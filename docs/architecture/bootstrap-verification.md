@@ -1,6 +1,6 @@
 # 초기 구축 검증 기록
 
-검증일: 2026-09-03. 성공·실패·미검증을 구분한다. 현재 원격 통합 검증과 최종 리뷰는 진행 중이다.
+검증일: 2026-09-03. 성공·실패·미검증을 구분한다. 최종 코드 리뷰와 수정 재검토를 완료했으며, 원격 통합 검증은 진행 중이다.
 
 ## 검증 결과
 
@@ -9,18 +9,18 @@
 | 문서 정합성 | Drive 최신 4종 전체 검토, 범위/계약/기술 조합 독립 검토 3개 및 보고서 재검토 완료. 미결 정책은 [정합성 보고서](planning-consistency-2026-09-03.md) 참조 |
 | Java 환경 | workspace-local Temurin 25.0.4.1+1, 공식 배포 SHA-256 대조 후 실행. 전역 Java 설정 변경 없음 |
 | 깨끗한 백엔드 빌드 | `gradlew clean test integrationTestClasses openapi3 bootJar --rerun-tasks --no-build-cache` 성공 |
-| 백엔드 테스트 | 모듈 경계 1건 + API/보안 4건 + 세션 쿠키 설정 바인딩 2건, 총 7건 성공·실패/skip 0 |
+| 백엔드 테스트 | 모듈 경계 1건 + API/보안 4건 + 세션 쿠키 설정 바인딩 2건 + Flyway PostgreSQL 플러그인 선택 1건, 총 8건 성공·실패/skip 0 |
 | QueryDSL 준비 | OpenFeign7.5 Q타입 생성과 통합 테스트 소스 컴파일 성공. 실제 PostgreSQL 조회는 원격 통합 테스트 결과로 별도 판정 |
 | 잠금 파일 | `pnpm install --frozen-lockfile` 성공 |
 | API 계약 산출물 | `pnpm api:generate` 성공: OpenAPI3.0.1 검증 → TypeScript 타입 → Swagger 생성 |
 | 프런트 | 실제 UI 테스트 3건, typecheck 및 Vite production build 성공 |
 | 알려진 npm 취약점 | `pnpm audit --json`: 0건. 초기 발견된 Vitest 취약점은 4.1.0으로 패치 후 재검증 |
-| 브라우저 확인 | Swagger에서 GET 경로와 200 JSON 예제 표시, Try it out 없음. 프런트는 백엔드 미기동 시 실패·재시도 UI 표시 확인 |
+| 브라우저 확인 | Swagger에서 GET 경로와 200 JSON 예제 표시, Try it out 없음. 프런트는 백엔드 미기동 시 실패·재시도 UI 표시 확인. border-box 수정 후 1280×720에서 문서 폭 1280, main 높이 720, 카드 폭 576 확인. 모바일 실측은 미수행 |
 | Docker 통합 테스트 | 로컬 Docker 불가용으로 `integrationTest`가 명시 실패. 조용한 skip 없음. GitHub Linux runner에서 필수 검증 예정 |
 | 개발 Compose | localhost 바인딩과 named volume 구성 읽기 검토. 실행 검증은 원격 Docker 환경에서 예정 |
 | Git 포함 파일 | 기존 planning/PPT/임시 작업물, 비밀값 파일, node_modules/build/생성 타입 제외 확인 |
-| 배포 JAR | 테스트용 QuerydslProbe 및 전용 V2 마이그레이션이 없고, 운영 V1 스키마 생성만 포함됨을 확인 |
-| 코드 재검토 | 최초 검토의 8개 수정사항과 Swagger 외부 validator 차단을 독립 재검토하여 모두 해결 확인. 최종 전체 리뷰는 별도 진행 |
+| 배포 JAR | 테스트용 QuerydslProbe 및 전용 V2 마이그레이션이 없고, 운영 V1 스키마 생성만 포함됨을 확인. Flyway PostgreSQL 12.4.0 플러그인 포함 확인 |
+| 코드 재검토 | 최초 8개 수정사항과 Swagger 외부 validator 차단 재검토 완료. 최종 전체 리뷰의 Flyway 플러그인·Boot4 테스트 클라이언트 자동 설정·CSS 크기 계산 3건도 수정 후 독립 재검토에서 모두 해결 판정 |
 
 브라우저에서 백엔드까지 연결되는 성공 흐름은 로컬에서 확인하지 못했다. 성공 응답은 실제 Controller의 MockMvc 테스트와 프런트 HTTP 경계 테스트로 각각 검증했다. 전체 연결/DB·Redis는 통합 테스트 결과를 기준으로 한다.
 
@@ -33,6 +33,8 @@
 - npm 설치에서 `@scarf/scarf` 및 `esbuild` dependency install script가 차단되어 있다. 현재 생성·빌드는 통과했으며, 단순히 경고를 없애려고 임의 스크립트를 승인하지 않는다.
 
 Vitest 수정 근거: [공식 보안 공지 GHSA-5xrq-8626-4rwp](https://github.com/vitest-dev/vitest/security/advisories/GHSA-5xrq-8626-4rwp). 현재 프로젝트는 취약 UI 서버를 사용하지 않았지만 패치 버전을 채택했다.
+
+런타임 수정 근거: [Flyway PostgreSQL 별도 지원 모듈](https://documentation.red-gate.com/fd/postgresql-database-277579325.html), [Boot4 TestRestTemplate 명시적 자동 설정](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#using-webclient-or-testresttemplate-and-springboottest). PostgreSQL URL에 맞는 플러그인을 실제로 선택하는 회귀 테스트의 실패→성공을 확인했다.
 
 ## 이번에 수행하지 않은 것
 
