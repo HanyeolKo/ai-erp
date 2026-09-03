@@ -18,6 +18,8 @@
 Thumbs.db
 
 node_modules/
+.pnpm-store/
+/frontend/src/api/generated.ts
 dist/
 coverage/
 playwright-report/
@@ -25,4 +27,3 @@ test-results/
 .gradle/
 build/
 *.log
-
