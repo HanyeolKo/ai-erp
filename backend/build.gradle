@@ -47,6 +47,7 @@ dependencies {
     implementation 'io.github.openfeign.querydsl:querydsl-jpa:7.5'
 
     runtimeOnly 'org.postgresql:postgresql'
+    runtimeOnly 'org.flywaydb:flyway-database-postgresql'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
