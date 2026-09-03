@@ -29,6 +29,7 @@ jobs:
         with:
           version: '10.33.0'
       - run: pnpm install --frozen-lockfile
+      - run: docker compose --env-file infra/.env.example -f infra/compose.dev.yml config --quiet
       - run: ./gradlew clean test integrationTest openapi3 bootJar
         working-directory: backend
       - run: pnpm api:generate

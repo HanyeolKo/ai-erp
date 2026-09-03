@@ -12,6 +12,6 @@ const page = `<!doctype html>
 <title>AI ERP API 검토</title><link rel="stylesheet" href="./swagger-ui-dist/swagger-ui.css"></head>
 <body><div id="swagger-ui"></div><script src="./swagger-ui-dist/swagger-ui-bundle.js"></script>
 <script src="./swagger-ui-dist/swagger-ui-standalone-preset.js"></script><script>
-SwaggerUIBundle({ url: "./openapi3.yaml", dom_id: "#swagger-ui", presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset], layout: "StandaloneLayout", supportedSubmitMethods: [] });
+SwaggerUIBundle({ url: "./openapi3.yaml", dom_id: "#swagger-ui", presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset], layout: "StandaloneLayout", supportedSubmitMethods: [], validatorUrl: null });
 </script></body></html>`;
 await writeFile(new URL("index.html", output), page, "utf8");

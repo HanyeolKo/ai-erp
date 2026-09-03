@@ -39,10 +39,10 @@ Set-Location backend
 다른 터미널에서 `pnpm --dir frontend dev`를 실행하면 `/api` 요청은 `localhost:8080`으로 프록시됩니다. API 명세는 `pnpm api:generate` 후 아래처럼 정적으로 검토할 수 있습니다. Swagger의 Try it out은 비활성화되어 있고 운영에 자동 공개되지 않습니다.
 
 ```sh
-python -m http.server 8081 --directory backend/build/api-docs
+pnpm --dir frontend exec vite ../backend/build/api-docs --host 127.0.0.1 --port 4174 --strictPort
 ```
 
-브라우저에서 `http://localhost:8081`을 엽니다.
+브라우저에서 `http://127.0.0.1:4174`을 엽니다.
 
 ## 아키텍처와 문서
 

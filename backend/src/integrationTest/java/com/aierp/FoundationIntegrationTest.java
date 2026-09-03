@@ -17,6 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -39,8 +40,8 @@ class FoundationIntegrationTest {
         registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
         registry.add("spring.datasource.username", POSTGRES::getUsername);
         registry.add("spring.datasource.password", POSTGRES::getPassword);
-        registry.add("spring.data.redis.host", REDIS::getHost);
-        registry.add("spring.data.redis.port", () -> REDIS.getMappedPort(6379));
+        registry.add("spring.data.redis.url", () -> "redis://%s:%d".formatted(REDIS.getHost(), REDIS.getMappedPort(6379)));
+        registry.add("spring.flyway.locations", () -> "classpath:db/migration,classpath:db/integration-migration");
     }
 
     @Autowired
@@ -54,7 +55,6 @@ class FoundationIntegrationTest {
 
     @BeforeEach
     void prepareQuerydslProbeTable() {
-        jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS platform.querydsl_probe (id BIGSERIAL PRIMARY KEY, label VARCHAR(255) NOT NULL)");
         jdbcTemplate.execute("TRUNCATE TABLE platform.querydsl_probe");
     }
 
@@ -75,6 +75,7 @@ class FoundationIntegrationTest {
     }
 
     @Test
+    @Transactional
     void generates_q_type_and_executes_hql_against_the_test_only_entity() {
         entityManager.persist(new QuerydslProbe("foundation"));
         entityManager.flush();

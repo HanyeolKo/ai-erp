@@ -11,18 +11,30 @@ spring:
   session:
     redis:
       repository-type: indexed
-    cookie:
-      http-only: true
-      same-site: lax
-      secure: true
   jpa:
     hibernate:
       ddl-auto: validate
     open-in-view: false
   flyway:
     default-schema: platform
-    schemas: platform,identity,"group",project,schedule,notification,calendar_integration,audit
+    schemas:
+      - platform
+      - identity
+      - group
+      - project
+      - schedule
+      - notification
+      - calendar_integration
+      - audit
     create-schemas: true
+
+server:
+  servlet:
+    session:
+      cookie:
+        http-only: true
+        same-site: lax
+        secure: true
 
 management:
   endpoint:
