@@ -1,0 +1,14 @@
+spring:
+  config:
+    activate:
+      on-profile: local
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/aierp}
+    username: ${DB_USERNAME:aierp}
+    password: ${DB_PASSWORD:aierp_local_example}
+  data:
+    redis:
+      url: ${REDIS_URL:redis://localhost:6379}
+  session:
+    cookie:
+      secure: false

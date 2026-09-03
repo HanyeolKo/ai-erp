@@ -1,0 +1,41 @@
+spring:
+  application:
+    name: ai-erp
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  data:
+    redis:
+      url: ${REDIS_URL}
+  session:
+    redis:
+      repository-type: indexed
+    cookie:
+      http-only: true
+      same-site: lax
+      secure: true
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    default-schema: platform
+    schemas: platform,identity,"group",project,schedule,notification,calendar_integration,audit
+    create-schemas: true
+
+management:
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
+      group:
+        liveness:
+          include: livenessState
+        readiness:
+          include: readinessState,db,redis
+  endpoints:
+    web:
+      exposure:
+        include: health

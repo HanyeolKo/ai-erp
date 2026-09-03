@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: gradle/actions/wrapper-validation@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22.19.0'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '10.33.0'
+      - run: pnpm install --frozen-lockfile
+      - run: ./gradlew clean test integrationTest openapi3 bootJar
+        working-directory: backend
+      - run: pnpm api:generate
+      - run: pnpm frontend:test
+      - run: pnpm frontend:typecheck
+      - run: pnpm frontend:build
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: verification-artifacts
+          path: |
+            backend/build/reports
+            backend/build/api-spec
+            backend/build/api-docs

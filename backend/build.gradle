@@ -1,0 +1,94 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '4.1.1'
+    id 'io.spring.dependency-management' version '1.1.7'
+    id 'com.epages.restdocs-api-spec' version '0.20.1'
+}
+
+group = 'com.aierp'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+sourceSets {
+    integrationTest {
+        java.srcDir file('src/integrationTest/java')
+        resources.srcDir file('src/integrationTest/resources')
+        compileClasspath += sourceSets.main.output + sourceSets.test.output + configurations.testRuntimeClasspath
+        runtimeClasspath += output + compileClasspath
+    }
+}
+
+configurations.named('integrationTestImplementation') {
+    extendsFrom configurations.testImplementation
+}
+
+configurations.named('integrationTestRuntimeOnly') {
+    extendsFrom configurations.testRuntimeOnly
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.session:spring-session-data-redis'
+    implementation 'org.flywaydb:flyway-database-postgresql'
+    implementation 'org.springframework.modulith:spring-modulith-core:2.1.1'
+
+    annotationProcessor 'io.github.openfeign.querydsl:querydsl-apt:7.5:jpa'
+    implementation 'io.github.openfeign.querydsl:querydsl-jpa:7.5'
+
+    runtimeOnly 'org.postgresql:postgresql'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-security-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-restdocs'
+    testImplementation 'org.springframework.restdocs:spring-restdocs-mockmvc'
+    testImplementation 'com.epages:restdocs-api-spec-mockmvc:0.20.1'
+    testImplementation 'org.springframework.modulith:spring-modulith-starter-test:2.1.1'
+
+    integrationTestImplementation 'org.springframework.boot:spring-boot-testcontainers'
+    integrationTestImplementation 'org.springframework.boot:spring-boot-starter-restclient-test'
+    integrationTestImplementation platform('org.testcontainers:testcontainers-bom:2.0.5')
+    integrationTestImplementation 'org.testcontainers:testcontainers-junit-jupiter'
+    integrationTestImplementation 'org.testcontainers:testcontainers-postgresql'
+    integrationTestAnnotationProcessor 'io.github.openfeign.querydsl:querydsl-apt:7.5:jpa'
+}
+
+tasks.withType(Test).configureEach {
+    useJUnitPlatform()
+}
+
+tasks.register('integrationTest', Test) {
+    description = 'Runs PostgreSQL and Redis integration tests with Testcontainers.'
+    group = 'verification'
+    testClassesDirs = sourceSets.integrationTest.output.classesDirs
+    classpath = sourceSets.integrationTest.runtimeClasspath
+    shouldRunAfter tasks.test
+    useJUnitPlatform()
+}
+
+openapi3 {
+    server = 'http://localhost:8080'
+    title = 'AI ERP Foundation API'
+    description = 'REST Docs 테스트로 생성된 초기 기반 API 명세입니다.'
+    version = project.version.toString()
+    format = 'yaml'
+    outputFileNamePrefix = 'openapi3'
+}
+
+tasks.configureEach {
+    if (name == 'openapi3') {
+        dependsOn tasks.test
+    }
+}

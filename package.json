@@ -1,0 +1,17 @@
+{
+  "name": "ai-erp",
+  "private": true,
+  "packageManager": "pnpm@10.33.0",
+  "scripts": {
+    "api:validate": "node scripts/validate-openapi.mjs",
+    "api:generate": "pnpm api:validate && openapi-typescript backend/build/api-spec/openapi3.yaml -o frontend/src/api/generated.ts && node scripts/build-swagger.mjs",
+    "frontend:test": "pnpm --dir frontend test",
+    "frontend:typecheck": "pnpm --dir frontend typecheck",
+    "frontend:build": "pnpm --dir frontend build"
+  },
+  "devDependencies": {
+    "@apidevtools/swagger-parser": "12.1.0",
+    "openapi-typescript": "7.10.1",
+    "swagger-ui-dist": "5.31.0"
+  }
+}
