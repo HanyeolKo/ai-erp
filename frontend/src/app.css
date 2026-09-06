@@ -63,4 +63,13 @@ input, select { display:block; width:min(100%, 28rem); padding:.55rem; margin-to
 .month-grid, .week-grid { display:grid; grid-template-columns:repeat(7, minmax(0, 1fr)); gap:.35rem; margin:1rem 0; }
 .month-grid > div, .week-grid > div { min-height:5rem; padding:.4rem; border:1px solid #d9e0ea; border-radius:.3rem; }
 .month-grid span, .week-grid a { display:block; font-size:.8rem; margin-top:.25rem; }
+.month-grid > [role="columnheader"], .week-grid > [role="columnheader"] { min-height: 0; font-weight: 700; text-align: center; }
+.day-events { position: relative; height: 36rem; margin-top: .5rem; background: repeating-linear-gradient(to bottom, transparent 0, transparent calc(4.1667% - 1px), #d9e0ea calc(4.1667% - 1px), #d9e0ea 4.1667%); }
+.hour-label { position: absolute; font-size: .65rem; color: #52647f; }
+.week-event { position: absolute; z-index: 1; padding: .15rem; background: #eef4fc; border-left: 3px solid #1e5aa8; overflow-wrap: anywhere; }
+.week-event a { margin: 0; }
+.week-event small { font-size: .65rem; }
+input[type="checkbox"] { display: inline-block; width: auto; margin-right: .5rem; }
+textarea { font: inherit; width: min(100%, 28rem); min-height: 6rem; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid #b16b00; outline-offset: 2px; }
 @media (max-width: 40rem) { main { padding:.75rem; } header { align-items:flex-start; flex-direction:column; } section { padding:1rem; } .radar { grid-template-columns:1fr; } }
