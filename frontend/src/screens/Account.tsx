@@ -3,6 +3,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, ApiError } from "../api/client";
 import { keys, useProject } from "../state";
 import { Link, Shell, QueryState, ProjectMissing, Notice, invitationHash, internalLink } from "../ui";
+function AuthShell({ children }: {
+    children: ReactNode;
+}) {
+    return <main><header><Link to="/">AI ERP</Link></header><section>{children}</section></main>;
+}
 export function Auth({ children }: {
     children: ReactNode;
 }) {
@@ -19,14 +24,14 @@ export function Auth({ children }: {
         sessionStorage.removeItem("ai-erp.invitation");
     }, [me.isSuccess]);
     if (!config.isSuccess)
-        return <Shell><QueryState query={config}/></Shell>;
+        return <AuthShell><QueryState query={config}/></AuthShell>;
     if (config.data.login !== "READY" || !config.data.loginUrl)
-        return <Shell><h1>AI ERP</h1><p>Google 로그인이 구성되지 않았습니다.</p></Shell>;
+        return <AuthShell><h1>AI ERP</h1><p>Google 로그인이 구성되지 않았습니다.</p></AuthShell>;
     if (me.isError && me.error instanceof ApiError && me.error.status === 401)
-        return <Shell><h1>AI ERP</h1><a href={config.data.loginUrl} onClick={() => { const value = invitationHash(window.location.hash); if (value)
-            sessionStorage.setItem("ai-erp.invitation", value); }}>Google로 로그인</a></Shell>;
+        return <AuthShell><h1>AI ERP</h1><a className="button" href={config.data.loginUrl} onClick={() => { const value = invitationHash(window.location.hash); if (value)
+            sessionStorage.setItem("ai-erp.invitation", value); }}>Google로 로그인</a></AuthShell>;
     if (!me.isSuccess)
-        return <Shell><QueryState query={me}/></Shell>;
+        return <AuthShell><QueryState query={me}/></AuthShell>;
     return <>{children}</>;
 }
 export function Projects() {

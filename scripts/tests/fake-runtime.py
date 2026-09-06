@@ -6,6 +6,7 @@ from pathlib import Path
 import re
 import subprocess
 import sys
+from urllib.parse import urlencode, urlsplit
 
 command, *args = sys.argv[1:]
 data_file, log_file = Path(os.environ['FAKE_DATA']), Path(os.environ['FAKE_LOG'])
@@ -38,6 +39,23 @@ def fault(name):
 def native(name, values):
     executable = f'D:/Git/usr/bin/{name}.exe' if os.name == 'nt' else '/usr/bin/' + name
     sys.exit(subprocess.call([executable, *values]))
+
+def response_body(path, container):
+    if path == '/actuator/health/readiness':
+        return '{"status":"UP"}'
+    if path == '/api/v1/system/configuration':
+        enabled = container.get('oidc_enabled', False)
+        mismatch = os.environ.get('FAKE_CONFIGURATION', '')
+        if mismatch == 'malformed':
+            return 'ok'
+        if mismatch in ('enabled', 'disabled'):
+            enabled = mismatch == 'enabled'
+        login_url = '/oauth2/authorization/google' if enabled else None
+        if mismatch == 'bad-login-url':
+            login_url = 'https://foreign.test/login'
+        return json.dumps(dict(login='READY' if enabled else 'CONFIGURATION_REQUIRED', loginUrl=login_url))
+    return 'ok'
+
 
 if command == 'git':
     if len(args) < 3 or args[:2] != ['-C', os.environ['AI_ERP_PROJECT_DIR']]:
@@ -135,17 +153,17 @@ if command == 'ln':
     event('file-install:' + Path(args[2]).name)
     native(command, args)
 if command == 'curl':
-    prefix = ['--silent', '--show-error', '--fail', '--connect-timeout', '3', '--max-time', '10', '--insecure']
+    prefix = ['--silent', '--show-error', '--connect-timeout', '3', '--max-time', '10', '--include', '--insecure', '--noproxy', '*']
     if args[:len(prefix)] != prefix:
         die('curl timeout/flags missing')
     tail = args[len(prefix):]
-    if tail[:1] != ['--include']:
-        die('each public endpoint must include its release header')
-    tail = tail[1:]
-    if len(tail) != 1 or not tail[0].startswith('https://192.168.219.100/'):
+    if len(tail) != 3 or tail[0] != '--resolve':
         die()
-    path = tail[0][len('https://192.168.219.100'):]
-    if path not in ('/actuator/health/readiness', '/', '/api/v1/system/configuration', '/api/v1/system/info', '/assets/api-docs/index.html'):
+    url = urlsplit(tail[2])
+    site, path = url.netloc, url.path
+    if url.scheme != 'https' or site not in ('192.168.219.100', 'ai-erp.duckdns.org', 'blackcow.duckdns.org') or tail[1] != site + ':443:192.168.219.100' or url.query or url.fragment:
+        die('public smoke must use the approved Host/SNI and fixed LAN destination')
+    if path not in ('/actuator/health/readiness', '/', '/api/v1/system/configuration', '/api/v1/system/info', '/assets/api-docs/index.html', '/api/v1/me', '/oauth2/authorization/google'):
         die()
     if not data['live']:
         die('no live release', 22)
@@ -154,10 +172,39 @@ if command == 'curl':
         save()
         if point in ('public', 'recovery') or (point == 'public-second' and data['public_count'] == 2):
             die('public failed', 22)
-    event('public:' + path)
-    body = '{"status":"UP"}' if 'readiness' in path else 'ok'
+    event('public:' + path, site=site, resolve=tail[1])
+    container = next(value for value in data['containers'].values() if value.get('release') == data['live'] and value['running'])
+    body = response_body(path, container)
     release = 'bad' if os.environ.get('FAKE_BAD_HEADER') and path == '/assets/api-docs/index.html' else data['live']
-    output('HTTP/1.1 200 OK\r\nX-AI-ERP-Release: ' + release + '\r\n\r\n' + body)
+    status = os.environ.get('FAKE_ME_STATUS', '401') if path == '/api/v1/me' else os.environ.get('FAKE_HTTP_STATUS', '200')
+    headers = 'X-AI-ERP-Release: ' + release + '\r\n'
+    if path == '/' and site == '192.168.219.100':
+        status = '302'
+        body = ''
+        location = 'https://ai-erp.duckdns.org/'
+        if os.environ.get('FAKE_ENTRY') == 'wrong-origin':
+            location = 'https://unapproved.example/'
+        elif os.environ.get('FAKE_ENTRY') == 'fragment':
+            location += '#/'
+        headers += 'Location: ' + location + '\r\n'
+    if path == '/oauth2/authorization/google':
+        status = '302'
+        body = ''
+        if site == '192.168.219.100':
+            location = 'https://ai-erp.duckdns.org' + path
+        else:
+            if not container.get('oidc_enabled'):
+                die('Google authorization requires enabled app', 1)
+            mismatch = os.environ.get('FAKE_OAUTH', '')
+            provider = 'foreign.test' if mismatch == 'foreign-provider' else 'accounts.google.com'
+            callback = 'wrong.duckdns.org' if mismatch == 'wrong-callback' else site
+            query = dict(client_id='do-not-print-google-client-id', response_type='code',
+                         redirect_uri='https://' + callback + '/login/oauth2/code/google', state='do-not-print-oidc-state')
+            if mismatch == 'missing-state':
+                del query['state']
+            location = 'https://' + provider + '/o/oauth2/v2/auth?' + urlencode(query)
+        headers += 'Location: ' + location + '\r\n'
+    output('HTTP/1.1 ' + status + ' Status\r\n' + headers + '\r\n' + body)
 if command != 'docker':
     die()
 if args == ['info', '--format', '{{.ServerVersion}}']:
@@ -267,7 +314,8 @@ if len(tail) == 4 and tail[:3] == ['up', '-d', '--no-deps'] and tail[3] in ('app
     if data['live'] and data['containers'].get(service, {}).get('release') == data['live']:
         die('attempt to recreate live slot', 1)
     event('start:' + service, release=release)
-    data['containers'][service] = dict(running=True, image=ident, release=release)
+    data['containers'][service] = dict(running=True, image=ident, release=release,
+                                     oidc_enabled=os.environ['APP_OIDC_ENABLED'] == 'true')
     save()
     sys.exit(0)
 if len(tail) == 3 and tail[:2] == ['ps', '-q'] and tail[2] in ('postgres', 'redis', 'caddy', 'app-blue', 'app-green'):
@@ -339,14 +387,15 @@ if tail[:3] == ['exec', '-T', 'postgres']:
         sys.exit(0)
     die()
 if tail[:2] == ['exec', '-T'] and len(tail) == 12 and tail[2] in ('app-blue', 'app-green'):
-    if tail[3:11] != ['curl', '--silent', '--show-error', '--fail', '--connect-timeout', '3', '--max-time', '10']:
+    if tail[3:11] != ['curl', '--silent', '--show-error', '--connect-timeout', '3', '--max-time', '10', '--include']:
         die()
     path = tail[11].removeprefix('http://127.0.0.1:8080')
-    if path not in ('/actuator/health/readiness', '/', '/api/v1/system/configuration', '/api/v1/system/info', '/assets/api-docs/index.html'):
+    if path not in ('/actuator/health/readiness', '/', '/api/v1/system/configuration', '/api/v1/system/info', '/assets/api-docs/index.html', '/api/v1/me'):
         die()
     fault('internal')
     if not data['containers'].get(tail[2], {}).get('running'):
         die('internal smoke on absent app')
     event('internal:' + path)
-    output('{"status":"UP"}' if 'readiness' in path else 'ok')
+    status = os.environ.get('FAKE_ME_STATUS', '401') if path == '/api/v1/me' else os.environ.get('FAKE_HTTP_STATUS', '200')
+    output('HTTP/1.1 ' + status + ' Status\r\n\r\n' + response_body(path, data['containers'][tail[2]]))
 die()
