@@ -79,13 +79,13 @@ function Editor({ project, userId, current, members, membersReady }: {
     };
     const fieldError = (key: string) => errors[key] ? <p role="alert" id={`error-${key}`}>{errors[key]}</p> : null;
     return <>{!editable && <p>현재 역할 또는 일정 상태로는 수정할 수 없습니다.</p>}<form noValidate onSubmit={submit}>
-    <label>제목<input required value={title} disabled={disabled} aria-invalid={!!errors.title} onChange={e => setTitle(e.target.value)}/></label>{fieldError("title")}
+    <label>제목<input required value={title} disabled={disabled} aria-invalid={!!errors.title} aria-describedby={errors.title ? "error-title" : undefined} onChange={e => setTitle(e.target.value)}/></label>{fieldError("title")}
     <label>설명<textarea value={description} disabled={disabled} onChange={e => setDescription(e.target.value)}/></label>
-    <label>시간대<input value={zone} disabled={disabled} aria-invalid={!!errors.zone} onChange={e => setZone(e.target.value)}/></label>{fieldError("zone")}
-    <label>시작<input type="datetime-local" value={start} disabled={disabled} aria-invalid={!!errors.start} onChange={e => setStart(e.target.value)}/></label>{fieldError("start")}
-    <label>종료<input type="datetime-local" value={end} disabled={disabled} aria-invalid={!!errors.end} onChange={e => setEnd(e.target.value)}/></label>{fieldError("end")}
+    <label>시간대<input value={zone} disabled={disabled} aria-invalid={!!errors.zone} aria-describedby={errors.zone ? "error-zone" : undefined} onChange={e => setZone(e.target.value)}/></label>{fieldError("zone")}
+    <label>시작<input type="datetime-local" value={start} disabled={disabled} aria-invalid={!!errors.start} aria-describedby={errors.start ? "error-start" : undefined} onChange={e => setStart(e.target.value)}/></label>{fieldError("start")}
+    <label>종료<input type="datetime-local" value={end} disabled={disabled} aria-invalid={!!errors.end} aria-describedby={errors.end ? "error-end" : undefined} onChange={e => setEnd(e.target.value)}/></label>{fieldError("end")}
     <fieldset disabled={disabled || !membersReady}><legend>프로젝트 구성원 참석자</legend>{membersReady && !members.length && <p>선택할 구성원이 없습니다.</p>}{members.map(m => <label key={m.userId}><input type="checkbox" checked={ids.includes(m.userId)} onChange={e => setIds(old => e.target.checked ? [...old, m.userId] : old.filter(id => id !== m.userId))}/>{m.userId}</label>)}{ids.filter(id => !members.some(m => m.userId === id)).map(id => <label key={id}><input type="checkbox" checked onChange={() => setIds(old => old.filter(v => v !== id))}/>{id} (저장된 참석자)</label>)}</fieldset>
-    <label>외부 참석자 이메일<input value={external} disabled={disabled} aria-invalid={!!errors.external} onChange={e => setExternal(e.target.value)}/></label>{fieldError("external")}
+    <label>외부 참석자 이메일<input value={external} disabled={disabled} aria-invalid={!!errors.external} aria-describedby={errors.external ? "error-external" : undefined} onChange={e => setExternal(e.target.value)}/></label>{fieldError("external")}
     <p>일정을 확정하면 Google Calendar에 단방향 투영합니다. 이후 수정·취소도 Calendar에 반영하며 외부 전송 실패는 일정 저장을 취소하지 않습니다. 외부 참석자는 앱 접근권한이나 변경 확인 권한을 얻지 않습니다.</p><p>IANA 시간대는 입력 시간을 UTC로 변환하는 데 사용합니다. 시간대를 바꾸면 입력한 현지 시각의 의미가 바뀝니다. 현재 API는 시간대 이름을 저장하지 않습니다.</p>
     {save.isError && <><Notice error={save.error}/><p>입력한 내용은 유지됩니다. 충돌한 경우 상세 화면에서 최신 버전을 확인한 뒤 다시 편집하세요.</p></>}<button disabled={disabled || !membersReady}>일정 저장</button>
   </form></>;

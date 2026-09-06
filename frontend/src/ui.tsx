@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { ApiError, type Project } from "./api/client";
 export const go = (path: string) => { window.location.hash = `#${path}`; };
 export const invitationHash = (value: string) => /^#\/invitations\/[A-Za-z0-9_-]+$/.test(value) ? value : undefined;
-export const internalLink = (value?: string | null) => value && /^#?\/projects\/[A-Za-z0-9_-]+\/schedules\/[A-Za-z0-9_-]+$/.test(value) ? value.replace(/^#/, "") : undefined;
+export const internalLink = (value?: string | null) => value && /^#?\/projects\/[A-Za-z0-9_-]+(?:\/schedules\/[A-Za-z0-9_-]+)?$/.test(value) ? value.replace(/^#/, "") : undefined;
 export function Link({ to, children }: {
     to: string;
     children: ReactNode;
