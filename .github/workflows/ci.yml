@@ -1,6 +1,6 @@
 name: CI
 
-on:
+"on":
   push:
     branches: [main]
   pull_request:
@@ -30,13 +30,23 @@ jobs:
         with:
           version: '10.33.0'
       - run: pnpm install --frozen-lockfile
+      - run: ruby .github/workflows/tests/validate_workflows.rb
       - run: docker compose --env-file infra/.env.example -f infra/compose.dev.yml config --quiet
+      - run: docker compose --env-file infra/.env.prod.example -f infra/compose.prod.yml config --quiet
+      - run: |
+          bash -n scripts/preflight.sh
+          bash -n scripts/backup.sh
+          bash -n scripts/deploy.sh
+          bash -n scripts/rollback.sh
+          bash -n scripts/smoke.sh
+      - run: bash scripts/tests/deployment-contract.sh
       - run: ./gradlew clean test integrationTest openapi3 bootJar
         working-directory: backend
       - run: pnpm api:generate
       - run: pnpm frontend:test
       - run: pnpm frontend:typecheck
       - run: pnpm frontend:build
+      - run: docker build --tag ai-erp:ci .
       - uses: actions/upload-artifact@v6
         if: always()
         with:
