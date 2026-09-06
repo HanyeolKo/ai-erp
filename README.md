@@ -47,7 +47,9 @@ pnpm --dir frontend exec vite ../backend/build/api-docs --host 127.0.0.1 --port 
 
 ## 운영 배포
 
-운영 배포는 GitHub Actions의 승인된 self-hosted deployment job에서만 `scripts/deploy.sh <40-character-main-commit-sha>`로 실행합니다. 이 스크립트는 `/home/deploy/ai-erp/shared/.env`(mode `600`)의 비밀을 읽고 `infra/compose.prod.yml`로 PostgreSQL, Redis, Caddy 및 비활성 app slot을 시작합니다. host의 80/443을 사용하는 기존 컨테이너는 별도 승인·식별 절차 없이 건드리지 않습니다.
+운영 배포는 GitHub Actions의 승인된 self-hosted deployment job에서만 clean `main` HEAD와 같은 `scripts/deploy.sh <40-character-main-commit-sha>`로 실행합니다. `/home/deploy/ai-erp/shared/.env`는 mode `600`이어야 하며, `DB_URL=jdbc:postgresql://postgres:5432/$POSTGRES_DB`, `REDIS_URL=redis://:$REDIS_PASSWORD@redis:6379/0`, URL-safe `REDIS_PASSWORD`, `APP_OIDC_ENABLED`를 사용한다. OIDC가 `true`이면 Google credential 두 값이 모두 필요하다.
+
+배포는 immutable OCI revision label, project-owned network/volumes, atomic `active-state.json`, inactive slot, Flyway one-shot migration, Caddy candidate validation/reload, public smoke 순서를 강제한다. `rollback.sh`는 인자 없이 현재 manifest의 직전 release로, 또는 명시한 보존 release로 비활성 slot에 전환한다. Flyway, Docker volume, image, 비프로젝트 컨테이너는 제거하지 않는다. host의 80/443을 사용하는 기존 컨테이너는 별도 승인·식별 절차 없이 건드리지 않는다.
 
 서버에서만 아래 검증을 실행합니다. `.env.prod.example`은 키 목록 예시이며 실제 값으로 사용하면 안 됩니다.
 
@@ -55,6 +57,8 @@ pnpm --dir frontend exec vite ../backend/build/api-docs --host 127.0.0.1 --port 
 docker compose --env-file infra/.env.prod.example -f infra/compose.prod.yml config --quiet
 bash scripts/tests/deployment-contract.sh
 ```
+
+OpenAPI와 Swagger 검토 artifact는 production image의 `/app/api-docs-artifact`에 포함된다. 현재 보안 정책은 운영 HTTP 경로로 Swagger 문서를 공개하지 않는다.
 
 ## 아키텍처와 문서
 

@@ -33,14 +33,14 @@ services:
   redis:
     image: redis:8.2.9
     restart: unless-stopped
-    command: ["redis-server", "--appendonly", "yes"]
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD}"]
     volumes:
       - ai_erp_phase1_redis_data:/data
     networks: [internal]
     mem_limit: 256m
     cpus: "0.50"
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli -a \"$${REDIS_PASSWORD}\" --no-auth-warning ping | grep -q PONG"]
       interval: 5s
       timeout: 3s
       retries: 24
@@ -69,15 +69,17 @@ services:
 
   app-blue: &app
     image: ${APP_IMAGE}
-    restart: "no"
+    restart: unless-stopped
+    pull_policy: never
     environment:
       DB_URL: ${DB_URL}
       DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
       REDIS_URL: ${REDIS_URL}
-      OIDC_ENABLED: ${OIDC_ENABLED}
+      APP_OIDC_ENABLED: ${APP_OIDC_ENABLED}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      SPRING_FLYWAY_ENABLED: "false"
     networks: [internal]
     depends_on:
       postgres:
@@ -112,7 +114,7 @@ services:
     mem_limit: 256m
     cpus: "0.50"
     healthcheck:
-      test: ["CMD", "caddy", "version"]
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:2019/config/ >/dev/null"]
       interval: 30s
       timeout: 5s
       retries: 3

@@ -24,6 +24,14 @@ The green contract test exercises first deployment, blue-to-green promotion, ina
 - `D:/Git/bin/bash.exe -lc 'bash scripts/tests/deployment-contract.sh'` passed.
 - `git diff --check` passed.
 
+## Review fix round 1
+
+- Release IDs now require a clean tracked worktree and exact repository `HEAD`; image builds carry and verify `org.opencontainers.image.revision`.
+- DB and Redis URLs are pinned to the project-only Compose services and matching credentials. OIDC uses `APP_OIDC_ENABLED`; app-owned Flyway is disabled after external one-shot migration.
+- `active-state.json` is the atomic traffic state. Caddy validates a complete candidate configuration before an atomic upstream/state switch and restores the prior state on reload/write failure.
+- Rollback uses a validated local immutable image identity and starts the requested release in the currently inactive slot.
+- The contract fake is stateful and covers provenance, first/subsequent deploys, failure recovery, rollback modes, secret suppression, lock, dirty/wrong HEAD, and unsafe operation absence.
+
 ## Not run locally
 
 Docker CLI/daemon is unavailable in this Windows workspace. Therefore `docker compose ... config --quiet` and the multi-stage image build must run on the GitHub-hosted CI or the approved Linux deployment host. No SSH, GitHub access, image pull, or deployment was performed by this task.

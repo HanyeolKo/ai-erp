@@ -38,6 +38,7 @@ RUN apt-get update \
     && groupadd --system --gid 10001 aierp \
     && useradd --system --uid 10001 --gid aierp --home-dir /app --shell /usr/sbin/nologin aierp
 COPY --from=application-build /workspace/backend/build/libs/*.jar /app/app.jar
+COPY --from=frontend-build /workspace/backend/build/api-docs /app/api-docs-artifact
 USER 10001:10001
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
