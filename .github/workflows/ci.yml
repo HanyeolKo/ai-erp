@@ -32,7 +32,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: ruby .github/workflows/tests/validate_workflows.rb
       - run: docker compose --env-file infra/.env.example -f infra/compose.dev.yml config --quiet
-      - run: docker compose --env-file infra/.env.prod.example -f infra/compose.prod.yml config --quiet
+      - run: APP_IMAGE=ai-erp:config-check docker compose --env-file infra/.env.prod.example -f infra/compose.prod.yml config --quiet
       - run: |
           bash -n scripts/preflight.sh
           bash -n scripts/backup.sh

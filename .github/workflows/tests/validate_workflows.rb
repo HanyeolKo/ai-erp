@@ -29,12 +29,12 @@ RESOLVER_RUN = <<~BASH
       exit 1
       ;;
   esac
-  printf 'RELEASE_SHA=%s\n' "$RELEASE_SHA" >> "$GITHUB_ENV"
+  printf 'RELEASE_SHA=%s\\n' "$RELEASE_SHA" >> "$GITHUB_ENV"
 BASH
 SUMMARY_RUN = <<~BASH
-  printf 'Deployment status: %s\n' "$JOB_STATUS" >> "$GITHUB_STEP_SUMMARY"
+  printf 'Deployment status: %s\\n' "$JOB_STATUS" >> "$GITHUB_STEP_SUMMARY"
   if [[ -n "${RELEASE_SHA:-}" ]]; then
-    printf 'Validated release SHA: %s\n' "$RELEASE_SHA" >> "$GITHUB_STEP_SUMMARY"
+    printf 'Validated release SHA: %s\\n' "$RELEASE_SHA" >> "$GITHUB_STEP_SUMMARY"
   fi
 BASH
 SYNTAX_RUN = <<~BASH
@@ -44,6 +44,7 @@ SYNTAX_RUN = <<~BASH
   bash -n scripts/rollback.sh
   bash -n scripts/smoke.sh
 BASH
+PROD_COMPOSE_CONFIG_RUN = "APP_IMAGE=ai-erp:config-check docker compose --env-file infra/.env.prod.example -f infra/compose.prod.yml config --quiet"
 
 class ContractError < StandardError; end
 
@@ -94,7 +95,7 @@ def ci_steps
     { "run" => "pnpm install --frozen-lockfile" },
     { "run" => "ruby .github/workflows/tests/validate_workflows.rb" },
     { "run" => "docker compose --env-file infra/.env.example -f infra/compose.dev.yml config --quiet" },
-    { "run" => "docker compose --env-file infra/.env.prod.example -f infra/compose.prod.yml config --quiet" },
+    { "run" => PROD_COMPOSE_CONFIG_RUN },
     { "run" => SYNTAX_RUN },
     { "run" => "bash scripts/tests/deployment-contract.sh" },
     { "run" => "./gradlew clean test integrationTest openapi3 bootJar", "working-directory" => "backend" },
@@ -204,6 +205,7 @@ def self_test!(documents)
     assert_rejected!("shell substitution CI step #{index}") { mutated = deep_copy(baseline); mutated["ci.yml"]["jobs"]["verify"]["steps"][index]["shell"] = "sh"; validate!(mutated) }
   end
   assert_rejected!("comment-only syntax check") { mutated = deep_copy(baseline); mutated["ci.yml"]["jobs"]["verify"]["steps"][9]["run"] = "# bash -n scripts/deploy.sh"; validate!(mutated) }
+  assert_rejected!("production Compose config without APP_IMAGE") { mutated = deep_copy(baseline); mutated["ci.yml"]["jobs"]["verify"]["steps"][8]["run"] = "docker compose --env-file infra/.env.prod.example -f infra/compose.prod.yml config --quiet"; validate!(mutated) }
   assert_rejected!("second deploy invocation") { mutated = deep_copy(baseline); deploy_job(mutated)["steps"] << { "name" => "Bypass", "shell" => "bash", "run" => "bash scripts/deploy.sh deadbeef" }; validate!(mutated) }
   assert_rejected!("checkout credential persistence") { mutated = deep_copy(baseline); deploy_job(mutated)["steps"][0]["with"]["persist-credentials"] = true; validate!(mutated) }
   assert_rejected!("secret output") { mutated = deep_copy(baseline); deploy_job(mutated)["steps"] << { "name" => "Leak", "shell" => "bash", "run" => "echo ${{ secrets.TOKEN }}" }; validate!(mutated) }
