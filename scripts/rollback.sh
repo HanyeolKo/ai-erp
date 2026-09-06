@@ -2,28 +2,35 @@
 set -Eeuo pipefail
 SCRIPT_NAME=rollback
 source "$(dirname -- "$0")/lib-deploy.sh"
-TARGET_RELEASE="${1:-}"
-exec 9>"$LOCK_FILE"
-if [[ "${AI_ERP_LOCK_HELD:-}" != 1 ]]; then flock -n 9 || fail 'another deployment holds the lock'; fi
-load_env; validate_environment; load_state
-if [[ -z "$TARGET_RELEASE" ]]; then
-  [[ -n "$STATE_RELEASE" ]] || fail 'no active release supplies a rollback target'
-  TARGET_RELEASE="$(sed -n 's/.*"previousRelease":"\([a-f0-9]\{40\}\)".*/\1/p' "$ROOT/releases/$STATE_RELEASE/manifest.json" | head -n1)"
+[[ $# -le 1 ]] || fail 'rollback accepts at most one releaseId'
+RELEASE_ID="${1:-}"
+if [[ $# == 1 ]]; then valid_release "$RELEASE_ID" || fail 'rollback target must be an exact lowercase 40-character commit SHA'; fi
+validate_base
+acquire_lock
+verify_no_transaction
+load_env
+export APP_IMAGE=ai-erp:preflight
+verify_host
+load_state
+[[ -n "$STATE_RELEASE" ]] || fail 'no active deployment exists'
+RELEASE_ID="${RELEASE_ID:-$STATE_PREVIOUS_RELEASE}"
+valid_release "$RELEASE_ID" || fail 'no previous release exists'
+if [[ "$RELEASE_ID" == "$STATE_RELEASE" ]]; then
+  "$(dirname -- "$0")/smoke.sh" public "$RELEASE_ID"
+  printf 'rollback: verified active release=%s (no-op)\n' "$RELEASE_ID"
+  exit 0
 fi
-valid_release "$TARGET_RELEASE" || fail 'rollback target must be an exact lowercase 40-character commit SHA'
-MANIFEST="$ROOT/releases/$TARGET_RELEASE/manifest.json"; [[ -f "$MANIFEST" ]] || fail 'preserved release manifest is missing'
-image_id="$(sed -n 's/.*"imageId":"\(sha256:[a-f0-9]\{64\}\)".*/\1/p' "$MANIFEST" | head -n1)"
-revision="$(sed -n 's/.*"revision":"\([a-f0-9]\{40\}\)".*/\1/p' "$MANIFEST" | head -n1)"
-checksum="$(sed -n 's/.*"imageChecksum":"\([a-f0-9]\{64\}\)".*/\1/p' "$MANIFEST" | head -n1)"
-[[ "$revision" == "$TARGET_RELEASE" && "$image_id" =~ ^sha256:[a-f0-9]{64}$ && "$checksum" == "$(printf %s "$image_id" | sha256sum | awk '{print $1}')" ]] || fail 'rollback manifest is tampered'
-image_identity "$image_id" "$TARGET_RELEASE"
-if [[ "$STATE_COLOR" == blue ]]; then TARGET_COLOR=green; else TARGET_COLOR=blue; fi
-export APP_IMAGE="$image_id" CADDY_STATE_DIR="$STATE_DIR" RELEASE_SOURCE_DIR="$PROJECT_DIR"
-"${COMPOSE[@]}" up -d postgres redis caddy
-"${COMPOSE[@]}" up -d --no-deps "app-$TARGET_COLOR"
-wait_healthy "$TARGET_COLOR" || fail 'rollback candidate did not become healthy'
-"$(dirname -- "$0")/smoke.sh" internal "$TARGET_COLOR"
-transactional_promote "$TARGET_RELEASE" "$TARGET_COLOR" "$IMAGE_ID" "$IMAGE_REVISION"
-if [[ "${SKIP_PUBLIC_SMOKE:-0}" != 1 ]]; then "$(dirname -- "$0")/smoke.sh" public "$TARGET_RELEASE"; fi
-[[ -n "$STATE_COLOR" ]] && "${COMPOSE[@]}" stop "app-$STATE_COLOR"
-printf 'rollback: ok release=%s color=%s\n' "$TARGET_RELEASE" "$TARGET_COLOR"
+validate_manifest "$RELEASE_ID"
+CANDIDATE_IMAGE="$MANIFEST_IMAGE"
+export APP_IMAGE="$CANDIDATE_IMAGE"
+prepare_release
+install_error_trap
+if [[ "$STATE_COLOR" == blue ]]; then CANDIDATE_COLOR=green; else CANDIDATE_COLOR=blue; fi
+for service in postgres redis caddy; do wait_service_healthy "$service"; done
+CANDIDATE_STARTED=1
+"${COMPOSE[@]}" up -d --no-deps "app-$CANDIDATE_COLOR" >/dev/null 2>&1 || fail 'rollback candidate start failed'
+wait_service_healthy "app-$CANDIDATE_COLOR"
+verify_container "app-$CANDIDATE_COLOR" "$CANDIDATE_IMAGE"
+"$(dirname -- "$0")/smoke.sh" internal "$CANDIDATE_COLOR"
+transactional_promote 0
+printf 'rollback: ok release=%s color=%s\n' "$RELEASE_ID" "$CANDIDATE_COLOR"

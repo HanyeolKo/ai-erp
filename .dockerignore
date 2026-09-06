@@ -10,3 +10,8 @@ frontend/src/api/generated.ts
 docs
 infra
 *.log
+**/.env
+**/.env.*
+.tmp
+**/node_modules
+**/.gradle
