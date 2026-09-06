@@ -33,4 +33,3 @@ metadata="$BACKUP_DIR/metadata-$timestamp.txt"
 chmod 600 "$metadata"
 find "$BACKUP_DIR" -xdev -type f -mtime "+$RETENTION_DAYS" -delete
 printf 'backup: ok release=%s\n' "$RELEASE_ID"
-
