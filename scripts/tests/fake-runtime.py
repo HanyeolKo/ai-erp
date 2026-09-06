@@ -1,5 +1,6 @@
 """Strict production boundary double: every unsupported call fails closed."""
 import json
+import hashlib
 import os
 from pathlib import Path
 import re
@@ -255,14 +256,20 @@ if tail == ['--profile', 'migration', 'run', '--rm', 'migrate']:
     data['history'] = True
     save()
     sys.exit(0)
-if tail == ['run', '--rm', '--no-deps', 'caddy', 'caddy', 'validate', '--config', '/etc/caddy/state/candidate.Caddyfile', '--adapter', 'caddyfile']:
-    event('caddy-validate')
+if tail == ['run', '--rm', '--no-deps', 'caddy', 'validate', '--config', '/etc/caddy/state/candidate.Caddyfile', '--adapter', 'caddyfile']:
+    source = Path(os.environ['AI_ERP_PROJECT_DIR']) / 'infra/Caddyfile'
+    event('caddy-validate', caddyChecksum=hashlib.sha256(source.read_bytes()).hexdigest())
     fault('caddy-validate')
-    text = (root / 'shared/caddy/candidate.Caddyfile').read_text()
-    if 'reverse_proxy app-' not in text or 'tls internal' not in text or 'header X-AI-ERP-Release' not in text:
-        die('not a complete candidate Caddyfile', 1)
+    text = (root / 'shared/caddy/candidate.Caddyfile').read_text(encoding='utf-8')
+    upstream = (root / 'shared/caddy/upstream.candidate').read_text(encoding='utf-8').rstrip()
+    expected = source.read_text(encoding='utf-8').replace('import /etc/caddy/state/active-upstream.caddy', upstream)
+    if text.rstrip() != expected.rstrip():
+        die('candidate does not match the current checkout Caddyfile', 1)
     sys.exit(0)
-if tail == ['exec', '-T', 'caddy', 'caddy', 'reload', '--config', '/etc/caddy/Caddyfile', '--adapter', 'caddyfile']:
+if tail == ['exec', '-T', 'caddy', 'caddy', 'reload', '--config', '/etc/caddy/source/Caddyfile', '--adapter', 'caddyfile']:
+    source = Path(os.environ['AI_ERP_PROJECT_DIR']) / 'infra/Caddyfile'
+    if source.read_text(encoding='utf-8').count('import /etc/caddy/state/active-upstream.caddy') != 1:
+        die('runtime config must import the current upstream exactly once', 1)
     text = (root / 'shared/caddy/active-upstream.caddy').read_text()
     match = re.search(r'header X-AI-ERP-Release "([a-f0-9]{40})"', text)
     release = match[1] if match else ''
@@ -275,7 +282,7 @@ if tail == ['exec', '-T', 'caddy', 'caddy', 'reload', '--config', '/etc/caddy/Ca
         save()
         fault('reload')
     data['live'] = release
-    event('restore' if restoring else 'switch')
+    event('restore' if restoring else 'switch', caddyChecksum=hashlib.sha256(source.read_bytes()).hexdigest())
     save()
     sys.exit(0)
 if len(tail) == 2 and tail[0] == 'stop' and tail[1] in ('app-blue', 'app-green'):

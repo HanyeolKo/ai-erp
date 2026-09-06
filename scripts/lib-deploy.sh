@@ -82,7 +82,7 @@ load_env() {
   local -A seen=()
   # .env is data, never executable shell. Unknown keys and shell interpolation
   # fail closed; APP_IMAGE is deliberately ignored and re-derived by the caller.
-  for key in POSTGRES_DB POSTGRES_USER POSTGRES_PASSWORD DB_USERNAME DB_PASSWORD DB_URL REDIS_URL REDIS_PASSWORD SESSION_SECRET APP_OIDC_ENABLED GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET SITE_ADDRESS; do
+  for key in POSTGRES_DB POSTGRES_USER POSTGRES_PASSWORD DB_USERNAME DB_PASSWORD DB_URL REDIS_URL REDIS_PASSWORD APP_OIDC_ENABLED GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET SITE_ADDRESS; do
     unset "$key"
   done
   while IFS= read -r line || [[ -n "$line" ]]; do
@@ -91,7 +91,7 @@ load_env() {
     [[ "$line" =~ ^([A-Z_][A-Z_0-9]*)=(.*)$ ]] || fail 'environment syntax is invalid'
     key="${BASH_REMATCH[1]}"; value="${BASH_REMATCH[2]}"
     [[ "$key" == APP_IMAGE ]] && continue
-    case "$key" in POSTGRES_DB|POSTGRES_USER|POSTGRES_PASSWORD|DB_USERNAME|DB_PASSWORD|DB_URL|REDIS_URL|REDIS_PASSWORD|SESSION_SECRET|APP_OIDC_ENABLED|GOOGLE_CLIENT_ID|GOOGLE_CLIENT_SECRET|SITE_ADDRESS) :;; *) fail 'unknown environment key';; esac
+    case "$key" in POSTGRES_DB|POSTGRES_USER|POSTGRES_PASSWORD|DB_USERNAME|DB_PASSWORD|DB_URL|REDIS_URL|REDIS_PASSWORD|APP_OIDC_ENABLED|GOOGLE_CLIENT_ID|GOOGLE_CLIENT_SECRET|SITE_ADDRESS) :;; *) fail 'unknown environment key';; esac
     [[ ! -v "seen[$key]" ]] || fail 'duplicate environment key'
     seen[$key]=1
     if [[ "$value" == \"*\" || "$value" == \'*\' ]]; then value="${value:1:${#value}-2}"; fi
@@ -99,7 +99,7 @@ load_env() {
     printf -v "$key" '%s' "$value"
     export "$key"
   done <"$ENV_FILE"
-  for required in POSTGRES_DB POSTGRES_USER POSTGRES_PASSWORD DB_USERNAME DB_PASSWORD DB_URL REDIS_URL REDIS_PASSWORD SESSION_SECRET APP_OIDC_ENABLED SITE_ADDRESS; do
+  for required in POSTGRES_DB POSTGRES_USER POSTGRES_PASSWORD DB_USERNAME DB_PASSWORD DB_URL REDIS_URL REDIS_PASSWORD APP_OIDC_ENABLED SITE_ADDRESS; do
     [[ -n "${!required:-}" ]] || fail "required environment key missing: $required"
   done
   [[ "$POSTGRES_DB" == ai_erp && "$POSTGRES_USER" =~ ^[a-z_][a-z0-9_]*$ ]] || fail 'project database must be ai_erp with a safe role name'
@@ -321,7 +321,7 @@ cleanup_candidates() {
     for path in "$RELEASE_DIR/manifest.candidate" "$RELEASE_DIR/manifest.sha256.candidate"; do optional_file "$path"; rm -f -- "$path" || return 1; done
   fi
 }
-reload_caddy() { "${COMPOSE[@]}" exec -T caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile >/dev/null 2>&1; }
+reload_caddy() { "${COMPOSE[@]}" exec -T caddy caddy reload --config /etc/caddy/source/Caddyfile --adapter caddyfile >/dev/null 2>&1; }
 abort_transaction() {
   local recovery=0
   if [[ "$TRANSACTION" == 1 ]]; then
@@ -375,7 +375,7 @@ needle='import /etc/caddy/state/active-upstream.caddy'
 assert config.count(needle)==1
 print(config.replace(needle,upstream))
 PY
-  "${COMPOSE[@]}" run --rm --no-deps caddy caddy validate --config /etc/caddy/state/candidate.Caddyfile --adapter caddyfile >/dev/null 2>&1 || fail 'candidate Caddy config invalid'
+  "${COMPOSE[@]}" run --rm --no-deps caddy validate --config /etc/caddy/state/candidate.Caddyfile --adapter caddyfile >/dev/null 2>&1 || fail 'candidate Caddy config invalid'
   event validated
   SWITCH_ATTEMPTED=1
   mv -f -- "$STATE_DIR/upstream.candidate" "$UPSTREAM_FILE"

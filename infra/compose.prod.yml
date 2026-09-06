@@ -105,13 +105,15 @@ services:
   caddy:
     image: caddy:2.11.4
     restart: unless-stopped
+    entrypoint: ["caddy"]
+    command: ["run", "--config", "/etc/caddy/source/Caddyfile", "--adapter", "caddyfile"]
     environment:
       SITE_ADDRESS: ${SITE_ADDRESS}
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - .:/etc/caddy/source:ro
       - ${CADDY_STATE_DIR:-/home/deploy/ai-erp/shared/caddy}:/etc/caddy/state:ro
       - ai_erp_phase1_caddy_data:/data
       - ai_erp_phase1_caddy_config:/config

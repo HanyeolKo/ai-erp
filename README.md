@@ -51,6 +51,8 @@ pnpm --dir frontend exec vite ../backend/build/api-docs --host 127.0.0.1 --port 
 
 배포는 실제 lock, OCI revision/image ID, project-owned network/volumes, inactive slot을 검증한다. 최초 빈 DB를 포함해 검증된 backup을 만든 뒤 Flyway를 한 번 실행하고, 새 app의 readiness·SPA·API·Swagger를 확인한다. 전체 Caddy config 검증·전환 뒤 두 차례 public smoke와 관찰을 통과해야 immutable manifest와 atomic `active-state.json`을 확정하고 이전 app을 중지한다. 전환 뒤 실패하면 이전 upstream과 state를 복원한다. 복구 자체가 실패하면 exit `2`와 보존된 transaction 파일을 확인한다.
 
+Caddy는 단일 파일 대신 `infra` 디렉터리를 read-only로 연결한다. 시작·reload는 `/etc/caddy/source/Caddyfile`을 읽고, candidate 검증과 checksum도 같은 현재 checkout 파일을 사용한다.
+
 `rollback.sh`는 atomic state의 직전 release 또는 명시한 보존 release를 현재 inactive slot으로 전환한다. 연속 rollback은 직전 active release로 되돌아가며 보존 manifest와 DB schema를 변경하지 않는다. 같은 active SHA의 배포는 검증만 수행하고, 완료된 비활성 SHA는 `rollback.sh`로 복원한다. Script는 volume/image 또는 비프로젝트 container를 제거하지 않는다. 운영에서 test mode나 경로 override를 설정하지 않는다.
 
 서버에서만 아래 검증을 실행합니다. `.env.prod.example`은 키 목록 예시이며 실제 값으로 사용하면 안 됩니다.

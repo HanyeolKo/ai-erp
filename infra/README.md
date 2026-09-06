@@ -43,6 +43,8 @@ bash scripts/smoke.sh public "$release"
 
 배포 순서는 immutable image build → PostgreSQL/Redis/Caddy health → `pg_dump -Fc`와 `pg_restore -l` 검증 → source 재검증 → external Flyway 한 번 → inactive app health·image 검증·internal smoke → 전체 Caddy candidate 검증·reload → public smoke·20초 관찰·public smoke → manifest와 state 원자 기록 → 이전 app 중지이다. 최초 빈 DB에도 migration 직전 backup을 만든다. app의 Spring Flyway는 비활성화한다.
 
+Caddy는 checkout의 `infra` 디렉터리를 `/etc/caddy/source`에 read-only로 연결하고 시작과 reload 모두 `/etc/caddy/source/Caddyfile`을 읽는다. checkout이 파일을 교체해도 현재 파일을 읽도록 단일 파일 bind mount를 사용하지 않는다. Candidate 검증과 manifest·backup의 Caddy checksum도 같은 checkout 파일을 기준으로 한다. 기존 단일 파일 mount에서 전환할 때에는 다음 배포의 Compose `up`이 변경된 Caddy 서비스 설정을 적용한다.
+
 `shared/active-state.json`은 현재 release/color/image와 직전 release/color를 기록한다. `shared/caddy/active-upstream.caddy`와 manifest, local image 및 running container가 모두 일치해야 다음 배포가 가능하다. 최초 상태는 state가 없고 app이 실행되지 않는 503 initialization이다. 같은 active SHA의 재실행은 public smoke만 수행하고 완료된 비활성 SHA의 재배포는 거부한다.
 
 Rollback은 보존된 immutable image를 현재 inactive slot에서 검증하고 같은 Caddy/public-smoke transaction으로 전환한다. migration을 역실행하지 않으며 원래 manifest를 수정하지 않는다. 연속해서 인자 없이 실행하면 직전 active release로 다시 이동한다.

@@ -46,7 +46,6 @@ DB_PASSWORD=do-not-print-database-secret
 DB_URL=jdbc:postgresql://postgres:5432/ai_erp
 REDIS_PASSWORD=do-not-print-redis-secret-123
 REDIS_URL=redis://:do-not-print-redis-secret-123@redis:6379/0
-SESSION_SECRET=do-not-print-session-secret
 APP_OIDC_ENABLED=false
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
@@ -318,6 +317,56 @@ def forwarded_headers_check():
     check(strategy == ['framework'], 'TLS-terminated app must use framework forwarded headers for external HTTPS/OIDC base URL')
     check('  app-green:\n    <<: *app\n' in compose, 'both app slots must share the forwarded-header configuration')
 
+def caddy_source_check():
+    global scenarios
+    scenarios += 1
+    compose = (PROJECT / 'infra/compose.prod.yml').read_text(encoding='utf-8')
+    caddy = compose.partition('  caddy:\n')[2].partition('\nnetworks:')[0]
+    check('./Caddyfile:' not in caddy, 'checkout Caddyfile must not be inode-pinned by a single-file bind mount')
+    check('      - .:/etc/caddy/source:ro\n' in caddy, 'Caddy must bind the stable infra directory read-only')
+    check('    entrypoint: ["caddy"]\n' in caddy, 'Caddy executable must be explicit for both run and validation commands')
+    check('    command: ["run", "--config", "/etc/caddy/source/Caddyfile", "--adapter", "caddyfile"]\n' in caddy,
+          'Caddy startup must read the current directory-mounted config without duplicating its entrypoint')
+
+def supported_environment_checks(root):
+    h = Host(root)
+    h.run('preflight', A)
+    check('SESSION_SECRET=' not in (PROJECT / 'infra/.env.prod.example').read_text(encoding='utf-8'),
+          'example must not advertise an unused session secret')
+    with h.envfile.open('a', encoding='utf-8') as env:
+        env.write('SESSION_SECRET=do-not-print-unused-session-secret\n')
+    result = h.run('preflight', A, success=False)
+    check('unknown environment key' in result.stderr, 'unused session secret must be rejected by the exact env allowlist')
+    h.clean()
+
+def caddy_checkout_checks(root):
+    h = Host(root)
+    checkout = root / 'checkout'
+    shutil.copytree(PROJECT / 'infra', checkout / 'infra')
+    migration = Path('backend/src/main/resources/db/migration')
+    shutil.copytree(PROJECT / migration, checkout / migration)
+    h.env['AI_ERP_PROJECT_DIR'] = posix(checkout)
+    source = checkout / 'infra/Caddyfile'
+    h.run('deploy', A)
+    old_checksum = hashlib.sha256(source.read_bytes()).hexdigest()
+    replacement = source.with_suffix('.replacement')
+    replacement.write_text(source.read_text(encoding='utf-8') + '\n# next clean checkout revision\n', encoding='utf-8')
+    replacement.replace(source)
+    current_checksum = hashlib.sha256(source.read_bytes()).hexdigest()
+    check(current_checksum != old_checksum, 'checkout fixture replaces Caddyfile contents and inode between releases')
+    checkpoint = len(h.calls())
+    h.run('deploy', B)
+    manifest = json.loads((h.host / f'releases/{B}/manifest.json').read_text(encoding='utf-8'))
+    backup = next((h.host / f'releases/{B}/backups').glob('*.json'))
+    check(manifest['caddyChecksum'] == current_checksum, 'manifest fingerprints the replaced current checkout config')
+    check(json.loads(backup.read_text(encoding='utf-8'))['caddyChecksum'] == current_checksum,
+          'backup metadata fingerprints the same current checkout config')
+    for stage in ('caddy-validate', 'switch'):
+        calls = [x for x in h.calls()[checkpoint:] if x['event'] == stage]
+        check(len(calls) == 1 and calls[0].get('caddyChecksum') == current_checksum,
+              stage + ' must use the same current config as the immutable manifest')
+    h.clean()
+
 def unsafe_delete_check(h):
     child = clone(h, 'mutation-unsafe-rm')
     child.entrypoints = child.root / 'scripts'
@@ -440,6 +489,11 @@ with tempfile.TemporaryDirectory(prefix='ai-erp-contract-') as temp:
         focus = os.environ.get('CONTRACT_FOCUS', '')
         if focus == 'headers':
             forwarded_headers_check()
+        elif focus == 'caddy-source':
+            caddy_source_check()
+            caddy_checkout_checks(Path(temp))
+        elif focus == 'env-keys':
+            supported_environment_checks(Path(temp))
         elif focus == 'rollback':
             h = Host(Path(temp))
             h.run('deploy', A)
@@ -455,6 +509,13 @@ with tempfile.TemporaryDirectory(prefix='ai-erp-contract-') as temp:
             recovery_checks(h)
         else:
             forwarded_headers_check()
+            caddy_source_check()
+            caddy_root = Path(temp) / 'caddy-checkout'
+            caddy_root.mkdir()
+            caddy_checkout_checks(caddy_root)
+            env_root = Path(temp) / 'env-keys'
+            env_root.mkdir()
+            supported_environment_checks(env_root)
             suite(Path(temp))
             for point in ('reload', 'public', 'manifest', 'state'):
                 path = Path(temp) / point
