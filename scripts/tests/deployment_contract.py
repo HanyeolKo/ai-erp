@@ -114,7 +114,7 @@ else printf '%s\\n' "$result"; fi''')
         args = [BASH, '-c', setup, '_',
                 posix(self.bin), posix(self.entrypoints / (command + '.sh'))]
         if release is not None:
-            args.append(release)
+            args.extend(release if isinstance(release, tuple) else (release,))
         result = subprocess.run(args, env=env, text=True, capture_output=True)
         print(f'case {case}: {command} {extra.get("FAKE_FAIL", "")} exit={result.returncode}', flush=True)
         self.output += result.stdout + result.stderr
@@ -328,6 +328,15 @@ def caddy_source_check():
     check('    command: ["run", "--config", "/etc/caddy/source/Caddyfile", "--adapter", "caddyfile"]\n' in caddy,
           'Caddy startup must read the current directory-mounted config without duplicating its entrypoint')
 
+def caddy_http_check():
+    global scenarios
+    scenarios += 1
+    config = (PROJECT / 'infra/Caddyfile').read_text(encoding='utf-8')
+    check(':80 {\n    redir https://ai-erp.duckdns.org{uri} 308\n}' in config,
+          'HTTP entry must redirect raw-IP and domain traffic to the fixed approved HTTPS origin')
+    check('{host}' not in config, 'HTTP redirect must never echo an untrusted Host into its destination')
+
+
 def supported_environment_checks(root):
     h = Host(root)
     h.run('preflight', A)
@@ -338,6 +347,67 @@ def supported_environment_checks(root):
     result = h.run('preflight', A, success=False)
     check('unknown environment key' in result.stderr, 'unused session secret must be rejected by the exact env allowlist')
     h.clean()
+
+def smoke_status_checks(root):
+    h = Host(root)
+    runtime = h.runtime()
+    runtime['live'] = A
+    runtime['containers']['app-blue'] = dict(running=True, image='fixture', release=A, oidc_enabled=False)
+    h.save(runtime)
+    for mode, value in (('internal', 'blue'), ('public', A)):
+        result = h.run('smoke', (mode, value), success=False, FAKE_HTTP_STATUS='500')
+        check('smoke response status mismatch' in result.stderr, 'ordinary endpoint errors must fail even with a valid-looking readiness body')
+    h.clean()
+
+
+def oauth_domain_checks(root):
+    h = Host(root)
+    original = h.envfile.read_text(encoding='utf-8')
+    sites = ('192.168.219.100', 'ai-erp.duckdns.org', 'blackcow.duckdns.org')
+    for site in sites:
+        h.envfile.write_text(original.replace('SITE_ADDRESS=192.168.219.100', 'SITE_ADDRESS=' + site), encoding='utf-8')
+        h.run('preflight', A)
+    for site in ('other.duckdns.org', '*.duckdns.org', 'ai-erp.duckdns.org.evil.test',
+                 'https://ai-erp.duckdns.org', 'ai-erp.duckdns.org:443', '192.168.219.101'):
+        h.envfile.write_text(original.replace('SITE_ADDRESS=192.168.219.100', 'SITE_ADDRESS=' + site), encoding='utf-8')
+        h.run('preflight', A, success=False)
+    enabled = original.replace('APP_OIDC_ENABLED=false', 'APP_OIDC_ENABLED=true').replace(
+        'GOOGLE_CLIENT_ID=', 'GOOGLE_CLIENT_ID=do-not-print-google-client-id').replace(
+        'GOOGLE_CLIENT_SECRET=', 'GOOGLE_CLIENT_SECRET=do-not-print-google-client-secret')
+    h.envfile.write_text(enabled.replace('SITE_ADDRESS=192.168.219.100', 'SITE_ADDRESS=ai-erp.duckdns.org'), encoding='utf-8')
+    h.run('deploy', A)
+    for site in sites:
+        h.envfile.write_text(enabled.replace('SITE_ADDRESS=192.168.219.100', 'SITE_ADDRESS=' + site), encoding='utf-8')
+        checkpoint = len(h.calls())
+        h.run('smoke', ('public', A))
+        calls = [call for call in h.calls()[checkpoint:] if call['event'].startswith('public:')]
+        check(all(call['resolve'] == call['site'] + ':443:192.168.219.100' for call in calls),
+              'public smoke must preserve each approved origin while bypassing public DNS/hairpin NAT')
+        check(any(call['event'] == 'public:/api/v1/me' for call in calls), 'anonymous session must return 401')
+        redirects = [call['site'] for call in calls if call['event'] == 'public:/oauth2/authorization/google']
+        check(redirects == (['192.168.219.100', 'ai-erp.duckdns.org'] if site == sites[0] else [site]),
+              'IP initiation must move to primary domain before Google authorization; aliases retain their origin')
+    for mode, value in (('internal', 'blue'), ('public', A)):
+        for mismatch in ('disabled', 'bad-login-url', 'malformed'):
+            result = h.run('smoke', (mode, value), success=False, FAKE_CONFIGURATION=mismatch)
+            check('login configuration mismatch' in result.stderr, 'smoke must reject incorrect enabled login configuration')
+        h.run('smoke', (mode, value), success=False, FAKE_ME_STATUS='200')
+    for mismatch in ('foreign-provider', 'wrong-callback', 'missing-state'):
+        h.run('smoke', ('public', A), success=False, FAKE_OAUTH=mismatch)
+    # Editing host configuration cannot silently activate a running old container.
+    h.envfile.write_text(original, encoding='utf-8')
+    checkpoint = len(h.calls())
+    result = h.run('deploy', A, success=False)
+    check('login configuration mismatch' in result.stderr, 'same-SHA smoke must detect changed host/app OIDC configuration')
+    check(not any(call['event'] in ('build', 'migrate', 'switch') for call in h.calls()[checkpoint:]),
+          'configuration activation must retain same-SHA no-op semantics')
+    h.run('deploy', B)
+    for mode, value in (('internal', 'green'), ('public', B)):
+        for mismatch in ('enabled', 'bad-login-url'):
+            result = h.run('smoke', (mode, value), success=False, FAKE_CONFIGURATION=mismatch)
+            check('login configuration mismatch' in result.stderr, 'disabled login requires CONFIGURATION_REQUIRED and null URL')
+    h.clean()
+
 
 def publisher_id_checks(root):
     h = Host(root)
@@ -510,6 +580,12 @@ with tempfile.TemporaryDirectory(prefix='ai-erp-contract-') as temp:
             caddy_checkout_checks(Path(temp))
         elif focus == 'env-keys':
             supported_environment_checks(Path(temp))
+        elif focus == 'oauth':
+            oauth_domain_checks(Path(temp))
+        elif focus == 'http-entry':
+            caddy_http_check()
+        elif focus == 'smoke-status':
+            smoke_status_checks(Path(temp))
         elif focus == 'publisher-id':
             publisher_id_checks(Path(temp))
         elif focus == 'rollback':
@@ -528,12 +604,19 @@ with tempfile.TemporaryDirectory(prefix='ai-erp-contract-') as temp:
         else:
             forwarded_headers_check()
             caddy_source_check()
+            caddy_http_check()
             caddy_root = Path(temp) / 'caddy-checkout'
             caddy_root.mkdir()
             caddy_checkout_checks(caddy_root)
             env_root = Path(temp) / 'env-keys'
             env_root.mkdir()
             supported_environment_checks(env_root)
+            oauth_root = Path(temp) / 'oauth'
+            oauth_root.mkdir()
+            oauth_domain_checks(oauth_root)
+            status_root = Path(temp) / 'smoke-status'
+            status_root.mkdir()
+            smoke_status_checks(status_root)
             publisher_root = Path(temp) / 'publisher-id'
             publisher_root.mkdir()
             publisher_id_checks(publisher_root)

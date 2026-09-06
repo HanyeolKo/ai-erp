@@ -1,10 +1,19 @@
 {
     auto_https disable_redirects
-    default_sni {$SITE_ADDRESS:192.168.219.100}
+    default_sni 192.168.219.100
 }
 
-{$SITE_ADDRESS:192.168.219.100} {
+:80 {
+    redir https://ai-erp.duckdns.org{uri} 308
+}
+
+192.168.219.100, ai-erp.duckdns.org, blackcow.duckdns.org {
     tls internal
     encode zstd gzip
+    @ip_google_login {
+        host 192.168.219.100
+        path /oauth2/authorization/google
+    }
+    redir @ip_google_login https://ai-erp.duckdns.org{uri} 302
     import /etc/caddy/state/active-upstream.caddy
 }

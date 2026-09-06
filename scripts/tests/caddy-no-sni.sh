@@ -2,7 +2,9 @@
 set -Eeuo pipefail
 
 PROJECT="$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)"
-SITE_ADDRESS="192.168.219.100"
+SITE_ADDRESS="ai-erp.duckdns.org"
+PRODUCTION_IP="192.168.219.100"
+TEST_RELEASE="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 TEMP_ROOT="${TMPDIR:-/tmp}"
 TEST_DIR="$(mktemp -d "$TEMP_ROOT/ai-erp-caddy-no-sni.XXXXXX")"
 CONTAINER="ai-erp-caddy-no-sni-$$-${RANDOM}"
@@ -25,13 +27,15 @@ trap cleanup EXIT
 command -v docker >/dev/null || { printf 'FAIL: docker is required\n' >&2; exit 1; }
 command -v openssl >/dev/null || { printf 'FAIL: openssl is required\n' >&2; exit 1; }
 command -v timeout >/dev/null || { printf 'FAIL: timeout is required\n' >&2; exit 1; }
+command -v curl >/dev/null || { printf 'FAIL: curl is required\n' >&2; exit 1; }
 
 mkdir "$TEST_DIR/state"
-printf 'respond "ready" 200\n' >"$TEST_DIR/state/active-upstream.caddy"
+printf 'header X-AI-ERP-Release "%s"\nrespond "ready" 200\n' "$TEST_RELEASE" >"$TEST_DIR/state/active-upstream.caddy"
 
 docker run --detach --rm \
   --name "$CONTAINER" \
   --publish '127.0.0.1::443' \
+  --publish '127.0.0.1::80' \
   --env "SITE_ADDRESS=$SITE_ADDRESS" \
   --mount "type=bind,src=$PROJECT/infra,dst=/etc/caddy/source,readonly" \
   --mount "type=bind,src=$TEST_DIR/state,dst=/etc/caddy/state,readonly" \
@@ -51,12 +55,12 @@ done
 HOST_PORT="${BASH_REMATCH[1]}"
 
 request() {
-  local sni_mode="$1"
+  local sni_mode="$1" site="${2:-$PRODUCTION_IP}" path="${3:-/}"
   local -a sni_args=(-noservername)
   if [[ "$sni_mode" == "with-sni" ]]; then
-    sni_args=(-servername "$SITE_ADDRESS")
+    sni_args=(-servername "$site")
   fi
-  printf 'GET / HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n' "$SITE_ADDRESS" |
+  printf 'GET %s HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n' "$path" "$site" |
     timeout 3 openssl s_client \
       -connect "127.0.0.1:$HOST_PORT" \
       "${sni_args[@]}" \
@@ -79,4 +83,50 @@ grep -q '^HTTP/1\.[01] 200' <<<"$NO_SNI_RESPONSE" || {
   exit 1
 }
 
-printf 'PASS: 1 scenario / 3 assertions (loopback, explicit-SNI readiness, no-SNI HTTP 200)\n'
+for site in ai-erp.duckdns.org blackcow.duckdns.org; do
+  for path in / /oauth2/authorization/google; do
+    DOMAIN_RESPONSE="$(request with-sni "$site" "$path")"
+    grep -q '^HTTP/1\.[01] 200' <<<"$DOMAIN_RESPONSE" || {
+      printf 'FAIL: approved domain must reach upstream with its own origin\n' >&2
+      exit 1
+    }
+  done
+done
+
+IP_LOGIN_RESPONSE="$(request without-sni "$PRODUCTION_IP" '/oauth2/authorization/google?test=preserve')"
+IP_LOGIN_RESPONSE="${IP_LOGIN_RESPONSE//$'\r'/}"
+grep -q '^HTTP/1\.[01] 302' <<<"$IP_LOGIN_RESPONSE" || {
+  printf 'FAIL: IP login initiation must redirect before upstream handles it\n' >&2
+  exit 1
+}
+grep -Fxiq 'location: https://ai-erp.duckdns.org/oauth2/authorization/google?test=preserve' <<<"$IP_LOGIN_RESPONSE" || {
+  printf 'FAIL: IP login redirect must preserve the URI on the primary domain\n' >&2
+  exit 1
+}
+grep -Fxiq "x-ai-erp-release: $TEST_RELEASE" <<<"$IP_LOGIN_RESPONSE" || {
+  printf 'FAIL: IP login redirect must retain the release header required by public smoke\n' >&2
+  exit 1
+}
+IP_CALLBACK_RESPONSE="$(request without-sni "$PRODUCTION_IP" /login/oauth2/code/google)"
+grep -q '^HTTP/1\.[01] 200' <<<"$IP_CALLBACK_RESPONSE" || {
+  printf 'FAIL: only IP login initiation may redirect\n' >&2
+  exit 1
+}
+
+MAPPED_HTTP_PORT="$(docker port "$CONTAINER" 80/tcp)"
+[[ "$MAPPED_HTTP_PORT" =~ ^127\.0\.0\.1:([0-9]+)$ ]] || { printf 'FAIL: HTTP port is not bound to loopback\n' >&2; exit 1; }
+HTTP_PORT="${BASH_REMATCH[1]}"
+for site in 203.0.113.9 ai-erp.duckdns.org blackcow.duckdns.org unapproved.example; do
+  HTTP_RESPONSE="$(curl --silent --show-error --max-time 3 --noproxy '*' --include --header "Host: $site" "http://127.0.0.1:$HTTP_PORT/projects?test=preserve")"
+  HTTP_RESPONSE="${HTTP_RESPONSE//$'\r'/}"
+  grep -q '^HTTP/1\.[01] 308' <<<"$HTTP_RESPONSE" || {
+    printf 'FAIL: HTTP entry must redirect raw-IP and domain visitors\n' >&2
+    exit 1
+  }
+  grep -Fxiq 'location: https://ai-erp.duckdns.org/projects?test=preserve' <<<"$HTTP_RESPONSE" || {
+    printf 'FAIL: HTTP redirect must use the fixed approved HTTPS origin and preserve the URI\n' >&2
+    exit 1
+  }
+done
+
+printf 'PASS: 1 scenario / 20 assertions (loopback, IP SNI/no-SNI, both domain origins, bounded IP OAuth redirect, canonical HTTP entry)\n'

@@ -106,7 +106,7 @@ load_env() {
   [[ "$DB_USERNAME" == "$POSTGRES_USER" && "$DB_PASSWORD" == "$POSTGRES_PASSWORD" ]] || fail 'database credentials must match project PostgreSQL'
   [[ "$DB_URL" == "jdbc:postgresql://postgres:5432/$POSTGRES_DB" ]] || fail 'DB_URL must target project PostgreSQL exactly'
   [[ "$REDIS_PASSWORD" =~ ^[A-Za-z0-9._~-]{24,128}$ && "$REDIS_URL" == "redis://:$REDIS_PASSWORD@redis:6379/0" ]] || fail 'Redis must use the exact project URL and URL-safe password'
-  [[ "$SITE_ADDRESS" == 192.168.219.100 ]] || fail 'SITE_ADDRESS must equal the approved production IP'
+  case "$SITE_ADDRESS" in 192.168.219.100|ai-erp.duckdns.org|blackcow.duckdns.org) :;; *) fail 'SITE_ADDRESS must match an approved production IP or domain';; esac
   [[ "$APP_OIDC_ENABLED" == true || "$APP_OIDC_ENABLED" == false ]] || fail 'APP_OIDC_ENABLED must be true or false'
   [[ ( -z "${GOOGLE_CLIENT_ID:-}" && -z "${GOOGLE_CLIENT_SECRET:-}" ) || ( -n "${GOOGLE_CLIENT_ID:-}" && -n "${GOOGLE_CLIENT_SECRET:-}" ) ]] || fail 'Google credentials must be a complete pair'
   if [[ "$APP_OIDC_ENABLED" == true ]]; then [[ -n "${GOOGLE_CLIENT_ID:-}" && -n "${GOOGLE_CLIENT_SECRET:-}" ]] || fail 'OIDC requires Google credentials'; fi
