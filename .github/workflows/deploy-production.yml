@@ -1,0 +1,75 @@
+name: Deploy Production
+
+"on":
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: >-
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_branch == 'main' &&
+       github.event.workflow_run.head_repository.full_name == github.repository) ||
+      (github.event_name == 'workflow_dispatch' &&
+       github.ref == 'refs/heads/main' &&
+       github.event.repository.default_branch == 'main')
+    runs-on: [self-hosted, linux, x64, ai-erp-prod]
+    timeout-minutes: 45
+    env:
+      EVENT_NAME: ${{ github.event_name }}
+      WORKFLOW_RUN_SHA: ${{ github.event.workflow_run.head_sha }}
+      GITHUB_REF_NAME: ${{ github.ref }}
+      DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: refs/heads/main
+          fetch-depth: 0
+          persist-credentials: false
+          clean: true
+      - name: Resolve validated release SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          RELEASE_SHA="$(git rev-parse HEAD)"
+          [[ "$RELEASE_SHA" =~ ^[a-f0-9]{40}$ ]] || { echo "Invalid checked-out SHA" >&2; exit 1; }
+          case "$EVENT_NAME" in
+            workflow_run)
+              [[ "$WORKFLOW_RUN_SHA" =~ ^[a-f0-9]{40}$ ]] || { echo "Invalid CI SHA" >&2; exit 1; }
+              [[ "$RELEASE_SHA" == "$WORKFLOW_RUN_SHA" ]] || { echo "Checked-out SHA differs from CI SHA" >&2; exit 1; }
+              ;;
+            workflow_dispatch)
+              [[ "$GITHUB_REF_NAME" == "refs/heads/main" && "$DEFAULT_BRANCH" == "main" ]] || { echo "Manual deployment is restricted to main" >&2; exit 1; }
+              MAIN_SHA="$(git rev-parse origin/main)"
+              [[ "$MAIN_SHA" =~ ^[a-f0-9]{40}$ && "$RELEASE_SHA" == "$MAIN_SHA" ]] || { echo "Checked-out SHA differs from origin/main" >&2; exit 1; }
+              ;;
+            *)
+              echo "Unexpected deployment event" >&2
+              exit 1
+              ;;
+          esac
+          printf 'RELEASE_SHA=%s\n' "$RELEASE_SHA" >> "$GITHUB_ENV"
+      - name: Deploy validated release
+        shell: bash
+        run: bash scripts/deploy.sh "$RELEASE_SHA"
+      - name: Deployment summary
+        if: always()
+        shell: bash
+        env:
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          printf 'Deployment status: %s\n' "$JOB_STATUS" >> "$GITHUB_STEP_SUMMARY"
+          if [[ -n "${RELEASE_SHA:-}" ]]; then
+            printf 'Validated release SHA: %s\n' "$RELEASE_SHA" >> "$GITHUB_STEP_SUMMARY"
+          fi

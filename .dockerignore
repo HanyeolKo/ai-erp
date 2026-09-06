@@ -1,0 +1,17 @@
+.git
+.github
+.superpowers
+node_modules
+frontend/node_modules
+backend/.gradle
+backend/build
+frontend/dist
+frontend/src/api/generated.ts
+docs
+infra
+*.log
+**/.env
+**/.env.*
+.tmp
+**/node_modules
+**/.gradle

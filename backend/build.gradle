@@ -38,6 +38,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-webmvc'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'org.springframework.boot:spring-boot-starter-session-data-redis'
     implementation 'org.springframework.boot:spring-boot-starter-flyway'
@@ -50,6 +51,8 @@ dependencies {
     runtimeOnly 'org.flywaydb:flyway-database-postgresql'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
+    testRuntimeOnly 'com.h2database:h2'
     testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-security-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-restdocs'
@@ -66,6 +69,15 @@ dependencies {
 
 tasks.withType(Test).configureEach {
     useJUnitPlatform()
+}
+
+// Verify the generated document itself after REST Docs has produced the OpenAPI file.
+tasks.test { exclude '**/OpenApiContractTest.class' }
+tasks.register('openapiContractTest', Test) {
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    include '**/OpenApiContractTest.class'
+    dependsOn tasks.named('openapi3')
 }
 
 tasks.register('integrationTest', Test) {
@@ -89,5 +101,6 @@ openapi3 {
 tasks.configureEach {
     if (name == 'openapi3') {
         dependsOn tasks.test
+        finalizedBy tasks.named('openapiContractTest')
     }
 }

@@ -55,7 +55,8 @@ class SystemInfoApiTest {
     @Test
     void blocks_unapproved_application_paths() throws Exception {
         mockMvc.perform(get("/api/v1/identity/users"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHENTICATED"));
     }
 
     @Test
