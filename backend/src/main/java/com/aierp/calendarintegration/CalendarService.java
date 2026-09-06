@@ -1,5 +1,6 @@
 package com.aierp.calendarintegration;
 import com.aierp.project.api.ProjectAccess;
+import com.aierp.schedule.api.ScheduleLookup;
 import com.aierp.calendarintegration.api.CalendarController.*;
 import java.util.*;
 import java.time.Instant;
@@ -13,8 +14,10 @@ public class CalendarService {
     private final CalendarProjectionRepository projections;
     private final CalendarAdapter adapter;
     private final ProjectAccess access;
-    public CalendarService(CalendarConnectionRepository connections,ProjectCalendarRepository calendars,CalendarProjectionRepository projections,CalendarAdapter adapter,ProjectAccess access) {
+    private final ScheduleLookup schedules;
+    public CalendarService(CalendarConnectionRepository connections,ProjectCalendarRepository calendars,CalendarProjectionRepository projections,CalendarAdapter adapter,ProjectAccess access,ScheduleLookup schedules) {
         this.connections=connections;this.calendars=calendars;this.projections=projections;this.adapter=adapter;this.access=access;
+        this.schedules=schedules;
     }
     public Connection connection(UUID user) {
         return new Connection(connections.findByUserAccountId(user).map(c->c.status).orElse("NOT_CONNECTED"),!adapter.configured());
@@ -25,11 +28,13 @@ public class CalendarService {
     }
     public Projection projection(UUID projectId,UUID scheduleId,UUID user) {
         access.role(projectId,user);
+        schedules.requireInProject(projectId,scheduleId);
         return calendars.findByProjectId(projectId).flatMap(c->projections.findByScheduleIdAndProjectCalendarId(scheduleId,c.id))
             .map(this::response).orElse(new Projection(null,scheduleId,"NOT_CONNECTED","CONFIGURATION_REQUIRED",0));
     }
     @Transactional public Projection retry(UUID projectId,UUID scheduleId,UUID user) {
         access.requireManager(projectId,user);
+        schedules.requireInProject(projectId,scheduleId);
         var calendar=calendars.findByProjectId(projectId).orElseThrow(NoSuchElementException::new);
         var snapshot=projections.findByScheduleIdAndProjectCalendarId(scheduleId,calendar.id).orElseThrow(NoSuchElementException::new);
         var p=projections.lockById(snapshot.id).orElseThrow();

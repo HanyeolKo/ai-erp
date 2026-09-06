@@ -7,6 +7,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+import com.aierp.platform.web.ReadLimits;
+import org.springframework.data.domain.Sort;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /** Project reads and membership changes backed by the project schema. */
 @RestController @RequestMapping("/api/v1/projects")
@@ -15,13 +19,18 @@ public class ProjectController {
     private final ProjectMemberRepository members;
     public ProjectController(ProjectRepository projects, ProjectMemberRepository members) { this.projects = projects; this.members = members; }
 
-    @GetMapping public List<ProjectResponse> list(Authentication auth) {
+    @GetMapping public List<ProjectResponse> list(Authentication auth, @RequestParam(required=false) Integer page, @RequestParam(required=false) Integer limit) {
         var user = principal(auth);
-        return members.findByUserAccountId(user.userId()).stream().map(m -> projects.findById(m.projectId).map(p -> new ProjectResponse(p.id, p.groupId, p.name, m.role)).orElse(null)).filter(Objects::nonNull).toList();
+        var memberships = members.findByUserAccountId(user.userId(), ReadLimits.page(page,limit,Sort.by("projectId")));
+        if (memberships.isEmpty()) return List.of();
+        var byId = projects.findAllById(memberships.stream().map(m -> m.projectId).toList()).stream().collect(Collectors.toMap(p -> p.id, Function.identity()));
+        return memberships.stream().filter(m -> byId.containsKey(m.projectId)).map(m -> {
+            var p=byId.get(m.projectId);return new ProjectResponse(p.id,p.groupId,p.name,m.role);
+        }).toList();
     }
-    @GetMapping("/{projectId}/members") public List<MemberResponse> members(@PathVariable UUID projectId, Authentication auth) {
+    @GetMapping("/{projectId}/members") public List<MemberResponse> members(@PathVariable UUID projectId, Authentication auth, @RequestParam(required=false) Integer page, @RequestParam(required=false) Integer limit) {
         requireMember(projectId, principal(auth));
-        return members.findByProjectId(projectId).stream().map(m -> new MemberResponse(m.userAccountId, m.role)).toList();
+        return members.findByProjectId(projectId,ReadLimits.page(page,limit,Sort.by("userAccountId"))).stream().map(m -> new MemberResponse(m.userAccountId, m.role)).toList();
     }
     @PatchMapping("/{projectId}/members/{userId}") @Transactional public MemberResponse changeRole(@PathVariable UUID projectId, @PathVariable UUID userId, @RequestBody RoleRequest body, Authentication auth) {
         requireManager(projectId, principal(auth));

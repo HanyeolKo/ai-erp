@@ -25,6 +25,7 @@ class DashboardRegressionTest {
         when(members.findByProjectIdAndUserAccountId(project,user)).thenReturn(Optional.of(member));
         var auth=new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(new ApplicationPrincipal(user,"a@example.test",true),null,List.of());
         var service=mock(com.aierp.schedule.ScheduleService.class);
+        when(service.dashboard(project,user)).thenReturn(new com.aierp.schedule.api.ScheduleDashboard.Summary(0,0,List.of(),List.of()));
         var result=new tools.jackson.databind.json.JsonMapper().valueToTree(new com.aierp.dashboard.DashboardController(new com.aierp.project.api.ProjectAccess(members),new com.aierp.schedule.api.ScheduleDashboard(service),mock(com.aierp.calendarintegration.api.CalendarDashboard.class)).dashboard(project,auth));
         assertThat(result.path("scheduleCount").asInt(-1)).isZero();
         assertThat(result.path("actionQueue").isArray()).isTrue();

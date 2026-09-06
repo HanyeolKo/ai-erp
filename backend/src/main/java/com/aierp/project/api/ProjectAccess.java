@@ -22,7 +22,10 @@ public class ProjectAccess {
         if (role.equals("VIEWER") || (role.equals("MEMBER") && creator != null && !creator.equals(userId)))
             throw new AccessDeniedException("SCHEDULE_WRITE_DENIED");
     }
-    public List<UUID> memberIds(UUID projectId) {
-        return members.findByProjectId(projectId).stream().map(m -> m.userAccountId).toList();
+    public long memberCount(UUID projectId) { return members.countByProjectId(projectId); }
+    /** Resolves current active MANAGER/MEMBER eligibility in one module-owned batch. */
+    public Set<UUID> eligibleAcknowledgers(UUID projectId, Collection<UUID> userIds) {
+        if (userIds.size() > 200) throw new IllegalArgumentException("Eligibility batch exceeds 200");
+        return userIds.isEmpty() ? Set.of() : members.findEligibleAcknowledgers(projectId, userIds);
     }
 }

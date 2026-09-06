@@ -17,8 +17,8 @@ public class DashboardController {
         if(!(auth.getPrincipal() instanceof ApplicationPrincipal principal)) throw new org.springframework.security.access.AccessDeniedException("APPLICATION_PRINCIPAL_REQUIRED");
         var role=projects.role(projectId,principal.userId());
         var summary=schedules.summary(projectId,principal.userId());
-        return new Response(projectId,projects.memberIds(projectId).size(),summary.scheduleCount(),summary.pendingAcknowledgementCount(),calendars.riskCount(projectId),summary.upcomingSchedules(),"VIEWER".equals(role)?List.of():summary.actionQueue());
+        return new Response(projectId,projects.memberCount(projectId),summary.scheduleCount(),summary.pendingAcknowledgementCount(),calendars.riskCount(projectId),summary.upcomingSchedules(),"VIEWER".equals(role)?List.of():summary.actionQueue());
     }
-    public record Response(UUID projectId,int memberCount,int scheduleCount,long pendingAcknowledgementCount,long calendarRiskCount,
+    public record Response(UUID projectId,long memberCount,long scheduleCount,long pendingAcknowledgementCount,long calendarRiskCount,
             List<ScheduleController.ScheduleResponse> upcomingSchedules,List<ScheduleController.ScheduleResponse> actionQueue) {}
 }

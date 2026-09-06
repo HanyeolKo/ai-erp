@@ -8,6 +8,17 @@ import org.springframework.orm.ObjectOptimisticLockingFailureException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
+    @ExceptionHandler(org.springframework.web.HttpRequestMethodNotSupportedException.class)
+    ResponseEntity<ApiProblem> method(org.springframework.web.HttpRequestMethodNotSupportedException e,HttpServletRequest r) {
+        var response=problem(405,"METHOD_NOT_ALLOWED",r,List.of());
+        var headers=new HttpHeaders(); headers.putAll(response.getHeaders());
+        if(e.getSupportedHttpMethods()!=null) headers.setAllow(e.getSupportedHttpMethods());
+        return new ResponseEntity<>(response.getBody(),headers,response.getStatusCode());
+    }
+    @ExceptionHandler(org.springframework.web.HttpMediaTypeNotSupportedException.class)
+    ResponseEntity<ApiProblem> media(Exception e,HttpServletRequest r) { return problem(415,"UNSUPPORTED_MEDIA_TYPE",r,List.of()); }
+    @ExceptionHandler(Exception.class)
+    ResponseEntity<ApiProblem> unexpected(Exception e,HttpServletRequest r) { return problem(500,"INTERNAL_ERROR",r,List.of()); }
     @ExceptionHandler({NoSuchElementException.class,org.springframework.web.servlet.resource.NoResourceFoundException.class,org.springframework.web.servlet.NoHandlerFoundException.class})
     ResponseEntity<ApiProblem> missing(Exception e,HttpServletRequest r) { return problem(404,"NOT_FOUND",r,List.of()); }
     @ExceptionHandler(AccessDeniedException.class)

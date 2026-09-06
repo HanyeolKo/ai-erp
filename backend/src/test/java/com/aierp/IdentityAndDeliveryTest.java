@@ -36,7 +36,7 @@ class IdentityAndDeliveryTest {
         var calendar=new ProjectCalendarEntity();calendar.id=UUID.randomUUID();calendar.projectId=project;
         var projection=new CalendarProjectionEntity();projection.id=UUID.randomUUID();projection.scheduleId=schedule;projection.projectCalendarId=calendar.id;projection.businessRevision=3;
         when(calendars.findByProjectId(project)).thenReturn(Optional.of(calendar));when(projections.findByScheduleIdAndProjectCalendarId(schedule,calendar.id)).thenReturn(Optional.of(projection));when(projections.lockById(projection.id)).thenReturn(Optional.of(projection));when(adapter.configured()).thenReturn(true);
-        var service=new CalendarService(mock(CalendarConnectionRepository.class),calendars,projections,adapter,mock(ProjectAccess.class));
+        var service=new CalendarService(mock(CalendarConnectionRepository.class),calendars,projections,adapter,mock(ProjectAccess.class),mock(com.aierp.schedule.api.ScheduleLookup.class));
         when(adapter.deliver(projection)).thenThrow(new RuntimeException("injected transport failure"));
         assertThat(service.retry(project,schedule,user).retryClassification()).isEqualTo("TRANSIENT");
         doThrow(new CalendarAdapter.ReauthorizationRequired()).when(adapter).deliver(projection);

@@ -11,8 +11,13 @@ import org.springframework.web.bind.annotation.*;
 public class ScheduleController {
     private final ScheduleService schedules;
     public ScheduleController(ScheduleService schedules) {this.schedules=schedules;}
-    @GetMapping public List<ScheduleResponse> list(@PathVariable UUID projectId,Authentication auth) {return schedules.list(projectId,user(auth));}
-    @GetMapping("/{id}") public ScheduleResponse detail(@PathVariable UUID projectId,@PathVariable UUID id,Authentication auth) {return schedules.detail(projectId,id,user(auth));}
+    @GetMapping public List<ScheduleResponse> list(@PathVariable UUID projectId,Authentication auth,
+        @RequestParam(required=false) Instant from,@RequestParam(required=false) Instant to,
+        @RequestParam(required=false) Integer page,@RequestParam(required=false) Integer limit) {
+        return schedules.list(projectId,user(auth),from,to,page,limit);
+    }
+    @GetMapping("/{id}") public ScheduleResponse detail(@PathVariable UUID projectId,@PathVariable UUID id,Authentication auth,
+        @RequestParam(required=false) Integer historyLimit) {return schedules.detail(projectId,id,user(auth),historyLimit);}
     @PostMapping public ScheduleResponse create(@PathVariable UUID projectId,@RequestBody Write input,Authentication auth) {return schedules.create(projectId,input,user(auth));}
     @PatchMapping("/{id}") public ScheduleResponse patch(@PathVariable UUID projectId,@PathVariable UUID id,@RequestBody Write input,Authentication auth) {return schedules.update(projectId,id,input,user(auth));}
     @PostMapping("/{id}/confirm") public ScheduleResponse confirm(@PathVariable UUID projectId,@PathVariable UUID id,@RequestBody Revision input,Authentication auth) {return schedules.confirm(projectId,id,input,user(auth));}

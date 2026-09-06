@@ -6,11 +6,15 @@ import java.time.Instant;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.transaction.annotation.Transactional;
+import com.aierp.platform.web.ReadLimits;
+import org.springframework.data.domain.Sort;
 @RestController @RequestMapping("/api/v1/notifications")
 public class NotificationController {
     private final NotificationRepository notifications;
     public NotificationController(NotificationRepository notifications) {this.notifications=notifications;}
-    @GetMapping public List<Response> list(Authentication auth) {return notifications.findTop100ByUserAccountIdOrderByCreatedAtDesc(user(auth)).stream().map(this::response).toList();}
+    @GetMapping public List<Response> list(Authentication auth,@RequestParam(required=false) Integer page,@RequestParam(required=false) Integer limit) {
+        return notifications.findByUserAccountId(user(auth),ReadLimits.page(page,limit,Sort.by(Sort.Direction.DESC,"createdAt","id"))).stream().map(this::response).toList();
+    }
     @PostMapping("/{id}/read") @Transactional public Response read(@PathVariable UUID id,Authentication auth) {
         var n=notifications.findByIdAndUserAccountId(id,user(auth)).orElseThrow(NoSuchElementException::new);
         if(n.readAt==null) {n.readAt=Instant.now();notifications.save(n);}return response(n);

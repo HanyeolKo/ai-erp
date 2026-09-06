@@ -10,6 +10,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import com.aierp.schedule.api.ScheduleDashboard;
+import java.time.Duration;
+import java.util.stream.Collectors;
 
 @Service @Transactional(readOnly=true)
 public class ScheduleService {
@@ -26,11 +31,41 @@ public class ScheduleService {
         this.changes=changes;this.access=access;this.events=events;
     }
     public List<ScheduleResponse> list(UUID projectId,UUID user) {
+        return list(projectId,user,null,null,null,null);
+    }
+    public List<ScheduleResponse> list(UUID projectId,UUID user,Instant from,Instant to,Integer page,Integer limit) {
         access.role(projectId,user);
-        return schedules.findByProjectId(projectId).stream().map(this::response).toList();
+        if(from!=null && to!=null && !from.isBefore(to)) throw new ValidationFailure("to","Must be after from");
+        var bounds=ReadLimits.page(page,limit,Sort.by("startsAt","id"));
+        return summaries(schedules.findWindow(projectId,from==null?Instant.parse("0001-01-01T00:00:00Z"):from,
+            to==null?Instant.parse("9999-12-31T23:59:59Z"):to,bounds));
     }
     public ScheduleResponse detail(UUID projectId,UUID id,UUID user) {
-        access.role(projectId,user); return response(find(projectId,id));
+        return detail(projectId,id,user,null);
+    }
+    public ScheduleResponse detail(UUID projectId,UUID id,UUID user,Integer historyLimit) {
+        access.role(projectId,user); return response(find(projectId,id),ReadLimits.history(historyLimit));
+    }
+    public ScheduleDashboard.Summary dashboard(UUID projectId,UUID user) {
+        var role=access.role(projectId,user);
+        var page=PageRequest.of(0,ReadLimits.DEFAULT,Sort.by("startsAt","id"));
+        var now=Instant.now();
+        var upcoming=schedules.findUpcoming(projectId,now,now.plus(Duration.ofDays(14)),page);
+        var actions="VIEWER".equals(role)?List.<ScheduleEntity>of():schedules.findPendingForUser(projectId,user,page);
+        // Fetch participants and current ACKs once for the union of the two bounded dashboard lists.
+        var combined=new LinkedHashMap<UUID,ScheduleEntity>();
+        upcoming.forEach(s->combined.put(s.id,s));actions.forEach(s->combined.put(s.id,s));
+        var responses=summaries(new ArrayList<>(combined.values())).stream().collect(Collectors.toMap(ScheduleResponse::id,s->s));
+        long pending=0;
+        for(int number=0;;number++) {
+            var counts=participants.pendingCounts(projectId,PageRequest.of(number,ReadLimits.MAX));
+            if(counts.isEmpty()) break;
+            var eligible=access.eligibleAcknowledgers(projectId,counts.stream().map(ScheduleParticipantRepository.PendingCount::getUserId).toList());
+            pending+=counts.stream().filter(c->eligible.contains(c.getUserId())).mapToLong(ScheduleParticipantRepository.PendingCount::getPendingCount).sum();
+            if(counts.size()<ReadLimits.MAX) break;
+        }
+        return new ScheduleDashboard.Summary(schedules.countByProjectId(projectId),pending,
+            upcoming.stream().map(s->responses.get(s.id)).toList(),actions.stream().map(s->responses.get(s.id)).toList());
     }
     @Transactional public ScheduleResponse create(UUID projectId,Write input,UUID user) {
         access.requireWriter(projectId,user,null); validate(input,false);
@@ -137,10 +172,26 @@ public class ScheduleService {
     }
     private ScheduleEntity find(UUID projectId,UUID id) {return schedules.findByIdAndProjectId(id,projectId).orElseThrow(NoSuchElementException::new);}
     private ScheduleResponse response(ScheduleEntity s) {
+        return response(s,ReadLimits.HISTORY_DEFAULT);
+    }
+    private ScheduleResponse response(ScheduleEntity s,int historyLimit) {
         var ps=participants.findByScheduleId(s.id);
         var acks=acknowledgements.findByScheduleIdAndBusinessRevision(s.id,s.businessRevision).stream().map(a->a.userAccountId).toList();
+        // Select the most recent N in SQL, then present that bounded slice chronologically.
+        var history=changes.findByScheduleId(s.id,PageRequest.of(0,historyLimit,Sort.by(Sort.Direction.DESC,"createdAt","id"))).reversed();
         return new ScheduleResponse(s.id,s.projectId,s.title,s.status,s.rowVersion,s.businessRevision,s.startsAt,s.endsAt,s.description,s.createdBy,
             ps.stream().map(p->new Participant(p.memberUserAccountId,p.externalEmail, p.memberUserAccountId!=null && acks.contains(p.memberUserAccountId))).toList(),
-            changes.findByScheduleIdOrderByCreatedAtAsc(s.id).stream().map(c->new Change(c.businessRevision,c.changeType,c.changedBy,c.createdAt)).toList());
+            history.stream().map(c->new Change(c.businessRevision,c.changeType,c.changedBy,c.createdAt)).toList());
+    }
+    private List<ScheduleResponse> summaries(List<ScheduleEntity> selected) {
+        if(selected.isEmpty()) return List.of();
+        var ids=selected.stream().map(s->s.id).toList();
+        var ps=participants.findByScheduleIdIn(ids).stream().collect(Collectors.groupingBy(p->p.scheduleId));
+        var acks=acknowledgements.findCurrentByScheduleIds(ids).stream().collect(Collectors.groupingBy(a->a.scheduleId,
+            Collectors.mapping(a->a.userAccountId,Collectors.toSet())));
+        return selected.stream().map(s->new ScheduleResponse(s.id,s.projectId,s.title,s.status,s.rowVersion,s.businessRevision,
+            s.startsAt,s.endsAt,s.description,s.createdBy,
+            ps.getOrDefault(s.id,List.of()).stream().map(p->new Participant(p.memberUserAccountId,p.externalEmail,
+                p.memberUserAccountId!=null && acks.getOrDefault(s.id,Set.of()).contains(p.memberUserAccountId))).toList(),List.of())).toList();
     }
 }

@@ -8,6 +8,6 @@ public class CalendarDashboard {
     private final CalendarProjectionRepository projections;
     public CalendarDashboard(ProjectCalendarRepository calendars,CalendarProjectionRepository projections) {this.calendars=calendars;this.projections=projections;}
     public long riskCount(UUID projectId) {
-        return calendars.findByProjectId(projectId).map(c->projections.findByProjectCalendarId(c.id).stream().filter(p->!p.status.equals("SYNCED")).count()).orElse(0L);
+        return calendars.findByProjectId(projectId).map(c->projections.countByProjectCalendarIdAndStatusNot(c.id,"SYNCED")).orElse(0L);
     }
 }
