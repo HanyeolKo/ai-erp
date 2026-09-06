@@ -27,6 +27,7 @@ def die(message='unsupported command/arguments', code=97):
     sys.exit(code)
 
 def output(value):
+    sys.stdout.reconfigure(newline='\n')
     print(value)
     sys.exit(0)
 
@@ -181,18 +182,41 @@ if args[:3] == ['image', 'inspect', '--format']:
         die('image absent', 1)
     event('image-check')
     output(' '.join(data['images'][args[4]]))
+publisher_id = 'c' * 64
+impostor_id = 'd' * 64
+publisher_modes = ('short-id', 'owned-impostor', 'multiple-owned')
 if args[:3] == ['ps', '-q', '--filter'] and len(args) == 4 and args[3] in ('publish=80', 'publish=443'):
     port = os.environ.get('FAKE_PORT', '')
-    output('foreign' if port == 'foreign' else ('caddy' if 'caddy' in data['containers'] and port != 'host' else ''))
+    if port == 'foreign':
+        output('foreign')
+    if port == 'short-id' and 'caddy' in data['containers']:
+        output(publisher_id[:12])
+    if port == 'owned-impostor':
+        output(impostor_id[:12])
+    if port == 'multiple-owned' and 'caddy' in data['containers']:
+        output(publisher_id[:12] + '\n' + impostor_id[:12])
+    output('caddy' if 'caddy' in data['containers'] and port != 'host' else '')
 if args[:1] == ['inspect']:
     if len(args) != 4 or args[1] not in ('-f', '--format'):
         die()
     fmt, container = args[2:]
     labels = '{{ index .Config.Labels "com.docker.compose.project" }} {{ index .Config.Labels "com.docker.compose.service" }}'
+    if container in (publisher_id, publisher_id[:12]):
+        if fmt == '{{.Id}}':
+            output(publisher_id)
+        container = 'caddy'
+    if container in (impostor_id, impostor_id[:12]):
+        if fmt == '{{.Id}}':
+            output(impostor_id)
+        if fmt == labels:
+            output('ai-erp-phase1 caddy')
+        die()
     if container == 'foreign' and fmt == labels:
         output('legacy web')
     if container not in data['containers']:
         die('container absent', 1)
+    if fmt == '{{.Id}}':
+        output(publisher_id if container == 'caddy' else container[0] * 64)
     if fmt == '{{.State.Health.Status}}':
         event('healthy:' + container)
         if point == 'candidate-health' and container.startswith('app-') and data['containers'][container]['release'] == os.environ['FAKE_HEAD']:
@@ -247,6 +271,8 @@ if len(tail) == 4 and tail[:3] == ['up', '-d', '--no-deps'] and tail[3] in ('app
     save()
     sys.exit(0)
 if len(tail) == 3 and tail[:2] == ['ps', '-q'] and tail[2] in ('postgres', 'redis', 'caddy', 'app-blue', 'app-green'):
+    if tail[2] == 'caddy' and os.environ.get('FAKE_PORT') in publisher_modes and data['containers'].get('caddy', {}).get('running'):
+        output(publisher_id)
     output(tail[2] if data['containers'].get(tail[2], {}).get('running') else '')
 if len(tail) == 4 and tail[:3] == ['ps', '--all', '-q'] and tail[3] in ('app-blue', 'app-green'):
     output(tail[3] if tail[3] in data['containers'] else '')

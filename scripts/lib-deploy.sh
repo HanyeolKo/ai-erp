@@ -144,7 +144,7 @@ verify_resources() {
   done
 }
 verify_ports() {
-  local port listeners publishers container labels count
+  local port listeners publishers container labels compose_container publisher_id compose_id count
   for port in 80 443; do
     listeners="$(ss -ltn "sport = :$port")"
     publishers="$(docker ps -q --filter "publish=$port")"
@@ -153,7 +153,11 @@ verify_ports() {
       [[ -n "$container" ]] || continue
       labels="$(docker inspect --format '{{ index .Config.Labels "com.docker.compose.project" }} {{ index .Config.Labels "com.docker.compose.service" }}' "$container")"
       [[ "$labels" == 'ai-erp-phase1 caddy' ]] || fail 'public port has a foreign Docker publisher'
-      [[ "$("${COMPOSE[@]}" ps -q caddy)" == "$container" ]] || fail 'publisher is not the exact project Caddy container'
+      compose_container="$("${COMPOSE[@]}" ps -q caddy)"
+      [[ -n "$compose_container" ]] || fail 'publisher is not the exact project Caddy container'
+      publisher_id="$(docker inspect --format '{{.Id}}' "$container")" || fail 'publisher container identity is unavailable'
+      compose_id="$(docker inspect --format '{{.Id}}' "$compose_container")" || fail 'project Caddy container identity is unavailable'
+      [[ "$publisher_id" == "$compose_id" ]] || fail 'publisher is not the exact project Caddy container'
       count=$((count + 1))
     done <<<"$publishers"
     if grep -q LISTEN <<<"$listeners"; then [[ "$count" == 1 ]] || fail 'host listener has no exact project Caddy publisher'; fi

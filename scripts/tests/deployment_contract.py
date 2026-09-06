@@ -339,6 +339,22 @@ def supported_environment_checks(root):
     check('unknown environment key' in result.stderr, 'unused session secret must be rejected by the exact env allowlist')
     h.clean()
 
+def publisher_id_checks(root):
+    h = Host(root)
+    runtime = h.runtime()
+    runtime['containers']['caddy'] = dict(running=True, image='infra', release='')
+    h.save(runtime)
+    h.run('preflight', A, FAKE_PORT='short-id')
+
+    result = h.run('preflight', A, success=False, FAKE_PORT='owned-impostor')
+    check('publisher is not the exact project Caddy container' in result.stderr,
+          'same-label foreign publisher must fail exact normalized identity: ' + result.stderr)
+
+    result = h.run('preflight', A, success=False, FAKE_PORT='multiple-owned')
+    check('publisher is not the exact project Caddy container' in result.stderr,
+          'multiple publishers including a same-label impostor must be rejected: ' + result.stderr)
+    h.clean()
+
 def caddy_checkout_checks(root):
     h = Host(root)
     checkout = root / 'checkout'
@@ -494,6 +510,8 @@ with tempfile.TemporaryDirectory(prefix='ai-erp-contract-') as temp:
             caddy_checkout_checks(Path(temp))
         elif focus == 'env-keys':
             supported_environment_checks(Path(temp))
+        elif focus == 'publisher-id':
+            publisher_id_checks(Path(temp))
         elif focus == 'rollback':
             h = Host(Path(temp))
             h.run('deploy', A)
@@ -516,6 +534,9 @@ with tempfile.TemporaryDirectory(prefix='ai-erp-contract-') as temp:
             env_root = Path(temp) / 'env-keys'
             env_root.mkdir()
             supported_environment_checks(env_root)
+            publisher_root = Path(temp) / 'publisher-id'
+            publisher_root.mkdir()
+            publisher_id_checks(publisher_root)
             suite(Path(temp))
             for point in ('reload', 'public', 'manifest', 'state'):
                 path = Path(temp) / point
