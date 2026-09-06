@@ -8,7 +8,7 @@ AUTOMATIC_GUARD = "(github.event_name == 'workflow_run' && github.event.workflow
 MANUAL_GUARD = "(github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && github.event.repository.default_branch == 'main')"
 EXPECTED_DEPLOY_GUARD = "#{AUTOMATIC_GUARD} || #{MANUAL_GUARD}"
 EXPECTED_CHECKOUT_REF = "refs/heads/main"
-EXPECTED_EVENT_ENV = { "EVENT_NAME" => "${{ github.event_name }}", "WORKFLOW_RUN_SHA" => "${{ github.event.workflow_run.head_sha }}", "GITHUB_REF_NAME" => "${{ github.ref }}", "DEFAULT_BRANCH" => "${{ github.event.repository.default_branch }}" }.freeze
+EXPECTED_EVENT_ENV = { "EVENT_NAME" => "${{ github.event_name }}", "WORKFLOW_RUN_SHA" => "${{ github.event.workflow_run.head_sha }}", "EVENT_REF" => "${{ github.ref }}", "DEFAULT_BRANCH" => "${{ github.event.repository.default_branch }}" }.freeze
 SENSITIVE_OUTPUT = /\bssh\b|secrets\.|\.env|docker inspect|docker logs|upload-artifact/i
 RESOLVER_RUN = <<~BASH
   set -euo pipefail
@@ -20,7 +20,7 @@ RESOLVER_RUN = <<~BASH
       [[ "$RELEASE_SHA" == "$WORKFLOW_RUN_SHA" ]] || { echo "Checked-out SHA differs from CI SHA" >&2; exit 1; }
       ;;
     workflow_dispatch)
-      [[ "$GITHUB_REF_NAME" == "refs/heads/main" && "$DEFAULT_BRANCH" == "main" ]] || { echo "Manual deployment is restricted to main" >&2; exit 1; }
+      [[ "$EVENT_REF" == "refs/heads/main" && "$DEFAULT_BRANCH" == "main" ]] || { echo "Manual deployment is restricted to main" >&2; exit 1; }
       MAIN_SHA="$(git rev-parse origin/main)"
       [[ "$MAIN_SHA" =~ ^[a-f0-9]{40}$ && "$RELEASE_SHA" == "$MAIN_SHA" ]] || { echo "Checked-out SHA differs from origin/main" >&2; exit 1; }
       ;;
@@ -144,6 +144,7 @@ def validate_deploy!(deploy)
   assert!(normalized(job["if"]) == EXPECTED_DEPLOY_GUARD, "exact trusted-main deployment guard")
   assert!(job["runs-on"] == ["self-hosted", "linux", "x64", "ai-erp-prod"], "exact static production runner labels")
   assert!(job["timeout-minutes"].is_a?(Integer) && job["timeout-minutes"].positive?, "positive deployment timeout")
+  assert!(job.fetch("env").keys.none? { |key| key.start_with?("GITHUB_") }, "deployment custom env must not use reserved GITHUB_* names")
   assert!(job["env"] == EXPECTED_EVENT_ENV, "exact trusted event environment")
   assert_steps!(job.fetch("steps"), deploy_steps, "deployment")
   assert!(!Psych.dump(deploy).match?(SENSITIVE_OUTPUT), "deployment has no sensitive workflow content")
@@ -197,6 +198,13 @@ def self_test!(documents)
   assert_rejected!("free-form manual input") { mutated = deep_copy(baseline); mutated["deploy-production.yml"]["on"]["workflow_dispatch"] = { "inputs" => { "ref" => { "required" => true } } }; validate!(mutated) }
   assert_rejected!("free-form manual ref") { mutated = deep_copy(baseline); deploy_job(mutated)["steps"][0]["with"]["ref"] = "${{ inputs.ref }}"; validate!(mutated) }
   assert_rejected!("workflow_run checkout of event SHA") { mutated = deep_copy(baseline); deploy_job(mutated)["steps"][0]["with"]["ref"] = "${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || 'refs/heads/main' }}"; validate!(mutated) }
+  assert_rejected!("reserved GITHUB_ custom event environment") do
+    mutated = deep_copy(baseline)
+    job = deploy_job(mutated)
+    job["env"]["GITHUB_REF_NAME"] = job["env"].delete("EVENT_REF")
+    job["steps"][1]["run"] = job["steps"][1]["run"].gsub("$EVENT_REF", "$GITHUB_REF_NAME")
+    validate!(mutated)
+  end
   deploy_steps.each_index do |index|
     assert_rejected!("disabled deployment step #{index}") { mutated = deep_copy(baseline); deploy_job(mutated)["steps"][index]["if"] = "false"; validate!(mutated) }
     assert_rejected!("continue-on-error deployment step #{index}") { mutated = deep_copy(baseline); deploy_job(mutated)["steps"][index]["continue-on-error"] = true; validate!(mutated) }
