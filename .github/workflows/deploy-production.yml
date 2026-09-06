@@ -69,7 +69,7 @@ jobs:
         env:
           JOB_STATUS: ${{ job.status }}
         run: |
-          printf 'Deployment status: %s\n' "$JOB_STATUS"
+          printf 'Deployment status: %s\n' "$JOB_STATUS" >> "$GITHUB_STEP_SUMMARY"
           if [[ -n "${RELEASE_SHA:-}" ]]; then
-            printf 'Validated release SHA: %s\n' "$RELEASE_SHA"
+            printf 'Validated release SHA: %s\n' "$RELEASE_SHA" >> "$GITHUB_STEP_SUMMARY"
           fi
