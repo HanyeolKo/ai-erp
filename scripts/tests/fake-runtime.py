@@ -79,6 +79,34 @@ if command == 'df':
     if args != ['-Pk', os.environ['AI_ERP_ROOT']]:
         die()
     output('Filesystem blocks Used Available Capacity Mounted\nf 99999999 1 99999999 1% /')
+if command == 'rm':
+    if len(args) < 3 or args[:2] != ['-f', '--']:
+        die('rm options are outside the deletion contract')
+    allowed_shared = {'shared/active-state.json', 'shared/caddy/candidate.Caddyfile',
+                      'shared/caddy/upstream.candidate', 'shared/caddy/state.candidate',
+                      'shared/caddy/upstream.previous', 'shared/caddy/state.previous',
+                      'shared/caddy/upstream.restore', 'shared/caddy/state.restore'}
+    for argument in args[2:]:
+        path = Path(argument)
+        if path.is_symlink() or any(parent.is_symlink() for parent in path.parents):
+            die('rm may not follow symbolic links')
+        try:
+            relative = path.resolve().relative_to(root.resolve()).as_posix()
+        except ValueError:
+            die('rm target is outside the project host root')
+        if path.as_posix() != (root / relative).as_posix():
+            die('rm target is not canonical')
+        manifest = re.fullmatch(r'releases/[a-f0-9]{40}/(?:manifest\.candidate|manifest\.sha256\.candidate|manifest\.json|manifest\.json\.sha256)', relative)
+        backup = re.fullmatch(r'releases/[a-f0-9]{40}/backups/postgres-[0-9]{8}T[0-9]{6}Z-[0-9]+\.(?:dump|json)(?:\.candidate)?', relative)
+        if relative not in allowed_shared and not manifest and not backup:
+            die('rm target is outside the exact artifact allowlist')
+        if manifest or backup:
+            reference = os.environ.get('APP_IMAGE', '')
+            release = data['images'].get(reference, ['', ''])[1] or reference.removeprefix('ai-erp:')
+            if not re.fullmatch('[a-f0-9]{40}', release) or relative.split('/')[1] != release:
+                die('rm may only clean the current release artifacts')
+        event('remove', path=relative)
+    native(command, args)
 if command == 'ss':
     if len(args) != 2 or args[0] != '-ltn' or args[1] not in ('sport = :80', 'sport = :443'):
         die()
@@ -168,7 +196,7 @@ if args[:1] == ['inspect']:
         event('healthy:' + container)
         if point == 'candidate-health' and container.startswith('app-') and data['containers'][container]['release'] == os.environ['FAKE_HEAD']:
             output('unhealthy')
-        output('healthy' if data['containers'][container]['running'] else 'unhealthy')
+        output(data['containers'][container].get('health', 'healthy') if data['containers'][container]['running'] else 'unhealthy')
     if fmt == '{{.Image}}':
         event('identity:' + container)
         output('sha256:' + 'f' * 64 if point == 'candidate-image' and data['containers'][container]['release'] == os.environ['FAKE_HEAD'] else data['containers'][container]['image'])
@@ -219,6 +247,8 @@ if len(tail) == 4 and tail[:3] == ['up', '-d', '--no-deps'] and tail[3] in ('app
     sys.exit(0)
 if len(tail) == 3 and tail[:2] == ['ps', '-q'] and tail[2] in ('postgres', 'redis', 'caddy', 'app-blue', 'app-green'):
     output(tail[2] if data['containers'].get(tail[2], {}).get('running') else '')
+if len(tail) == 4 and tail[:3] == ['ps', '--all', '-q'] and tail[3] in ('app-blue', 'app-green'):
+    output(tail[3] if tail[3] in data['containers'] else '')
 if tail == ['--profile', 'migration', 'run', '--rm', 'migrate']:
     event('migrate')
     fault('migrate')

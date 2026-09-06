@@ -82,6 +82,7 @@ services:
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       SPRING_FLYWAY_ENABLED: "false"
+      SERVER_FORWARD_HEADERS_STRATEGY: framework
     networks: [internal]
     depends_on:
       postgres:

@@ -57,7 +57,7 @@ SITE_ADDRESS=192.168.219.100
         upstream.write_text('respond "service initializing" 503\n', encoding='utf-8')
         upstream.chmod(0o600)
         runtime = PROJECT / 'scripts/tests/fake-runtime.py'
-        for command in ('docker', 'curl', 'git', 'stat', 'readlink', 'ss', 'df', 'mv', 'ln'):
+        for command in ('docker', 'curl', 'git', 'stat', 'readlink', 'ss', 'df', 'mv', 'ln', 'rm'):
             self.wrapper(command, f'exec "{posix(sys.executable)}" "{posix(runtime)}" {command} "$@"')
         self.wrapper('python3', f'exec "{posix(sys.executable)}" "$@"')
         if os.name == 'nt':
@@ -98,13 +98,15 @@ else printf '%s\\n' "$result"; fi''')
     def calls(self):
         return [json.loads(x) for x in self.log.read_text(encoding='utf-8').splitlines()] if self.log.exists() else []
 
-    def run(self, command, release=None, success=True, **extra):
+    def run(self, command, release=None, success=True, allowed_codes=(0, 1, 2), **extra):
         global scenarios
         scenarios += 1
         case = scenarios
-        if command == 'deploy':
+        if command in ('deploy', 'rollback'):
             runtime = self.runtime()
-            runtime['backed_up'] = False
+            if command == 'deploy':
+                runtime['backed_up'] = False
+            runtime['prior_live'] = runtime['live']
             self.save(runtime)
         env = dict(self.env, **extra)
         if release in (A, B, C, D):
@@ -119,7 +121,7 @@ else printf '%s\\n' "$result"; fi''')
         self.output += result.stdout + result.stderr
         check((result.returncode == 0) == success,
               f'{command} {release}: expected success={success}, got {result.returncode}\n{result.stdout}{result.stderr}')
-        check(result.returncode in (0, 1, 2), f'unexpected process failure: {result.returncode}\n{result.stdout}{result.stderr}')
+        check(result.returncode in allowed_codes, f'unexpected process failure: {result.returncode}\n{result.stdout}{result.stderr}')
         return result
 
     def state(self):
@@ -245,6 +247,95 @@ def mutation_checks(h):
                               ('backup', '/backup.sh"', 'backup'),
                               ('internal-smoke', '/smoke.sh" internal', 'internal:/')]))
 
+def recovery_checks(h):
+    before = h.snapshot()
+    prior = h.state()['releaseId']
+    candidate = 'app-green' if h.state()['color'] == 'blue' else 'app-blue'
+    # Missing the recovery-success guard stops the very container that the
+    # running proxy may still route to after a failed compensating reload.
+    failed = clone(h, 'recovery-failed')
+    result = failed.run('deploy', C, success=False, FAKE_BAD_HEADER='1', FAKE_FAIL='recovery')
+    check(result.returncode == 2, 'failed compensating reload must surface exit 2')
+    check(failed.runtime()['live'] == C, 'failed reload leaves runtime potentially routing the candidate')
+    check(failed.runtime()['containers'][candidate]['running'], 'candidate must remain running until recovery reload is confirmed')
+    check(not any(x['event'] == 'stop:' + candidate for x in failed.calls()), 'uncertain live candidate must not receive stop')
+    check(failed.snapshot() == before, 'prior recorded state and upstream remain available for recovery')
+    for name in ('upstream.previous', 'state.previous', 'candidate.Caddyfile'):
+        check((failed.host / 'shared/caddy' / name).is_file(), 'failed recovery preserves transaction evidence: ' + name)
+    failed.clean()
+
+    recovered = clone(h, 'recovery-confirmed')
+    result = recovered.run('deploy', C, success=False, FAKE_BAD_HEADER='1')
+    check(result.returncode == 1, 'successful compensation retains the original deployment failure')
+    check(recovered.runtime()['live'] == prior, 'confirmed recovery routes the previous release')
+    check(not recovered.runtime()['containers'][candidate]['running'], 'confirmed recovery stops the unused candidate')
+    recovered.preserved(before)
+    check(not (recovered.host / 'shared/caddy/candidate.Caddyfile').exists(), 'confirmed recovery removes full candidate config')
+    ordered([x['event'] for x in recovered.calls()], ['restore', 'stop:' + candidate])
+    recovered.clean()
+
+def active_failure_rollback_checks(h):
+    active = h.state()
+    active_service = 'app-' + active['color']
+    target = active['previousRelease']
+    candidate = 'app-green' if active['color'] == 'blue' else 'app-blue'
+    def recover(kind):
+        child = clone(h, 'active-' + kind)
+        runtime = child.runtime()
+        if kind == 'stopped':
+            runtime['containers'][active_service]['running'] = False
+        elif kind == 'absent':
+            del runtime['containers'][active_service]
+        else:
+            runtime['containers'][active_service]['health'] = 'unhealthy'
+        child.save(runtime)
+        child.run('preflight', active['releaseId'], success=False)
+        child.run('deploy', C, success=False)
+        check(not any(x['event'] == 'build' for x in child.calls()), 'deploy/preflight stay strict for failed active app')
+        child.run('rollback')
+        check(child.state()['releaseId'] == target and child.state()['previousRelease'] == active['releaseId'], 'rollback recovers preserved release with correct lineage')
+        check(child.runtime()['live'] == target and child.runtime()['containers'][candidate]['running'], 'rollback serves a running preserved target')
+        check(child.runtime()['containers'][candidate]['image'] == 'sha256:' + target + '0' * 24, 'recovery target uses the preserved immutable image')
+        ordered([x['event'] for x in child.calls()], ['start:' + candidate, 'internal:/', 'caddy-validate', 'switch', 'public:/', 'stop:' + active_service])
+        child.clean()
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        list(pool.map(recover, ('stopped', 'unhealthy', 'absent')))
+
+    corrupt = clone(h, 'active-unhealthy-wrong-image')
+    runtime = corrupt.runtime()
+    runtime['containers'][active_service]['health'] = 'unhealthy'
+    runtime['containers'][active_service]['image'] = 'sha256:' + 'f' * 64
+    corrupt.save(runtime)
+    corrupt.run('rollback', success=False)
+    check(not any(x['event'].startswith('start:') for x in corrupt.calls()), 'rollback must still reject active ownership/image disagreement')
+
+def forwarded_headers_check():
+    global scenarios
+    scenarios += 1
+    compose = (PROJECT / 'infra/compose.prod.yml').read_text(encoding='utf-8')
+    app = compose.partition('  app-blue: &app\n')[2].partition('  app-green:\n')[0]
+    strategy = [line.split(':', 1)[1].strip().strip('\"\'') for line in app.splitlines() if line.strip().startswith('SERVER_FORWARD_HEADERS_STRATEGY:')]
+    check(strategy == ['framework'], 'TLS-terminated app must use framework forwarded headers for external HTTPS/OIDC base URL')
+    check('  app-green:\n    <<: *app\n' in compose, 'both app slots must share the forwarded-header configuration')
+
+def unsafe_delete_check(h):
+    child = clone(h, 'mutation-unsafe-rm')
+    child.entrypoints = child.root / 'scripts'
+    child.entrypoints.mkdir()
+    for path in (PROJECT / 'scripts').glob('*.sh'):
+        shutil.copy2(path, child.entrypoints / path.name)
+    entrypoint = child.entrypoints / 'deploy.sh'
+    source = entrypoint.read_text(encoding='utf-8')
+    check(source.count('\nacquire_lock\n') == 1, 'unsafe-delete mutation has one insertion point')
+    entrypoint.write_text(source.replace('\nacquire_lock\n', '\nacquire_lock\nrm -f -- "$ROOT/shared/foreign-sentinel"\n'), encoding='utf-8')
+    entrypoint.chmod(0o755)
+    sentinel = child.host / 'shared/foreign-sentinel'
+    sentinel.write_text('preserve this unrelated fixture', encoding='utf-8')
+    result = child.run('deploy', C, success=False, allowed_codes=(97,))
+    check(result.returncode == 97, 'strict rm boundary rejects unapproved paths')
+    check(sentinel.read_text(encoding='utf-8') == 'preserve this unrelated fixture', 'unsafe rm must not delete the unrelated sentinel')
+    check(any(x['event'] == 'unsupported' and x.get('boundary') == 'rm' for x in child.calls()), 'unsafe-delete mutation is detected by rm boundary')
+
 def suite(root):
     h = Host(root)
     if os.environ.get('CONTRACT_RED_PROBE') == '1':
@@ -276,6 +367,9 @@ def suite(root):
     h.run('deploy', B)
     check(not any(x['event'] in ('build', 'migrate', 'backup', 'switch') for x in h.calls()[checkpoint:]), 'same active SHA smoke-only no-op')
     h.run('deploy', A, success=False)
+    recovery_checks(h)
+    active_failure_rollback_checks(h)
+    unsafe_delete_check(h)
     before = h.snapshot()
     def failpoint(point):
         child = clone(h, 'fail-' + point)
@@ -343,17 +437,35 @@ def suite(root):
 
 with tempfile.TemporaryDirectory(prefix='ai-erp-contract-') as temp:
     try:
-        suite(Path(temp))
-        for point in ('reload', 'public', 'manifest', 'state'):
-            path = Path(temp) / point
-            path.mkdir()
-            h = Host(path)
-            before = h.snapshot()
-            h.run('deploy', A, success=False, FAKE_FAIL=point)
-            h.preserved(before)
+        focus = os.environ.get('CONTRACT_FOCUS', '')
+        if focus == 'headers':
+            forwarded_headers_check()
+        elif focus == 'rollback':
+            h = Host(Path(temp))
             h.run('deploy', A)
-            check(h.state()['releaseId'] == A, 'first deployment retry')
-            h.clean()
+            h.run('deploy', B)
+            active_failure_rollback_checks(h)
+        elif focus == 'unsafe-rm':
+            h = Host(Path(temp))
+            h.run('deploy', A)
+            unsafe_delete_check(h)
+        elif focus == 'recovery':
+            h = Host(Path(temp))
+            h.run('deploy', A)
+            recovery_checks(h)
+        else:
+            forwarded_headers_check()
+            suite(Path(temp))
+            for point in ('reload', 'public', 'manifest', 'state'):
+                path = Path(temp) / point
+                path.mkdir()
+                h = Host(path)
+                before = h.snapshot()
+                h.run('deploy', A, success=False, FAKE_FAIL=point)
+                h.preserved(before)
+                h.run('deploy', A)
+                check(h.state()['releaseId'] == A, 'first deployment retry')
+                h.clean()
     except Exception:
         print(f'FAIL after {scenarios} scenarios / {assertions} assertions', file=sys.stderr)
         raise

@@ -11,7 +11,7 @@ verify_no_transaction
 load_env
 export APP_IMAGE=ai-erp:preflight
 verify_host
-load_state
+load_state recovery
 [[ -n "$STATE_RELEASE" ]] || fail 'no active deployment exists'
 RELEASE_ID="${RELEASE_ID:-$STATE_PREVIOUS_RELEASE}"
 valid_release "$RELEASE_ID" || fail 'no previous release exists'

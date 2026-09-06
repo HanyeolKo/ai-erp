@@ -232,15 +232,23 @@ validate_manifest() {
   MANIFEST_IMAGE="$IMAGE_ID" MANIFEST_CHECKSUM="$digest"
 }
 verify_container() {
-  local service="$1" expected="$2" container labels
-  container="$("${COMPOSE[@]}" ps -q "$service")"
+  local service="$1" expected="$2" validation_mode="${3:-strict}" container labels
+  [[ "$validation_mode" == strict || "$validation_mode" == recovery ]] || fail 'invalid container validation mode'
+  if [[ "$validation_mode" == recovery ]]; then
+    container="$("${COMPOSE[@]}" ps --all -q "$service")"
+    [[ -n "$container" ]] || return 0
+  else container="$("${COMPOSE[@]}" ps -q "$service")"; fi
   [[ -n "$container" && "$container" != *$'\n'* ]] || fail 'expected one running project application container'
   labels="$(docker inspect --format '{{ index .Config.Labels "com.docker.compose.project" }} {{ index .Config.Labels "com.docker.compose.service" }}' "$container")"
   [[ "$labels" == "ai-erp-phase1 $service" ]] || fail 'application container ownership mismatch'
-  [[ "$(docker inspect -f '{{.State.Health.Status}}' "$container")" == healthy ]] || fail 'application container is unhealthy'
+  if [[ "$validation_mode" == strict ]]; then
+    [[ "$(docker inspect -f '{{.State.Health.Status}}' "$container")" == healthy ]] || fail 'application container is unhealthy'
+  fi
   [[ "$(docker inspect -f '{{.Image}}' "$container")" == "$expected" ]] || fail 'application container image differs from immutable image'
 }
 load_state() {
+  local validation_mode="${1:-strict}"
+  [[ "$validation_mode" == strict || "$validation_mode" == recovery ]] || fail 'invalid state validation mode'
   STATE_COLOR="" STATE_RELEASE="" STATE_IMAGE_ID="" STATE_PREVIOUS_RELEASE="" STATE_PREVIOUS_COLOR="" STATE_MANIFEST_CHECKSUM=""
   if [[ ! -e "$STATE_FILE" ]]; then
     if [[ -e "$UPSTREAM_FILE" ]]; then
@@ -261,7 +269,9 @@ load_state() {
   [[ "$MANIFEST_IMAGE" == "$STATE_IMAGE_ID" && "$MANIFEST_CHECKSUM" == "$STATE_MANIFEST_CHECKSUM" ]] || fail 'active state and manifest disagree'
   expected="$(printf 'header X-AI-ERP-Release "%s"\nreverse_proxy app-%s:8080' "$STATE_RELEASE" "$STATE_COLOR")"
   [[ "$(<"$UPSTREAM_FILE")" == "$expected" ]] || fail 'active upstream and state disagree'
-  verify_container "app-$STATE_COLOR" "$STATE_IMAGE_ID"
+  # Rollback may recover an absent or unhealthy active app, but any existing
+  # container still has to agree with the verified ownership and image lineage.
+  verify_container "app-$STATE_COLOR" "$STATE_IMAGE_ID" "$validation_mode"
   if [[ -n "$STATE_PREVIOUS_RELEASE" ]]; then
     valid_release "$STATE_PREVIOUS_RELEASE" && [[ "$STATE_PREVIOUS_RELEASE" != "$STATE_RELEASE" && "$STATE_PREVIOUS_COLOR" =~ ^(blue|green)$ && "$STATE_PREVIOUS_COLOR" != "$STATE_COLOR" ]] || fail 'previous release lineage invalid'
     validate_manifest "$STATE_PREVIOUS_RELEASE"
@@ -329,7 +339,9 @@ abort_transaction() {
     if [[ "$NEW_MANIFEST" == 1 ]]; then rm -f -- "$RELEASE_DIR/manifest.json" || recovery=1; fi
     if [[ "$NEW_MANIFEST_CHECKSUM" == 1 ]]; then rm -f -- "$RELEASE_DIR/manifest.json.sha256" || recovery=1; fi
   fi
-  if [[ "$CANDIDATE_STARTED" == 1 ]]; then "${COMPOSE[@]}" stop "app-$CANDIDATE_COLOR" >/dev/null 2>&1 || recovery=1; fi
+  # Restoring files does not confirm the running proxy accepted the old route.
+  # Preserve a possibly live candidate and recovery evidence on any failure.
+  if [[ "$recovery" == 0 && "$CANDIDATE_STARTED" == 1 ]]; then "${COMPOSE[@]}" stop "app-$CANDIDATE_COLOR" >/dev/null 2>&1 || recovery=1; fi
   if [[ "$recovery" == 0 ]]; then cleanup_candidates || recovery=1; fi
   if [[ "$recovery" != 0 ]]; then printf '%s\n' 'deployment recovery failed; preserve transaction files and inspect host' >&2; return 1; fi
 }
