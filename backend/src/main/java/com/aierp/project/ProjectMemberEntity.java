@@ -9,6 +9,6 @@ public class ProjectMemberEntity {
     @Id public UUID projectId;
     @Id public UUID userAccountId;
     @Enumerated(EnumType.STRING) public ProjectRole role;
-    protected ProjectMemberEntity() { }
+    public ProjectMemberEntity() { }
     public static class Key implements Serializable { public UUID projectId; public UUID userAccountId; }
 }

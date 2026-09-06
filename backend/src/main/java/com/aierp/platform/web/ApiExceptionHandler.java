@@ -17,5 +17,6 @@ class ApiExceptionHandler {
     @ExceptionHandler({IllegalArgumentException.class, org.springframework.web.bind.MethodArgumentNotValidException.class}) ResponseEntity<ApiProblem> badRequest(Exception ex) { return problem(HttpStatus.BAD_REQUEST, "VALIDATION_FAILED"); }
     @ExceptionHandler(AccessDeniedException.class) ResponseEntity<ApiProblem> forbidden(AccessDeniedException ex) { return problem(HttpStatus.FORBIDDEN, "FORBIDDEN"); }
     @ExceptionHandler(ObjectOptimisticLockingFailureException.class) ResponseEntity<ApiProblem> stale(ObjectOptimisticLockingFailureException ex) { return problem(HttpStatus.CONFLICT, "STALE_ROW_VERSION"); }
+    @ExceptionHandler(IllegalStateException.class) ResponseEntity<ApiProblem> conflict(IllegalStateException ex) { return problem(HttpStatus.CONFLICT, "CONFLICT"); }
     private ResponseEntity<ApiProblem> problem(HttpStatus status, String code) { return ResponseEntity.status(status).contentType(MediaType.APPLICATION_PROBLEM_JSON).body(new ApiProblem(code, UUID.randomUUID().toString(), List.of())); }
 }
