@@ -3,9 +3,12 @@ package com.aierp;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.document;
 import static com.epages.restdocs.apispec.ResourceDocumentation.resource;
+import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.hamcrest.Matchers.matchesPattern;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 
 import com.aierp.platform.web.SecurityConfiguration;
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
@@ -28,10 +31,21 @@ class MeApiTest {
     void returns_the_authenticated_principal_without_a_production_header_fallback() throws Exception {
         mockMvc.perform(get("/api/v1/me").with(user("user-42").roles("USER")))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value("user-42"))
+                .andExpect(jsonPath("$.id", matchesPattern("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")))
                 .andDo(document("current-user", resource(ResourceSnippetParameters.builder()
                         .tag("Identity")
                         .description("Returns the authenticated principal.")
+                        .responseFields(
+                                fieldWithPath("id").description("Stable internal UUID"),
+                                fieldWithPath("authorities").description("Granted Spring Security authorities"))
                         .build())));
+    }
+
+    @Test
+    void returns_a_problem_document_for_an_unauthenticated_api_request() throws Exception {
+        mockMvc.perform(get("/api/v1/me"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
+                .andExpect(jsonPath("$.code").value("UNAUTHENTICATED"));
     }
 }
