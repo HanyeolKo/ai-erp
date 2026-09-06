@@ -7,6 +7,7 @@ valid_release "$RELEASE_ID" || fail 'releaseId must be an exact lowercase 40-cha
 mkdir -p "$ROOT/releases/$RELEASE_ID" "$STATE_DIR"; chmod 700 "$ROOT/releases/$RELEASE_ID" "$STATE_DIR"
 if [[ ! -f "$STATE_DIR/active-upstream.caddy" ]]; then printf 'respond "service initializing" 503\n' >"$STATE_DIR/active-upstream.caddy"; chmod 600 "$STATE_DIR/active-upstream.caddy"; fi
 exec 9>"$LOCK_FILE"; flock -n 9 || fail 'another deployment holds the lock'
+export APP_IMAGE="ai-erp:$RELEASE_ID"
 AI_ERP_LOCK_HELD=1 "$(dirname -- "$0")/preflight.sh" "$RELEASE_ID"
 load_env; load_state
 PREVIOUS_RELEASE="$STATE_RELEASE"; PREVIOUS_COLOR="$STATE_COLOR"
@@ -21,11 +22,16 @@ rollback_failure() {
   fi
 }
 trap rollback_failure ERR
-export APP_IMAGE="ai-erp:$RELEASE_ID" CADDY_STATE_DIR="$STATE_DIR" RELEASE_SOURCE_DIR="$PROJECT_DIR"
+export CADDY_STATE_DIR="$STATE_DIR" RELEASE_SOURCE_DIR="$PROJECT_DIR"
 docker build --pull --label "org.opencontainers.image.revision=$RELEASE_ID" --tag "$APP_IMAGE" "$PROJECT_DIR"
 image_identity "$APP_IMAGE" "$RELEASE_ID"; BUILT_IMAGE_ID="$IMAGE_ID"; BUILT_REVISION="$IMAGE_REVISION"
 "${COMPOSE[@]}" up -d postgres redis caddy
-if "${COMPOSE[@]}" exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atqc "select to_regclass('platform.flyway_schema_history') is not null" | grep -qx t; then "$(dirname -- "$0")/backup.sh" "$RELEASE_ID"; fi
+wait_service_healthy postgres || fail 'postgres did not become healthy'
+wait_service_healthy redis || fail 'redis did not become healthy'
+wait_service_healthy caddy || fail 'caddy did not become healthy'
+probe=""
+if ! probe="$("${COMPOSE[@]}" exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atqc "select to_regclass('platform.flyway_schema_history') is not null")"; then fail 'database history probe failed'; fi
+case "$probe" in t) "$(dirname -- "$0")/backup.sh" "$RELEASE_ID";; f) :;; *) fail 'database history probe returned an invalid value';; esac
 "${COMPOSE[@]}" --profile migration run --rm migrate >/dev/null
 MIGRATED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 "${COMPOSE[@]}" up -d --no-deps "app-$INACTIVE_COLOR"

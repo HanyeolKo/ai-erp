@@ -28,6 +28,7 @@ RUN chmod +x gradlew && ./gradlew --no-daemon dependencies
 COPY backend/src backend/src
 COPY --from=api-contract /workspace/backend/build/api-spec/openapi3.yaml build/api-spec/openapi3.yaml
 COPY --from=frontend-build /workspace/frontend/dist src/main/resources/static
+COPY --from=frontend-build /workspace/backend/build/api-docs src/main/resources/static/assets/api-docs
 RUN test -f src/main/resources/static/index.html && ./gradlew --no-daemon clean bootJar && test -f build/libs/*.jar
 
 FROM eclipse-temurin:25-jre
@@ -38,7 +39,6 @@ RUN apt-get update \
     && groupadd --system --gid 10001 aierp \
     && useradd --system --uid 10001 --gid aierp --home-dir /app --shell /usr/sbin/nologin aierp
 COPY --from=application-build /workspace/backend/build/libs/*.jar /app/app.jar
-COPY --from=frontend-build /workspace/backend/build/api-docs /app/api-docs-artifact
 USER 10001:10001
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

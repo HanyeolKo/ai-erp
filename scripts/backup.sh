@@ -9,7 +9,9 @@ valid_release "$RELEASE_ID" || fail 'releaseId must be an exact lowercase 40-cha
 load_env; validate_environment
 BACKUP_DIR="$ROOT/releases/$RELEASE_ID/backups"; [[ "$BACKUP_DIR" == "$ROOT/releases/$RELEASE_ID/backups" ]] || fail 'unsafe backup path'
 mkdir -p "$BACKUP_DIR"; chmod 700 "$BACKUP_DIR"
-"${COMPOSE[@]}" exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atqc "select to_regclass('platform.flyway_schema_history') is not null" | grep -qx t || { printf 'backup: skipped empty database\n'; exit 0; }
+probe=""
+if ! probe="$("${COMPOSE[@]}" exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atqc "select to_regclass('platform.flyway_schema_history') is not null")"; then fail 'database history probe failed'; fi
+case "$probe" in t) :;; f) printf 'backup: skipped empty database\n'; exit 0;; *) fail 'database history probe returned an invalid value';; esac
 tmp="$BACKUP_DIR/.postgres-$(date -u +%Y%m%dT%H%M%SZ).tmp"; final="${tmp%.tmp}.dump"
 "${COMPOSE[@]}" exec -T postgres pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc >"$tmp"
 [[ -s "$tmp" ]] || fail 'database dump is empty'

@@ -87,6 +87,18 @@ wait_healthy() {
   done
   return 1
 }
+wait_service_healthy() {
+  local service="$1" attempt container status
+  for attempt in $(seq 1 "${HEALTH_ATTEMPTS:-36}"); do
+    container="$("${COMPOSE[@]}" ps -q "$service")"
+    if [[ -n "$container" ]]; then
+      status="$(docker inspect -f '{{.State.Health.Status}}' "$container" 2>/dev/null || true)"
+      [[ "$status" == healthy ]] && return 0
+    fi
+    sleep "${HEALTH_INTERVAL_SECONDS:-5}"
+  done
+  return 1
+}
 image_identity() {
   local image="$1" details
   details="$(docker image inspect --format '{{.Id}} {{ index .Config.Labels "org.opencontainers.image.revision" }}' "$image")"

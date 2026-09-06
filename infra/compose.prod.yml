@@ -33,6 +33,8 @@ services:
   redis:
     image: redis:8.2.9
     restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
     command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD}"]
     volumes:
       - ai_erp_phase1_redis_data:/data
@@ -102,6 +104,8 @@ services:
   caddy:
     image: caddy:2.11.4
     restart: unless-stopped
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS}
     ports:
       - "80:80"
       - "443:443"

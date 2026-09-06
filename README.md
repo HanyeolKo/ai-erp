@@ -58,7 +58,7 @@ docker compose --env-file infra/.env.prod.example -f infra/compose.prod.yml conf
 bash scripts/tests/deployment-contract.sh
 ```
 
-OpenAPI와 Swagger 검토 artifact는 production image의 `/app/api-docs-artifact`에 포함된다. 현재 보안 정책은 운영 HTTP 경로로 Swagger 문서를 공개하지 않는다.
+OpenAPI와 Swagger 검토 artifact는 production image의 `/assets/api-docs/`에 포함되며, 같은 image의 `/assets/api-docs/index.html`에서 읽는다.
 
 ## 아키텍처와 문서
 
