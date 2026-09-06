@@ -348,6 +348,25 @@ def supported_environment_checks(root):
     check('unknown environment key' in result.stderr, 'unused session secret must be rejected by the exact env allowlist')
     h.clean()
 
+def ip_entry_checks(root):
+    h = Host(root)
+    runtime = h.runtime()
+    runtime['live'] = A
+    runtime['containers']['app-blue'] = dict(running=True, image='fixture', release=A, oidc_enabled=False)
+    h.save(runtime)
+    h.run('smoke', ('public', A))
+    roots = [call for call in h.calls() if call['event'] == 'public:/']
+    check([call['site'] for call in roots] == ['192.168.219.100', 'ai-erp.duckdns.org'],
+          'IP root must redirect to canonical origin before the SPA can store invitation state')
+    check(all(call['resolve'] == call['site'] + ':443:192.168.219.100' for call in roots),
+          'canonical entry verification must retain fixed LAN routing for both requests')
+    for mismatch in ('wrong-origin', 'fragment'):
+        result = h.run('smoke', ('public', A), success=False, FAKE_ENTRY=mismatch)
+        check('IP browser entry must redirect to the primary domain' in result.stderr,
+              'IP entry must reject a foreign origin or a fragment that replaces the invitation')
+    h.clean()
+
+
 def smoke_status_checks(root):
     h = Host(root)
     runtime = h.runtime()
@@ -586,6 +605,8 @@ with tempfile.TemporaryDirectory(prefix='ai-erp-contract-') as temp:
             caddy_http_check()
         elif focus == 'smoke-status':
             smoke_status_checks(Path(temp))
+        elif focus == 'ip-entry':
+            ip_entry_checks(Path(temp))
         elif focus == 'publisher-id':
             publisher_id_checks(Path(temp))
         elif focus == 'rollback':
@@ -617,6 +638,9 @@ with tempfile.TemporaryDirectory(prefix='ai-erp-contract-') as temp:
             status_root = Path(temp) / 'smoke-status'
             status_root.mkdir()
             smoke_status_checks(status_root)
+            entry_root = Path(temp) / 'ip-entry'
+            entry_root.mkdir()
+            ip_entry_checks(entry_root)
             publisher_root = Path(temp) / 'publisher-id'
             publisher_root.mkdir()
             publisher_id_checks(publisher_root)

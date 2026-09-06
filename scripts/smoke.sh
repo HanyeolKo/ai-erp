@@ -29,7 +29,13 @@ request() {
   fi
 }
 for path in "${paths[@]}"; do
-  request "$path" 200
+  if [[ "$MODE" == public && "$SITE_ADDRESS" == 192.168.219.100 && "$path" == / ]]; then
+    request "$path" 302
+    [[ "$(grep -Fxic 'location: https://ai-erp.duckdns.org/' <<<"$headers")" == 1 ]] || fail 'IP browser entry must redirect to the primary domain'
+    request "$path" 200 ai-erp.duckdns.org
+  else
+    request "$path" 200
+  fi
   [[ -n "$body" ]] || fail 'smoke response is empty'
   if [[ "$path" == /actuator/health/readiness ]]; then
     python3 -c 'import json,sys; assert json.load(sys.stdin)["status"] == "UP"' <<<"$body" 2>/dev/null || fail 'readiness is not UP'

@@ -30,7 +30,7 @@ install -m 600 infra/.env.prod.example /home/deploy/ai-erp/shared/.env
 
 서버의 `.env`를 직접 편집해 긴 임의 secret을 넣는다. `.env`는 shell script가 아니며 `KEY=literal` 형식이다. shell substitution, 중복·알 수 없는 key, 공백이 있는 값은 거부된다. `POSTGRES_DB=ai_erp`, 일치하는 PostgreSQL/DB credential, `DB_URL=jdbc:postgresql://postgres:5432/ai_erp`, URL-safe Redis password와 정확히 일치하는 `redis://:<password>@redis:6379/0`, 기본 도메인인 `SITE_ADDRESS=ai-erp.duckdns.org`를 사용한다. `SITE_ADDRESS`는 `ai-erp.duckdns.org`, `blackcow.duckdns.org`, 기존 IP인 `192.168.219.100`만 허용한다. Google credential은 두 값이 모두 비어 있거나 모두 있어야 하며 `APP_OIDC_ENABLED=true`이면 둘 다 필요하다. `APP_IMAGE`는 운영 env에 넣지 않는다. 배포 script가 commit SHA에서 직접 결정한다.
 
-Google 로그인은 서버의 `APP_OIDC_ENABLED=true`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`으로 활성화한다. 비밀은 서버 `.env`에만 보관한다. Google OAuth client의 승인된 redirect URI에 `https://ai-erp.duckdns.org/login/oauth2/code/google`과 `https://blackcow.duckdns.org/login/oauth2/code/google`을 모두 등록한다. Caddy는 두 도메인과 기존 IP를 함께 처리하며, IP의 `/oauth2/authorization/google` 요청만 기본 도메인으로 이동시켜 세션이 도메인에서 시작되게 한다. 각 도메인에서 시작한 로그인은 해당 도메인의 callback을 사용한다.
+Google 로그인은 서버의 `APP_OIDC_ENABLED=true`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`으로 활성화한다. 비밀은 서버 `.env`에만 보관한다. Google OAuth client의 승인된 redirect URI에 `https://ai-erp.duckdns.org/login/oauth2/code/google`과 `https://blackcow.duckdns.org/login/oauth2/code/google`을 모두 등록한다. Caddy는 두 도메인과 기존 IP를 함께 처리한다. IP의 `/`와 `/index.html` 진입은 앱이 실행되기 전에 기본 도메인으로 이동하여 초대 정보와 세션이 같은 도메인에 저장되게 한다. redirect의 Location에는 fragment를 넣지 않으므로 브라우저가 초대 링크의 `#/invitations/...`를 그대로 이어받는다. IP의 `/oauth2/authorization/google` 요청도 기본 도메인으로 이동한다. IP의 health·API·문서는 계속 직접 제공하며, 각 도메인에서 시작한 로그인은 해당 도메인의 callback을 사용한다.
 
 HTTP 80번 포트로 접속하면 요청 경로와 query를 유지하여 `https://ai-erp.duckdns.org`로 HTTP 308 redirect한다. IP로 입력한 HTTP 주소도 같은 기본 도메인으로 이동한다. 목적지에는 요청의 Host를 사용하지 않으며 HTTPS의 허용 주소나 인증서 범위는 늘어나지 않는다.
 
@@ -65,7 +65,7 @@ Caddy validation/reload, public smoke, manifest/state 기록이 실패하면 이
 
 Production image는 OpenAPI → typed client·Swagger → frontend → Spring Boot jar 순서로 생성하고, `/`, API, `/assets/api-docs/index.html`을 같은 release에서 제공한다. Caddy만 80/443을 공개하고 세 주소에 기존 내부 TLS를 사용한다. IP의 SNI 없는 접속도 지원한다. 이번 구성은 공인 인증서나 ACME 발급을 수행하지 않으므로 브라우저 신뢰가 필요하면 Caddy root CA를 별도 배포한다. Public smoke는 `--resolve <SITE_ADDRESS>:443:192.168.219.100 --noproxy '*' --insecure`로 LAN IP에 직접 연결하면서 HTTP Host와 TLS SNI는 선택한 주소로 유지한다. 따라서 서버 검사는 public DNS의 hairpin NAT에 의존하지 않는다. 브라우저를 사용하는 LAN 장치에서도 각 도메인이 접근 가능한 서버 주소로 해석되어야 한다.
 
-Smoke는 모든 일반 endpoint의 HTTP 200과 public release header, readiness `UP`을 검사한다. `APP_OIDC_ENABLED=true`이면 configuration의 `login=READY`와 정확한 `loginUrl=/oauth2/authorization/google`을 요구하고, `false`이면 `CONFIGURATION_REQUIRED`와 null URL을 요구한다. 익명 `/api/v1/me`는 HTTP 401이어야 한다. 로그인 활성화 시 public smoke는 Google redirect의 대상과 현재 도메인의 callback을 검사하며 redirect를 따라가거나 client ID, cookie, state, Location을 출력하지 않는다.
+Smoke는 일반 endpoint의 HTTP 200과 public release header, readiness `UP`을 검사한다. `SITE_ADDRESS`가 IP이면 `/`의 정확한 기본 도메인 redirect를 먼저 확인한 뒤 기본 도메인의 `/`에서 HTTP 200을 확인한다. 두 요청 모두 고정된 LAN IP로 연결한다. `APP_OIDC_ENABLED=true`이면 configuration의 `login=READY`와 정확한 `loginUrl=/oauth2/authorization/google`을 요구하고, `false`이면 `CONFIGURATION_REQUIRED`와 null URL을 요구한다. 익명 `/api/v1/me`는 HTTP 401이어야 한다. 로그인 활성화 시 public smoke는 Google redirect의 대상과 현재 도메인의 callback을 검사하며 Google redirect를 따라가거나 client ID, cookie, state, Location을 출력하지 않는다.
 
 검증은 다음과 같다. 첫 명령은 예시 env에 image key가 없으므로 검사할 image reference를 별도로 제공한다.
 
@@ -76,4 +76,4 @@ bash scripts/tests/caddy-no-sni.sh
 docker build --label "org.opencontainers.image.revision=$(git rev-parse HEAD)" --tag "ai-erp:$(git rev-parse HEAD)" .
 ```
 
-Contract harness는 실제 shell 진입점을 strict stateful host double로 실행한다. Linux에서 실제 `flock` 경쟁과 POSIX 권한·symlink를 검사한다. `caddy-no-sni.sh`는 임시 Docker Caddy에서 두 도메인, IP의 SNI 유무, IP 로그인 시작 요청만의 redirect, HTTP 80번 포트의 고정 HTTPS 목적지를 검증한다. Windows Git Bash 검증은 해당 Linux 기능과 실제 Docker 실행을 대체하지 못하며 이를 명시적으로 보고한다.
+Contract harness는 실제 shell 진입점을 strict stateful host double로 실행한다. Linux에서 실제 `flock` 경쟁과 POSIX 권한·symlink를 검사한다. `caddy-no-sni.sh`는 임시 Docker Caddy에서 두 도메인, IP의 SNI 유무, IP의 앱 진입·로그인 시작 redirect와 직접 제공하는 health·문서, HTTP 80번 포트의 고정 HTTPS 목적지를 검증한다. Windows Git Bash 검증은 해당 Linux 기능과 실제 Docker 실행을 대체하지 못하며 이를 명시적으로 보고한다.

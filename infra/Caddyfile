@@ -10,6 +10,11 @@
 192.168.219.100, ai-erp.duckdns.org, blackcow.duckdns.org {
     tls internal
     encode zstd gzip
+    @ip_browser_entry {
+        host 192.168.219.100
+        path / /index.html
+    }
+    redir @ip_browser_entry https://ai-erp.duckdns.org{uri} 302
     @ip_google_login {
         host 192.168.219.100
         path /oauth2/authorization/google

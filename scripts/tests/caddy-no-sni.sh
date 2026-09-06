@@ -55,7 +55,7 @@ done
 HOST_PORT="${BASH_REMATCH[1]}"
 
 request() {
-  local sni_mode="$1" site="${2:-$PRODUCTION_IP}" path="${3:-/}"
+  local sni_mode="$1" site="${2:-$PRODUCTION_IP}" path="${3:-/actuator/health/readiness}"
   local -a sni_args=(-noservername)
   if [[ "$sni_mode" == "with-sni" ]]; then
     sni_args=(-servername "$site")
@@ -93,6 +93,24 @@ for site in ai-erp.duckdns.org blackcow.duckdns.org; do
   done
 done
 
+for path in '/?entry=preserve' '/index.html?entry=preserve'; do
+  IP_ENTRY_RESPONSE="$(request without-sni "$PRODUCTION_IP" "$path")"
+  IP_ENTRY_RESPONSE="${IP_ENTRY_RESPONSE//$'\r'/}"
+  grep -q '^HTTP/1\.[01] 302' <<<"$IP_ENTRY_RESPONSE" || {
+    printf 'FAIL: IP browser entry must redirect before the SPA stores invitation state\n' >&2
+    exit 1
+  }
+  grep -Fxiq "location: https://ai-erp.duckdns.org$path" <<<"$IP_ENTRY_RESPONSE" || {
+    printf 'FAIL: IP entry must preserve URI without a Location fragment so browsers inherit invitation fragments\n' >&2
+    exit 1
+  }
+done
+IP_DOCS_RESPONSE="$(request without-sni "$PRODUCTION_IP" /assets/api-docs/index.html)"
+grep -q '^HTTP/1\.[01] 200' <<<"$IP_DOCS_RESPONSE" || {
+  printf 'FAIL: IP documentation must continue reaching upstream\n' >&2
+  exit 1
+}
+
 IP_LOGIN_RESPONSE="$(request without-sni "$PRODUCTION_IP" '/oauth2/authorization/google?test=preserve')"
 IP_LOGIN_RESPONSE="${IP_LOGIN_RESPONSE//$'\r'/}"
 grep -q '^HTTP/1\.[01] 302' <<<"$IP_LOGIN_RESPONSE" || {
@@ -109,7 +127,7 @@ grep -Fxiq "x-ai-erp-release: $TEST_RELEASE" <<<"$IP_LOGIN_RESPONSE" || {
 }
 IP_CALLBACK_RESPONSE="$(request without-sni "$PRODUCTION_IP" /login/oauth2/code/google)"
 grep -q '^HTTP/1\.[01] 200' <<<"$IP_CALLBACK_RESPONSE" || {
-  printf 'FAIL: only IP login initiation may redirect\n' >&2
+  printf 'FAIL: IP callback must continue reaching upstream\n' >&2
   exit 1
 }
 
@@ -129,4 +147,4 @@ for site in 203.0.113.9 ai-erp.duckdns.org blackcow.duckdns.org unapproved.examp
   }
 done
 
-printf 'PASS: 1 scenario / 20 assertions (loopback, IP SNI/no-SNI, both domain origins, bounded IP OAuth redirect, canonical HTTP entry)\n'
+printf 'PASS: 1 scenario / 25 assertions (loopback, IP SNI/no-SNI, both domain origins, canonical browser entry, bounded IP OAuth redirect, canonical HTTP entry)\n'

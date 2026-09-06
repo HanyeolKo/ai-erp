@@ -178,6 +178,15 @@ if command == 'curl':
     release = 'bad' if os.environ.get('FAKE_BAD_HEADER') and path == '/assets/api-docs/index.html' else data['live']
     status = os.environ.get('FAKE_ME_STATUS', '401') if path == '/api/v1/me' else os.environ.get('FAKE_HTTP_STATUS', '200')
     headers = 'X-AI-ERP-Release: ' + release + '\r\n'
+    if path == '/' and site == '192.168.219.100':
+        status = '302'
+        body = ''
+        location = 'https://ai-erp.duckdns.org/'
+        if os.environ.get('FAKE_ENTRY') == 'wrong-origin':
+            location = 'https://unapproved.example/'
+        elif os.environ.get('FAKE_ENTRY') == 'fragment':
+            location += '#/'
+        headers += 'Location: ' + location + '\r\n'
     if path == '/oauth2/authorization/google':
         status = '302'
         body = ''
