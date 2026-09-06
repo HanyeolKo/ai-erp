@@ -1,0 +1,9 @@
+{
+    auto_https disable_redirects
+}
+
+{$SITE_ADDRESS:192.168.219.100} {
+    tls internal
+    encode zstd gzip
+    import /etc/caddy/state/active-upstream.caddy
+}

@@ -1,18 +1,19 @@
 # AI ERP
 
-프로젝트 일정관리 시스템의 초기 기반입니다. 현재는 모듈 경계, 데이터베이스 스키마 기반, 보안 기본값, API 계약 생성과 연결 확인 화면만 제공합니다.
+프로젝트 일정관리 시스템의 Phase 1 구현입니다.
 
 ## 완료 범위
 
 - Java 25 / Spring Boot 4.1.1 기반 모듈러 모놀리스와 7개 닫힌 업무 모듈
 - PostgreSQL·Redis 개발 Compose, Flyway schema 초기화, Testcontainers 통합 검증
+- OIDC 설정 기반의 초대·프로젝트·일정·확인·알림·Calendar 단방향 투영 API와 React SPA
 - `GET /api/v1/system/info` 및 liveness/readiness health 공개, 그 밖의 경로 deny-all
 - REST Docs → OpenAPI 3.0.1 → TypeScript 타입·정적 Swagger 검토 산출물
 - API 연결 상태와 재시도를 보여 주는 React foundation 화면
 
 ## 아직 구현하지 않는 범위
 
-업무 API/DTO, 로그인·더미 계정·기본 비밀번호, Google OAuth/Calendar, 메일, 결재, AI, 운영 배포와 자동 Blue/Green 전환은 구현하지 않았습니다. 인증 principal, Redis 세션 JSON serializer, Blue/Green 세션 호환은 별도 승인 후 도입합니다.
+실제 Google OAuth/Calendar 외부 연결은 운영 환경의 자격 증명이 있어야 활성화됩니다. 더미 계정·기본 비밀번호·운영 헤더 로그인, 메일, 결재, AI, Drive 문서·상세 업무·마일스톤·양방향 Calendar 동기화는 구현하지 않습니다.
 
 ## 실행 순서
 
@@ -43,6 +44,17 @@ pnpm --dir frontend exec vite ../backend/build/api-docs --host 127.0.0.1 --port 
 ```
 
 브라우저에서 `http://127.0.0.1:4174`을 엽니다.
+
+## 운영 배포
+
+운영 배포는 GitHub Actions의 승인된 self-hosted deployment job에서만 `scripts/deploy.sh <40-character-main-commit-sha>`로 실행합니다. 이 스크립트는 `/home/deploy/ai-erp/shared/.env`(mode `600`)의 비밀을 읽고 `infra/compose.prod.yml`로 PostgreSQL, Redis, Caddy 및 비활성 app slot을 시작합니다. host의 80/443을 사용하는 기존 컨테이너는 별도 승인·식별 절차 없이 건드리지 않습니다.
+
+서버에서만 아래 검증을 실행합니다. `.env.prod.example`은 키 목록 예시이며 실제 값으로 사용하면 안 됩니다.
+
+```sh
+docker compose --env-file infra/.env.prod.example -f infra/compose.prod.yml config --quiet
+bash scripts/tests/deployment-contract.sh
+```
 
 ## 아키텍처와 문서
 
