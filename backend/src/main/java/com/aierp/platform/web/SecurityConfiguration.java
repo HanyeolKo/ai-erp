@@ -24,6 +24,8 @@ public class SecurityConfiguration {
                         .permitAll()
                         .requestMatchers("/api/v1/me")
                         .authenticated()
+                        .requestMatchers("/api/v1/**")
+                        .authenticated()
                         .anyRequest().denyAll())
                 .exceptionHandling(errors -> errors
                         .authenticationEntryPoint((request, response, exception) -> writeProblem(response, HttpStatus.UNAUTHORIZED, "UNAUTHENTICATED"))

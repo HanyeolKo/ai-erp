@@ -1,7 +1,5 @@
 package com.aierp.identity.api;
 
-import java.nio.charset.StandardCharsets;
-import java.util.UUID;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,8 +13,11 @@ public class CurrentUserController {
 
     @GetMapping
     public CurrentUserResponse currentUser(Authentication authentication) {
+        if (!(authentication.getPrincipal() instanceof ApplicationPrincipal principal)) {
+            throw new org.springframework.security.access.AccessDeniedException("Application principal required");
+        }
         return new CurrentUserResponse(
-                UUID.nameUUIDFromBytes(("ai-erp:" + authentication.getName()).getBytes(StandardCharsets.UTF_8)).toString(),
+                principal.userId().toString(),
                 authentication.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList());
     }
 
