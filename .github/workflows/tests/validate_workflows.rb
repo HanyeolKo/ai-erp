@@ -8,13 +8,42 @@ AUTOMATIC_GUARD = "(github.event_name == 'workflow_run' && github.event.workflow
 MANUAL_GUARD = "(github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && github.event.repository.default_branch == 'main')"
 EXPECTED_DEPLOY_GUARD = "#{AUTOMATIC_GUARD} || #{MANUAL_GUARD}"
 EXPECTED_CHECKOUT_REF = "${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || 'refs/heads/main' }}"
-EXPECTED_EVENT_ENV = {
-  "EVENT_NAME" => "${{ github.event_name }}",
-  "WORKFLOW_RUN_SHA" => "${{ github.event.workflow_run.head_sha }}",
-  "GITHUB_REF_NAME" => "${{ github.ref }}",
-  "DEFAULT_BRANCH" => "${{ github.event.repository.default_branch }}"
-}.freeze
+EXPECTED_EVENT_ENV = { "EVENT_NAME" => "${{ github.event_name }}", "WORKFLOW_RUN_SHA" => "${{ github.event.workflow_run.head_sha }}", "GITHUB_REF_NAME" => "${{ github.ref }}", "DEFAULT_BRANCH" => "${{ github.event.repository.default_branch }}" }.freeze
 SENSITIVE_OUTPUT = /\bssh\b|secrets\.|\.env|docker inspect|docker logs|upload-artifact/i
+RESOLVER_RUN = <<~BASH
+  set -euo pipefail
+  RELEASE_SHA="$(git rev-parse HEAD)"
+  [[ "$RELEASE_SHA" =~ ^[a-f0-9]{40}$ ]] || { echo "Invalid checked-out SHA" >&2; exit 1; }
+  case "$EVENT_NAME" in
+    workflow_run)
+      [[ "$WORKFLOW_RUN_SHA" =~ ^[a-f0-9]{40}$ ]] || { echo "Invalid CI SHA" >&2; exit 1; }
+      [[ "$RELEASE_SHA" == "$WORKFLOW_RUN_SHA" ]] || { echo "Checked-out SHA differs from CI SHA" >&2; exit 1; }
+      ;;
+    workflow_dispatch)
+      [[ "$GITHUB_REF_NAME" == "refs/heads/main" && "$DEFAULT_BRANCH" == "main" ]] || { echo "Manual deployment is restricted to main" >&2; exit 1; }
+      MAIN_SHA="$(git rev-parse origin/main)"
+      [[ "$MAIN_SHA" =~ ^[a-f0-9]{40}$ && "$RELEASE_SHA" == "$MAIN_SHA" ]] || { echo "Checked-out SHA differs from origin/main" >&2; exit 1; }
+      ;;
+    *)
+      echo "Unexpected deployment event" >&2
+      exit 1
+      ;;
+  esac
+  printf 'RELEASE_SHA=%s\n' "$RELEASE_SHA" >> "$GITHUB_ENV"
+BASH
+SUMMARY_RUN = <<~BASH
+  printf 'Deployment status: %s\n' "$JOB_STATUS" >> "$GITHUB_STEP_SUMMARY"
+  if [[ -n "${RELEASE_SHA:-}" ]]; then
+    printf 'Validated release SHA: %s\n' "$RELEASE_SHA" >> "$GITHUB_STEP_SUMMARY"
+  fi
+BASH
+SYNTAX_RUN = <<~BASH
+  bash -n scripts/preflight.sh
+  bash -n scripts/backup.sh
+  bash -n scripts/deploy.sh
+  bash -n scripts/rollback.sh
+  bash -n scripts/smoke.sh
+BASH
 
 class ContractError < StandardError; end
 
@@ -32,91 +61,100 @@ rescue Psych::Exception => error
   raise ContractError, "invalid YAML #{File.basename(path)}: #{error.message}"
 end
 
-def steps(job)
-  Array(job.fetch("steps", []))
-end
-
-def run_steps(job)
-  steps(job).filter_map { |step| step["run"] if step.is_a?(Hash) }
-end
-
-def used_steps(job)
-  steps(job).filter_map { |step| step["uses"] if step.is_a?(Hash) }
-end
-
-def one_step!(job, description)
-  matches = yield(steps(job))
-  assert!(matches.length == 1, "exactly one #{description}")
-  matches.first
-end
-
-def validate_ci!(ci)
-  assert!(ci["name"] == "CI", "CI workflow name")
-  assert!(ci.dig("on", "push", "branches") == ["main"], "CI push must be main-only")
-  assert!(ci.fetch("on").key?("pull_request"), "CI must validate pull requests")
-  assert!(ci["permissions"] == { "contents" => "read" }, "CI permissions")
-  assert!(ci["concurrency"] == { "group" => "ci-${{ github.workflow }}-${{ github.ref }}", "cancel-in-progress" => true }, "CI concurrency")
-  jobs = ci.fetch("jobs")
-  jobs.each_value { |job| assert!(!Array(job["runs-on"]).include?("self-hosted"), "CI cannot use self-hosted runner") }
-  verify = jobs.fetch("verify")
-  assert!(verify["runs-on"] == "ubuntu-latest", "CI runs on GitHub-hosted Ubuntu")
-  assert!(!verify.key?("permissions"), "CI job has no permission override")
-  uses = used_steps(verify)
-  assert!(uses.include?("gradle/actions/wrapper-validation@v5"), "Gradle wrapper validation")
-  java = one_step!(verify, "Java setup") { |all| all.select { |step| step["uses"] == "actions/setup-java@v5" } }
-  assert!(java["with"] == { "distribution" => "temurin", "java-version" => "25" }, "Java 25 Temurin setup")
-  node = one_step!(verify, "Node setup") { |all| all.select { |step| step["uses"] == "actions/setup-node@v5" } }
-  assert!(node["with"] == { "node-version" => "22.19.0", "package-manager-cache" => false }, "Node 22.19.0 setup without cache")
-  pnpm = one_step!(verify, "pnpm setup") { |all| all.select { |step| step["uses"] == "pnpm/action-setup@v5" } }
-  assert!(pnpm["with"] == { "version" => "10.33.0" }, "pnpm 10.33.0 setup")
-  runs = run_steps(verify).map { |run| normalized(run) }
-  required = ["pnpm install --frozen-lockfile", "ruby .github/workflows/tests/validate_workflows.rb", "docker compose --env-file infra/.env.example -f infra/compose.dev.yml config --quiet", "docker compose --env-file infra/.env.prod.example -f infra/compose.prod.yml config --quiet", "bash scripts/tests/deployment-contract.sh", "./gradlew clean test integrationTest openapi3 bootJar", "pnpm api:generate", "pnpm frontend:test", "pnpm frontend:typecheck", "pnpm frontend:build", "docker build --tag ai-erp:ci ."]
-  required.each { |command| assert!(runs.include?(command), "CI command #{command}") }
-  %w[preflight.sh backup.sh deploy.sh rollback.sh smoke.sh].each do |script|
-    assert!(runs.any? { |run| run.include?("bash -n scripts/#{script}") }, "shell syntax check #{script}")
+def assert_step!(actual, expected, description)
+  assert!(actual.is_a?(Hash), "#{description} is a mapping")
+  assert!(actual.keys.sort == expected.keys.sort, "#{description} allowed keys")
+  expected.each do |key, value|
+    actual_value = actual.fetch(key)
+    if key == "run" || (key == "with" && value.is_a?(Hash))
+      if key == "with"
+        assert!(actual_value.keys.sort == value.keys.sort, "#{description} with keys")
+        value.each { |with_key, with_value| assert!(actual_value.fetch(with_key) == with_value, "#{description} with #{with_key}") }
+      else
+        assert!(normalized(actual_value) == normalized(value), "#{description} exact run")
+      end
+    else
+      assert!(actual_value == value, "#{description} #{key}")
+    end
   end
 end
 
+def assert_steps!(actual, expected, description)
+  assert!(actual.length == expected.length, "#{description} step count")
+  actual.zip(expected).each_with_index { |(step, contract), index| assert_step!(step, contract, "#{description} step #{index + 1}") }
+end
+
+def ci_steps
+  [
+    { "uses" => "actions/checkout@v5" },
+    { "uses" => "gradle/actions/wrapper-validation@v5" },
+    { "uses" => "actions/setup-java@v5", "with" => { "distribution" => "temurin", "java-version" => "25" } },
+    { "uses" => "actions/setup-node@v5", "with" => { "node-version" => "22.19.0", "package-manager-cache" => false } },
+    { "uses" => "pnpm/action-setup@v5", "with" => { "version" => "10.33.0" } },
+    { "run" => "pnpm install --frozen-lockfile" },
+    { "run" => "ruby .github/workflows/tests/validate_workflows.rb" },
+    { "run" => "docker compose --env-file infra/.env.example -f infra/compose.dev.yml config --quiet" },
+    { "run" => "docker compose --env-file infra/.env.prod.example -f infra/compose.prod.yml config --quiet" },
+    { "run" => SYNTAX_RUN },
+    { "run" => "bash scripts/tests/deployment-contract.sh" },
+    { "run" => "./gradlew clean test integrationTest openapi3 bootJar", "working-directory" => "backend" },
+    { "run" => "pnpm api:generate" },
+    { "run" => "pnpm frontend:test" },
+    { "run" => "pnpm frontend:typecheck" },
+    { "run" => "pnpm frontend:build" },
+    { "run" => "docker build --tag ai-erp:ci ." },
+    { "uses" => "actions/upload-artifact@v6", "if" => "always()", "with" => { "name" => "verification-artifacts", "path" => "backend/build/reports\nbackend/build/api-spec\nbackend/build/api-docs\n" } }
+  ]
+end
+
+def deploy_steps
+  [
+    { "uses" => "actions/checkout@v5", "with" => { "ref" => EXPECTED_CHECKOUT_REF, "fetch-depth" => 0, "persist-credentials" => false, "clean" => true } },
+    { "name" => "Resolve validated release SHA", "shell" => "bash", "run" => RESOLVER_RUN },
+    { "name" => "Deploy validated release", "shell" => "bash", "run" => "bash scripts/deploy.sh \"$RELEASE_SHA\"" },
+    { "name" => "Deployment summary", "if" => "always()", "shell" => "bash", "env" => { "JOB_STATUS" => "${{ job.status }}" }, "run" => SUMMARY_RUN }
+  ]
+end
+
+def validate_ci!(ci)
+  assert!(ci.keys.sort == ["concurrency", "jobs", "name", "on", "permissions"], "CI top-level keys")
+  assert!(ci["name"] == "CI", "CI workflow name")
+  assert!(ci["on"] == { "push" => { "branches" => ["main"] }, "pull_request" => nil }, "CI triggers")
+  assert!(ci["permissions"] == { "contents" => "read" }, "CI permissions")
+  assert!(ci["concurrency"] == { "group" => "ci-${{ github.workflow }}-${{ github.ref }}", "cancel-in-progress" => true }, "CI concurrency")
+  assert!(ci.fetch("jobs").keys == ["verify"], "CI job list")
+  verify = ci.fetch("jobs").fetch("verify")
+  assert!(verify.keys.sort == ["runs-on", "steps"], "CI job keys")
+  assert!(verify["runs-on"] == "ubuntu-latest", "CI GitHub-hosted runner")
+  assert_steps!(verify.fetch("steps"), ci_steps, "CI")
+end
+
 def validate_deploy!(deploy)
+  assert!(deploy.keys.sort == ["concurrency", "jobs", "name", "on", "permissions"], "deployment top-level keys")
   assert!(deploy["name"] == "Deploy Production", "deployment workflow name")
-  trigger = deploy.fetch("on")
-  assert!(trigger.keys.sort == ["workflow_dispatch", "workflow_run"], "deployment has only trusted triggers")
-  assert!(trigger["workflow_dispatch"] == {}, "manual dispatch accepts no inputs")
-  assert!(trigger.dig("workflow_run", "workflows") == ["CI"], "deployment follows CI only")
-  assert!(trigger.dig("workflow_run", "types") == ["completed"], "deployment waits for CI completion")
+  assert!(deploy["on"] == { "workflow_run" => { "workflows" => ["CI"], "types" => ["completed"] }, "workflow_dispatch" => {} }, "deployment triggers")
   assert!(deploy["permissions"] == { "contents" => "read" }, "deployment permissions")
-  assert!(deploy["concurrency"] == { "group" => "production-deploy", "cancel-in-progress" => false }, "non-cancelling production concurrency")
-  jobs = deploy.fetch("jobs")
-  assert!(jobs.keys == ["deploy"], "exactly one deployment job")
-  job = jobs.fetch("deploy")
-  assert!(!job.key?("permissions"), "deployment job has no permission override")
-  assert!(job["runs-on"] == ["self-hosted", "linux", "x64", "ai-erp-prod"], "exact production runner labels")
-  assert!(job["timeout-minutes"].is_a?(Integer) && job["timeout-minutes"].positive?, "positive deployment timeout")
+  assert!(deploy["concurrency"] == { "group" => "production-deploy", "cancel-in-progress" => false }, "production concurrency")
+  assert!(deploy.fetch("jobs").keys == ["deploy"], "deployment job list")
+  job = deploy.fetch("jobs").fetch("deploy")
+  assert!(job.keys.sort == ["env", "if", "runs-on", "steps", "timeout-minutes"], "deployment job keys")
   assert!(normalized(job["if"]) == EXPECTED_DEPLOY_GUARD, "exact trusted-main deployment guard")
-  assert!(job["env"] == EXPECTED_EVENT_ENV, "event values stay in exact job environment")
-  checkout = one_step!(job, "checkout") { |all| all.select { |step| step["uses"] == "actions/checkout@v5" } }
-  assert!(checkout["with"] == { "ref" => EXPECTED_CHECKOUT_REF, "fetch-depth" => 0, "persist-credentials" => false, "clean" => true }, "safe checkout configuration")
-  resolve = one_step!(job, "release resolution") { |all| all.select { |step| step["name"] == "Resolve validated release SHA" } }
-  resolve_run = normalized(resolve["run"])
-  ["set -euo pipefail", "RELEASE_SHA=\"$(git rev-parse HEAD)\"", "[[ \"$RELEASE_SHA\" =~ ^[a-f0-9]{40}$ ]]", "case \"$EVENT_NAME\" in", "[[ \"$RELEASE_SHA\" == \"$WORKFLOW_RUN_SHA\" ]]", "MAIN_SHA=\"$(git rev-parse origin/main)\"", "[[ \"$MAIN_SHA\" =~ ^[a-f0-9]{40}$ && \"$RELEASE_SHA\" == \"$MAIN_SHA\" ]]", "printf 'RELEASE_SHA=%s\\n' \"$RELEASE_SHA\" >> \"$GITHUB_ENV\""]
-    .each { |fragment| assert!(resolve_run.include?(fragment), "validated release resolution includes #{fragment}") }
-  deploy_step = one_step!(job, "deploy invocation") { |all| all.select { |step| normalized(step["run"]) == "bash scripts/deploy.sh \"$RELEASE_SHA\"" } }
-  assert!(!deploy_step.key?("env"), "deploy invocation has no alternate environment source")
-  assert!(run_steps(job).sum { |run| run.scan(/\bdeploy\.sh\b/).length } == 1, "no second deployment invocation")
-  summary = one_step!(job, "deployment summary") { |all| all.select { |step| step["name"] == "Deployment summary" } }
-  assert!(summary["if"] == "always()", "summary always runs")
-  assert!(summary.dig("env", "JOB_STATUS") == "${{ job.status }}", "summary receives job status")
-  assert!(normalized(summary["run"]).include?("$GITHUB_STEP_SUMMARY"), "summary writes GitHub step summary")
-  assert!(!normalized(summary["run"]).match?(SENSITIVE_OUTPUT), "summary has no sensitive output")
+  assert!(job["runs-on"] == ["self-hosted", "linux", "x64", "ai-erp-prod"], "exact static production runner labels")
+  assert!(job["timeout-minutes"].is_a?(Integer) && job["timeout-minutes"].positive?, "positive deployment timeout")
+  assert!(job["env"] == EXPECTED_EVENT_ENV, "exact trusted event environment")
+  assert_steps!(job.fetch("steps"), deploy_steps, "deployment")
   assert!(!Psych.dump(deploy).match?(SENSITIVE_OUTPUT), "deployment has no sensitive workflow content")
 end
 
-def validate_self_hosted_usage!(documents)
+def validate_runner_boundaries!(documents)
   documents.each do |path, document|
     document.fetch("jobs", {}).each do |name, job|
-      next unless Array(job["runs-on"]).include?("self-hosted")
-
-      assert!(File.basename(path) == "deploy-production.yml" && name == "deploy", "only guarded deploy job may use self-hosted runner")
+      expected_deploy = File.basename(path) == "deploy-production.yml" && name == "deploy"
+      if expected_deploy
+        assert!(job["runs-on"] == ["self-hosted", "linux", "x64", "ai-erp-prod"], "guarded deployment runner is static")
+      else
+        assert!(job["runs-on"] == "ubuntu-latest", "#{File.basename(path)} #{name} must use literal GitHub-hosted runner")
+      end
     end
   end
 end
@@ -124,7 +162,9 @@ end
 def validate!(documents)
   validate_ci!(documents.fetch("ci.yml"))
   validate_deploy!(documents.fetch("deploy-production.yml"))
-  validate_self_hosted_usage!(documents)
+  validate_runner_boundaries!(documents)
+rescue KeyError, TypeError => error
+  raise ContractError, "malformed workflow structure: #{error.message}"
 end
 
 def deep_copy(value)
@@ -139,18 +179,35 @@ else
   raise ContractError, "negative self-test accepted #{description}"
 end
 
+def deploy_job(documents)
+  documents.fetch("deploy-production.yml").fetch("jobs").fetch("deploy")
+end
+
 def self_test!(documents)
   baseline = deep_copy(documents)
-  assert_rejected!("an extra OR bypass") { mutated = deep_copy(baseline); mutated["deploy-production.yml"]["jobs"]["deploy"]["if"] += " || true"; validate!(mutated) }
-  ["conclusion == 'success'", "event == 'push'", "head_branch == 'main'", "head_repository.full_name == github.repository"].each do |guard|
-    assert_rejected!("missing automatic guard #{guard}") { mutated = deep_copy(baseline); job = mutated["deploy-production.yml"]["jobs"]["deploy"]; job["if"] = job["if"].sub(guard, "removed"); validate!(mutated) }
+  automatic_atoms = ["github.event_name == 'workflow_run'", "github.event.workflow_run.conclusion == 'success'", "github.event.workflow_run.event == 'push'", "github.event.workflow_run.head_branch == 'main'", "github.event.workflow_run.head_repository.full_name == github.repository"]
+  manual_atoms = ["github.event_name == 'workflow_dispatch'", "github.ref == 'refs/heads/main'", "github.event.repository.default_branch == 'main'"]
+  (automatic_atoms + manual_atoms).each do |atom|
+    assert_rejected!("missing guard #{atom}") { mutated = deep_copy(baseline); job = deploy_job(mutated); job["if"] = job["if"].sub(atom, "removed"); validate!(mutated) }
   end
+  assert_rejected!("an extra OR bypass") { mutated = deep_copy(baseline); deploy_job(mutated)["if"] += " || true"; validate!(mutated) }
   assert_rejected!("free-form manual input") { mutated = deep_copy(baseline); mutated["deploy-production.yml"]["on"]["workflow_dispatch"] = { "inputs" => { "ref" => { "required" => true } } }; validate!(mutated) }
-  assert_rejected!("free-form manual ref") { mutated = deep_copy(baseline); mutated["deploy-production.yml"]["jobs"]["deploy"]["steps"].first["with"]["ref"] = "${{ inputs.ref }}"; validate!(mutated) }
-  assert_rejected!("unvalidated second deploy call") { mutated = deep_copy(baseline); mutated["deploy-production.yml"]["jobs"]["deploy"]["steps"] << { "name" => "Bypass", "run" => "bash scripts/deploy.sh deadbeef" }; validate!(mutated) }
-  assert_rejected!("persisted checkout credentials") { mutated = deep_copy(baseline); mutated["deploy-production.yml"]["jobs"]["deploy"]["steps"].first["with"]["persist-credentials"] = true; validate!(mutated) }
-  assert_rejected!("artifact or sensitive output") { mutated = deep_copy(baseline); mutated["deploy-production.yml"]["jobs"]["deploy"]["steps"] << { "name" => "Leak", "run" => "docker logs app-blue" }; validate!(mutated) }
-  assert_rejected!("self-hosted YAML document") { mutated = deep_copy(baseline); mutated["bypass.yaml"] = { "jobs" => { "bypass" => { "runs-on" => ["self-hosted"] } } }; validate!(mutated) }
+  assert_rejected!("free-form manual ref") { mutated = deep_copy(baseline); deploy_job(mutated)["steps"][0]["with"]["ref"] = "${{ inputs.ref }}"; validate!(mutated) }
+  deploy_steps.each_index do |index|
+    assert_rejected!("disabled deployment step #{index}") { mutated = deep_copy(baseline); deploy_job(mutated)["steps"][index]["if"] = "false"; validate!(mutated) }
+    assert_rejected!("continue-on-error deployment step #{index}") { mutated = deep_copy(baseline); deploy_job(mutated)["steps"][index]["continue-on-error"] = true; validate!(mutated) }
+    assert_rejected!("shell substitution deployment step #{index}") { mutated = deep_copy(baseline); deploy_job(mutated)["steps"][index]["shell"] = "sh"; validate!(mutated) }
+  end
+  ci_steps.each_index do |index|
+    assert_rejected!("disabled CI step #{index}") { mutated = deep_copy(baseline); mutated["ci.yml"]["jobs"]["verify"]["steps"][index]["if"] = "false"; validate!(mutated) }
+    assert_rejected!("continue-on-error CI step #{index}") { mutated = deep_copy(baseline); mutated["ci.yml"]["jobs"]["verify"]["steps"][index]["continue-on-error"] = true; validate!(mutated) }
+    assert_rejected!("shell substitution CI step #{index}") { mutated = deep_copy(baseline); mutated["ci.yml"]["jobs"]["verify"]["steps"][index]["shell"] = "sh"; validate!(mutated) }
+  end
+  assert_rejected!("comment-only syntax check") { mutated = deep_copy(baseline); mutated["ci.yml"]["jobs"]["verify"]["steps"][9]["run"] = "# bash -n scripts/deploy.sh"; validate!(mutated) }
+  assert_rejected!("second deploy invocation") { mutated = deep_copy(baseline); deploy_job(mutated)["steps"] << { "name" => "Bypass", "shell" => "bash", "run" => "bash scripts/deploy.sh deadbeef" }; validate!(mutated) }
+  assert_rejected!("checkout credential persistence") { mutated = deep_copy(baseline); deploy_job(mutated)["steps"][0]["with"]["persist-credentials"] = true; validate!(mutated) }
+  assert_rejected!("secret output") { mutated = deep_copy(baseline); deploy_job(mutated)["steps"] << { "name" => "Leak", "shell" => "bash", "run" => "echo ${{ secrets.TOKEN }}" }; validate!(mutated) }
+  assert_rejected!("dynamic self-hosted YAML runner") { mutated = deep_copy(baseline); mutated["bypass.yaml"] = { "jobs" => { "bypass" => { "runs-on" => "${{ matrix.runner }}" } } }; validate!(mutated) }
 end
 
 documents = (Dir.glob(File.join(ROOT, "*.yml")) + Dir.glob(File.join(ROOT, "*.yaml"))).to_h { |path| [File.basename(path), parsed_workflow(path)] }
