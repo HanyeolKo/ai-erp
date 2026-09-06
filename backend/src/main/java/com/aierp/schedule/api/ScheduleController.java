@@ -1,3 +1,34 @@
 package com.aierp.schedule.api;
-import com.aierp.identity.api.ApplicationPrincipal;import com.aierp.project.*;import com.aierp.schedule.*;import java.time.*;import java.util.*;import org.springframework.security.core.Authentication;import org.springframework.transaction.annotation.Transactional;import org.springframework.web.bind.annotation.*;
-@RestController @RequestMapping("/api/v1/projects/{projectId}/schedules") public class ScheduleController {private final ScheduleRepository schedules;private final ProjectMemberRepository members;public ScheduleController(ScheduleRepository s,ProjectMemberRepository m){schedules=s;members=m;} @GetMapping public List<ScheduleResponse> list(@PathVariable UUID projectId,Authentication a){member(projectId,a);return schedules.findByProjectId(projectId).stream().map(this::out).toList();}@GetMapping("/{id}")public ScheduleResponse detail(@PathVariable UUID projectId,@PathVariable UUID id,Authentication a){member(projectId,a);return out(find(projectId,id));}@PostMapping @Transactional public ScheduleResponse create(@PathVariable UUID projectId,@RequestBody Write w,Authentication a){var p=member(projectId,a);write(p,null);var s=new ScheduleEntity();s.id=UUID.randomUUID();s.projectId=projectId;s.createdBy=principal(a).userId();s.title=w.title();s.startsAt=w.startsAt();s.endsAt=w.endsAt();s.status=ScheduleEntity.Status.DRAFT;s.businessRevision=0;return out(schedules.save(s));}@PatchMapping("/{id}")@Transactional public ScheduleResponse patch(@PathVariable UUID projectId,@PathVariable UUID id,@RequestBody Write w,Authentication a){var s=find(projectId,id);var m=member(projectId,a);write(m,s);if(s.rowVersion!=w.rowVersion())throw new org.springframework.orm.ObjectOptimisticLockingFailureException(ScheduleEntity.class,id);s.title=w.title();s.startsAt=w.startsAt();s.endsAt=w.endsAt();if(s.status==ScheduleEntity.Status.CONFIRMED)s.businessRevision++;return out(schedules.saveAndFlush(s));}@PostMapping("/{id}/confirm")@Transactional public ScheduleResponse confirm(@PathVariable UUID projectId,@PathVariable UUID id,@RequestBody Revision r,Authentication a){var s=find(projectId,id);write(member(projectId,a),s);check(s,r);s.status=ScheduleEntity.Status.CONFIRMED;s.businessRevision=Math.max(1,s.businessRevision+1);return out(schedules.saveAndFlush(s));}@PostMapping("/{id}/cancel")@Transactional public ScheduleResponse cancel(@PathVariable UUID projectId,@PathVariable UUID id,@RequestBody Revision r,Authentication a){var s=find(projectId,id);write(member(projectId,a),s);check(s,r);s.status=ScheduleEntity.Status.CANCELLED;if(s.businessRevision>0)s.businessRevision++;return out(schedules.saveAndFlush(s));}private void check(ScheduleEntity s,Revision r){if(s.rowVersion!=r.rowVersion())throw new org.springframework.orm.ObjectOptimisticLockingFailureException(ScheduleEntity.class,s.id);}private void write(ProjectMemberEntity m,ScheduleEntity s){if(m.role==ProjectRole.VIEWER||(m.role==ProjectRole.MEMBER&&s!=null&&!s.createdBy.equals(m.userAccountId)))throw new org.springframework.security.access.AccessDeniedException("SCHEDULE_WRITE_DENIED");}private ProjectMemberEntity member(UUID p,Authentication a){return members.findByProjectIdAndUserAccountId(p,principal(a).userId()).orElseThrow(()->new org.springframework.security.access.AccessDeniedException("PROJECT_ACCESS_DENIED"));}private ApplicationPrincipal principal(Authentication a){if(a.getPrincipal()instanceof ApplicationPrincipal p)return p;throw new org.springframework.security.access.AccessDeniedException("APPLICATION_PRINCIPAL_REQUIRED");}private ScheduleEntity find(UUID p,UUID id){return schedules.findByIdAndProjectId(id,p).orElseThrow(()->new NoSuchElementException("SCHEDULE_NOT_FOUND"));}private ScheduleResponse out(ScheduleEntity s){return new ScheduleResponse(s.id,s.projectId,s.title,s.status,s.rowVersion,s.businessRevision,s.startsAt,s.endsAt);}public record Write(String title,Instant startsAt,Instant endsAt,long rowVersion){}public record Revision(long rowVersion){}public record ScheduleResponse(UUID id,UUID projectId,String title,ScheduleEntity.Status status,long rowVersion,long businessRevision,Instant startsAt,Instant endsAt){}}
+
+import com.aierp.identity.api.ApplicationPrincipal;
+import com.aierp.schedule.*;
+import java.time.Instant;
+import java.util.*;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+
+@RestController @RequestMapping("/api/v1/projects/{projectId}/schedules")
+public class ScheduleController {
+    private final ScheduleService schedules;
+    public ScheduleController(ScheduleService schedules) {this.schedules=schedules;}
+    @GetMapping public List<ScheduleResponse> list(@PathVariable UUID projectId,Authentication auth) {return schedules.list(projectId,user(auth));}
+    @GetMapping("/{id}") public ScheduleResponse detail(@PathVariable UUID projectId,@PathVariable UUID id,Authentication auth) {return schedules.detail(projectId,id,user(auth));}
+    @PostMapping public ScheduleResponse create(@PathVariable UUID projectId,@RequestBody Write input,Authentication auth) {return schedules.create(projectId,input,user(auth));}
+    @PatchMapping("/{id}") public ScheduleResponse patch(@PathVariable UUID projectId,@PathVariable UUID id,@RequestBody Write input,Authentication auth) {return schedules.update(projectId,id,input,user(auth));}
+    @PostMapping("/{id}/confirm") public ScheduleResponse confirm(@PathVariable UUID projectId,@PathVariable UUID id,@RequestBody Revision input,Authentication auth) {return schedules.confirm(projectId,id,input,user(auth));}
+    @PostMapping("/{id}/cancel") public ScheduleResponse cancel(@PathVariable UUID projectId,@PathVariable UUID id,@RequestBody Revision input,Authentication auth) {return schedules.cancel(projectId,id,input,user(auth));}
+    @PostMapping("/{id}/acknowledge") public ScheduleResponse acknowledge(@PathVariable UUID projectId,@PathVariable UUID id,@RequestBody Acknowledge input,Authentication auth) {return schedules.acknowledge(projectId,id,input,user(auth));}
+    private UUID user(Authentication auth) {
+        if(auth.getPrincipal() instanceof ApplicationPrincipal p) return p.userId();
+        throw new org.springframework.security.access.AccessDeniedException("APPLICATION_PRINCIPAL_REQUIRED");
+    }
+    public record Write(String title,Instant startsAt,Instant endsAt,Long rowVersion,String description,List<UUID> memberParticipantIds,List<String> externalAttendeeEmails) {
+        public Write(String title,Instant startsAt,Instant endsAt,long rowVersion) {this(title,startsAt,endsAt,rowVersion,null,null,null);}
+    }
+    public record Revision(Long rowVersion) { public Revision(long rowVersion) {this(Long.valueOf(rowVersion));} }
+    public record Acknowledge(Long expectedBusinessRevision) {}
+    public record Participant(UUID memberUserId,String externalEmail,boolean acknowledged) {}
+    public record Change(long businessRevision,String type,UUID changedBy,Instant createdAt) {}
+    public record ScheduleResponse(UUID id,UUID projectId,String title,ScheduleEntity.Status status,long rowVersion,long businessRevision,
+        Instant startsAt,Instant endsAt,String description,UUID createdBy,List<Participant> participants,List<Change> changes) {}
+}

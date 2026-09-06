@@ -25,13 +25,25 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import java.util.List;
 import java.util.UUID;
 
-@WebMvcTest(CurrentUserController.class)
+@WebMvcTest({CurrentUserController.class, com.aierp.identity.api.SessionController.class})
 @AutoConfigureRestDocs
 @Import(SecurityConfiguration.class)
 class MeApiTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Test void csrfContractAvailableBeforeLogin() throws Exception {
+        mockMvc.perform(get("/api/v1/csrf")).andExpect(status().isOk())
+            .andExpect(jsonPath("$.headerName").value("X-CSRF-TOKEN"))
+            .andExpect(jsonPath("$.token").isNotEmpty());
+    }
+
+    @Test void unknownApiRouteHasUniformProblemContract() throws Exception {
+        var principal=new ApplicationPrincipal(UUID.randomUUID(),"a@example.test",true);
+        mockMvc.perform(get("/api/v1/unknown").with(authentication(new UsernamePasswordAuthenticationToken(principal,null,List.of()))))
+            .andExpect(status().isNotFound()).andExpect(jsonPath("$.code").value("NOT_FOUND"));
+    }
 
     @Test
     void returns_the_authenticated_principal_without_a_production_header_fallback() throws Exception {
@@ -44,7 +56,9 @@ class MeApiTest {
                         .description("Returns the authenticated principal.")
                         .responseFields(
                                 fieldWithPath("id").description("Stable internal UUID"),
-                                fieldWithPath("authorities").description("Granted Spring Security authorities"))
+                                fieldWithPath("authorities").type(org.springframework.restdocs.payload.JsonFieldType.ARRAY)
+                                    .attributes(org.springframework.restdocs.snippet.Attributes.key("itemsType").value("STRING"))
+                                    .description("Granted authorities as strings"))
                         .build())));
     }
 
