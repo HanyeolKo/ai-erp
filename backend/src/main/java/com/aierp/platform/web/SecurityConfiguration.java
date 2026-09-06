@@ -18,6 +18,8 @@ public class SecurityConfiguration {
                                 "/actuator/health/liveness",
                                 "/actuator/health/readiness")
                         .permitAll()
+                        .requestMatchers("/api/v1/me")
+                        .authenticated()
                         .anyRequest().denyAll())
                 .build();
     }
