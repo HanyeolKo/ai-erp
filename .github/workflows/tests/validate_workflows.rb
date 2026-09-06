@@ -7,7 +7,7 @@ ROOT = File.expand_path("..", __dir__)
 AUTOMATIC_GUARD = "(github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.head_repository.full_name == github.repository)"
 MANUAL_GUARD = "(github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && github.event.repository.default_branch == 'main')"
 EXPECTED_DEPLOY_GUARD = "#{AUTOMATIC_GUARD} || #{MANUAL_GUARD}"
-EXPECTED_CHECKOUT_REF = "${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || 'refs/heads/main' }}"
+EXPECTED_CHECKOUT_REF = "refs/heads/main"
 EXPECTED_EVENT_ENV = { "EVENT_NAME" => "${{ github.event_name }}", "WORKFLOW_RUN_SHA" => "${{ github.event.workflow_run.head_sha }}", "GITHUB_REF_NAME" => "${{ github.ref }}", "DEFAULT_BRANCH" => "${{ github.event.repository.default_branch }}" }.freeze
 SENSITIVE_OUTPUT = /\bssh\b|secrets\.|\.env|docker inspect|docker logs|upload-artifact/i
 RESOLVER_RUN = <<~BASH
@@ -194,6 +194,7 @@ def self_test!(documents)
   assert_rejected!("an extra OR bypass") { mutated = deep_copy(baseline); deploy_job(mutated)["if"] += " || true"; validate!(mutated) }
   assert_rejected!("free-form manual input") { mutated = deep_copy(baseline); mutated["deploy-production.yml"]["on"]["workflow_dispatch"] = { "inputs" => { "ref" => { "required" => true } } }; validate!(mutated) }
   assert_rejected!("free-form manual ref") { mutated = deep_copy(baseline); deploy_job(mutated)["steps"][0]["with"]["ref"] = "${{ inputs.ref }}"; validate!(mutated) }
+  assert_rejected!("workflow_run checkout of event SHA") { mutated = deep_copy(baseline); deploy_job(mutated)["steps"][0]["with"]["ref"] = "${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || 'refs/heads/main' }}"; validate!(mutated) }
   deploy_steps.each_index do |index|
     assert_rejected!("disabled deployment step #{index}") { mutated = deep_copy(baseline); deploy_job(mutated)["steps"][index]["if"] = "false"; validate!(mutated) }
     assert_rejected!("continue-on-error deployment step #{index}") { mutated = deep_copy(baseline); deploy_job(mutated)["steps"][index]["continue-on-error"] = true; validate!(mutated) }
