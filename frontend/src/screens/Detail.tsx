@@ -34,6 +34,8 @@ export function Detail({ id, scheduleId }: {
         return <Shell project={project.data}><QueryState query={detail}/></Shell>;
     const s = detail.data;
     const caps = capabilities(project.data, me.data!.id, s, projection.data);
+    const calendar = calendarStatus(connection.data, projection.data);
+    const configurationRequired = connection.data?.configurationRequired || projection.data?.retryClassification === "CONFIGURATION_REQUIRED";
     const run = (action: "confirm" | "cancel" | "ack" | "retry") => { if (!command.isPending)
         command.mutate(action); };
     return <Shell project={project.data}><h1>{s.title}</h1><p>{s.description}</p><p>상태 {s.status} · businessRevision {s.businessRevision} · rowVersion {s.rowVersion}</p><p><time dateTime={s.startsAt}>{displayTime(s.startsAt)}</time> ~ <time dateTime={s.endsAt}>{displayTime(s.endsAt)}</time> Asia/Seoul</p>
@@ -43,7 +45,10 @@ export function Detail({ id, scheduleId }: {
     {caps.ack && <button disabled={command.isPending} onClick={() => run("ack")}>변경 확인</button>}
     <h2>변경 이력</h2>{s.changes.length ? <ul>{s.changes.map((c, index) => <li key={index}>{c.businessRevision} · {c.type} · {c.changedBy} · <time dateTime={c.createdAt}>{displayTime(c.createdAt)}</time></li>)}</ul> : <p>변경 이력이 없습니다.</p>}<p>최신 변경 이력 최대 100개를 표시합니다.</p>
     <h2>Calendar 투영</h2><QueryState query={projection} label="투영 다시 시도"/><QueryState query={connection} label="연결 다시 시도"/>
-    {projection.isSuccess && connection.isSuccess && <><p>Calendar {calendarStatus(connection.data, projection.data)}</p><p>투영: {projection.data.status} · revision {projection.data.businessRevision} · {projection.data.retryClassification}</p>{connection.data.configurationRequired || projection.data.retryClassification === "CONFIGURATION_REQUIRED" ? <p>Calendar 연동이 구성되지 않았습니다.</p> : calendarStatus(connection.data, projection.data) === "REAUTH_REQUIRED" ? <Link to="/calendar">Calendar 다시 연결</Link> : caps.retry && <button disabled={command.isPending} onClick={() => run("retry")}>Calendar 재시도</button>}</>}
+    {calendar && <p>Calendar {calendar}</p>}
+    {connection.data && <p>연결: {connection.data.status}</p>}
+    {projection.data && <p>투영: {projection.data.status} · revision {projection.data.businessRevision} · {projection.data.retryClassification}</p>}
+    {configurationRequired ? <p>Calendar 연동이 구성되지 않았습니다.</p> : calendar === "REAUTH_REQUIRED" ? <Link to="/calendar">Calendar 다시 연결</Link> : caps.retry && <button disabled={command.isPending} onClick={() => run("retry")}>Calendar 재시도</button>}
     {command.isError && <><Notice error={command.error}/><button onClick={() => detail.refetch()}>최신 일정 불러오기</button></>}{command.isSuccess && <p role="status">요청을 처리했습니다.</p>}
   </Shell>;
 }

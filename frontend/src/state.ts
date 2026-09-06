@@ -42,7 +42,7 @@ export function capabilities(project: Project, userId: string, schedule?: Schedu
         ack: create && !!schedule && acknowledgement(schedule, userId) === "PENDING",
         retry: project.role === "MANAGER" && projection?.status === "FAILED" && projection.retryClassification === "TRANSIENT" };
 }
-export function calendarStatus(connection: Connection, projection: Projection) {
+export function calendarStatus(connection?: Connection, projection?: Projection) {
     const order = ["REAUTH_REQUIRED", "FAILED", "PENDING", "SYNCED", "NOT_CONNECTED"];
-    return order.find(s => s === connection.status || s === projection.status) ?? "NOT_CONNECTED";
+    return order.find(s => s === connection?.status || s === projection?.status);
 }

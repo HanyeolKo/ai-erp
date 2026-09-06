@@ -38,6 +38,28 @@ catch {
     return false;
 } }
 export function dateInZone(instant: string, zone: string) { return utcToLocalDateTime(instant, zone).slice(0, 10); }
+export function civilDateBoundary(date: string, zone: string) {
+    const center = Date.parse(date + "T00:00:00Z");
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(center) || new Date(center).toISOString().slice(0, 10) !== date)
+        throw new Error("올바른 날짜를 입력하세요.");
+    if (!validZone(zone))
+        throw new Error("지원하지 않는 IANA 시간대입니다.");
+    const localDate = (instant: number) => dateInZone(new Date(instant).toISOString(), zone);
+    let lower = center - 48 * 3600000;
+    let upper = center + 48 * 3600000;
+    // Civil dates remain ordered through a midnight clock gap or overlap. Find
+    // the first instant belonging to this date, rather than resolving 00:00.
+    while (upper - lower > 1) {
+        const middle = Math.floor((lower + upper) / 2);
+        if (localDate(middle) < date)
+            lower = middle;
+        else
+            upper = middle;
+    }
+    if (localDate(upper) !== date)
+        throw new Error("이 시간대에 존재하지 않는 날짜입니다.");
+    return new Date(upper).toISOString();
+}
 export function displayTime(instant: string, zone = "Asia/Seoul") { return utcToLocalDateTime(instant, zone).replace("T", " "); }
 export function shiftDate(date: string, days: number) { const value = new Date(date + "T12:00:00Z"); value.setUTCDate(value.getUTCDate() + days); return value.toISOString().slice(0, 10); }
 export function navigateDate(date: string, view: "month" | "week", direction: number) {
@@ -55,5 +77,5 @@ export function viewWindow(anchor: string | Date, view: "month" | "week", zone =
     const start = shiftDate(initial, -((weekday + 6) % 7));
     const count = view === "month" ? 42 : 7;
     const days = Array.from({ length: count }, (_, i) => shiftDate(start, i));
-    return { from: localDateTimeToUtc(start + "T00:00", zone), to: localDateTimeToUtc(shiftDate(start, count) + "T00:00", zone), days };
+    return { from: civilDateBoundary(start, zone), to: civilDateBoundary(shiftDate(start, count), zone), days };
 }

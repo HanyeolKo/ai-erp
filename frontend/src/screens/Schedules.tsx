@@ -3,7 +3,7 @@ import { useQueries, useQuery } from "@tanstack/react-query";
 import { api, PAGE_SIZE, type Schedules as Rows, type Dashboard as DashboardData } from "../api/client";
 import { acknowledgement, calendarStatus, capabilities, keys, useMe, useProject } from "../state";
 import { Link, ProjectMissing, QueryState, Shell } from "../ui";
-import { dateInZone, displayTime, localDateTimeToUtc, navigateDate, shiftDate, validZone, viewWindow } from "../time";
+import { civilDateBoundary, dateInZone, displayTime, navigateDate, shiftDate, validZone, viewWindow } from "../time";
 function TimedList({ rows }: {
     rows: DashboardData["upcomingSchedules"];
 }) {
@@ -54,7 +54,7 @@ export function Schedules({ id }: {
         if (before < after)
             return { from: "", to: "", error: "종료일은 시작일보다 빠를 수 없습니다." };
         try {
-            return { from: localDateTimeToUtc(after + "T00:00", zone), to: localDateTimeToUtc(shiftDate(before, 1) + "T00:00", zone), error: "" };
+            return { from: civilDateBoundary(after, zone), to: civilDateBoundary(shiftDate(before, 1), zone), error: "" };
         } catch (error) {
             return { from: "", to: "", error: error instanceof Error ? error.message : "날짜 범위를 확인하세요." };
         }
@@ -64,7 +64,7 @@ export function Schedules({ id }: {
     // The server page is bounded to 20; only that page's projections are observed.
     const rows = effectiveRange.error ? [] : list.data ?? [];
     const projections = useQueries({ queries: rows.slice(0, PAGE_SIZE).map(s => ({ queryKey: keys.projection(id, s.id), queryFn: () => api.projection(id, s.id), staleTime: 30000 })) });
-    const enriched = rows.map((s, i) => ({ s, projection: projections[i], ack: acknowledgement(s, me.data!.id), calendar: connection.data && projections[i]?.data ? calendarStatus(connection.data, projections[i].data!) : undefined }));
+    const enriched = rows.map((s, i) => ({ s, projection: projections[i], ack: acknowledgement(s, me.data!.id), calendar: calendarStatus(connection.data, projections[i]?.data) }));
     const filtered = enriched.filter(r => (!text || r.s.title.toLocaleLowerCase().includes(text.toLocaleLowerCase()) || r.s.description?.toLocaleLowerCase().includes(text.toLocaleLowerCase())) && (status === "ALL" || r.s.status === status) && (ack === "ALL" || r.ack === ack) && (calendar === "ALL" || r.calendar === calendar) && (!mine || r.s.createdBy === me.data!.id));
     const overlap = (s: Rows[number], day: string) => dateInZone(s.startsAt, zone) <= day && dateInZone(new Date(new Date(s.endsAt).getTime() - 1).toISOString(), zone) >= day;
     if (!project.isSuccess)
