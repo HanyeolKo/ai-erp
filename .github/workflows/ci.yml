@@ -40,6 +40,7 @@ jobs:
           bash -n scripts/rollback.sh
           bash -n scripts/smoke.sh
       - run: bash scripts/tests/deployment-contract.sh
+      - run: bash scripts/tests/caddy-no-sni.sh
       - run: ./gradlew clean test integrationTest openapi3 bootJar
         working-directory: backend
       - run: pnpm api:generate

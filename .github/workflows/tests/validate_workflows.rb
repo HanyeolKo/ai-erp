@@ -45,6 +45,7 @@ SYNTAX_RUN = <<~BASH
   bash -n scripts/smoke.sh
 BASH
 PROD_COMPOSE_CONFIG_RUN = "APP_IMAGE=ai-erp:config-check docker compose --env-file infra/.env.prod.example -f infra/compose.prod.yml config --quiet"
+CADDY_NO_SNI_TEST_RUN = "bash scripts/tests/caddy-no-sni.sh"
 
 class ContractError < StandardError; end
 
@@ -98,6 +99,7 @@ def ci_steps
     { "run" => PROD_COMPOSE_CONFIG_RUN },
     { "run" => SYNTAX_RUN },
     { "run" => "bash scripts/tests/deployment-contract.sh" },
+    { "run" => CADDY_NO_SNI_TEST_RUN },
     { "run" => "./gradlew clean test integrationTest openapi3 bootJar", "working-directory" => "backend" },
     { "run" => "pnpm api:generate" },
     { "run" => "pnpm frontend:test" },
@@ -205,6 +207,10 @@ def self_test!(documents)
     assert_rejected!("continue-on-error CI step #{index}") { mutated = deep_copy(baseline); mutated["ci.yml"]["jobs"]["verify"]["steps"][index]["continue-on-error"] = true; validate!(mutated) }
     assert_rejected!("shell substitution CI step #{index}") { mutated = deep_copy(baseline); mutated["ci.yml"]["jobs"]["verify"]["steps"][index]["shell"] = "sh"; validate!(mutated) }
   end
+  caddy_test_index = ci_steps.index { |step| step["run"] == CADDY_NO_SNI_TEST_RUN }
+  assert!(caddy_test_index, "Caddy no-SNI test is part of the expected CI steps")
+  assert_rejected!("deleted Caddy no-SNI integration test") { mutated = deep_copy(baseline); mutated["ci.yml"]["jobs"]["verify"]["steps"].delete_at(caddy_test_index); validate!(mutated) }
+  assert_rejected!("bypassed Caddy no-SNI integration test") { mutated = deep_copy(baseline); mutated["ci.yml"]["jobs"]["verify"]["steps"][caddy_test_index]["run"] = "true"; validate!(mutated) }
   assert_rejected!("comment-only syntax check") { mutated = deep_copy(baseline); mutated["ci.yml"]["jobs"]["verify"]["steps"][9]["run"] = "# bash -n scripts/deploy.sh"; validate!(mutated) }
   assert_rejected!("production Compose config without APP_IMAGE") { mutated = deep_copy(baseline); mutated["ci.yml"]["jobs"]["verify"]["steps"][8]["run"] = "docker compose --env-file infra/.env.prod.example -f infra/compose.prod.yml config --quiet"; validate!(mutated) }
   assert_rejected!("second deploy invocation") { mutated = deep_copy(baseline); deploy_job(mutated)["steps"] << { "name" => "Bypass", "shell" => "bash", "run" => "bash scripts/deploy.sh deadbeef" }; validate!(mutated) }
