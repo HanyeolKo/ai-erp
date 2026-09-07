@@ -1,0 +1,13 @@
+{
+  "id": "claude",
+  "display_name": "Claude Code",
+  "capabilities": [
+    "root-guidance",
+    "skills",
+    "subagents"
+  ],
+  "root_guidance": "CLAUDE.md",
+  "skill_root": ".claude/skills",
+  "agent_root": ".claude/agents",
+  "agent_extension": ".md"
+}

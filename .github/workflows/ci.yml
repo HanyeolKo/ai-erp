@@ -13,6 +13,18 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  harness:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+      - run: python -B scripts/verify-harness.py --require-tracked
+      - run: python -B scripts/test_verify_harness.py
+      - name: Smoke-test installed UI/UX search runtime
+        run: python -B scripts/smoke-ux-skills.py
+
   verify:
     runs-on: ubuntu-latest
     steps:

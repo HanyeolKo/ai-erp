@@ -72,6 +72,9 @@ OpenAPI와 Swagger 검토 artifact는 production image의 `/assets/api-docs/`에
 - [검증 기준](docs/architecture/bootstrap-verification.md)
 - [기획 문서 정합성](docs/architecture/planning-consistency-2026-09-03.md)
 - [개발 인프라](infra/README.md)
+- [UI/UX 전담 에이전트와 화면 기획 절차](docs/architecture/ui-ux-agent-guide.md)
+
+화면 기획은 `router -> ui-ux-designer -> reviewer`를 거치며, 구현은 승인된 상위 계약과 경량 `implementer` 실행 단계를 따른다. 하네스와 고정된 UX 스킬은 Git에서 함께 관리하고 `python -B scripts/verify-harness.py`로 구조를 검증한다.
 
 ## 버전
 

@@ -1,0 +1,11 @@
+{
+  "repository": "https://github.com/HanyeolKo/harness-factory",
+  "commit": "537ef692042bf9f1895fbd6d3fac48c364307cf4",
+  "version": "0.3.0",
+  "files": {
+    "scripts/validate_runtime_neutral.py": "61b27d6dbf4786d96ee6e112863ab6c6510e2451333603c32cd99ae2f7a0032b",
+    "providers/claude/contract.json": "9d32ffd65ada40afbf4b01400a4f6bc775ef2becfb6691a626546d6b3363af8c",
+    "providers/codex/contract.json": "aca1a7458aad93baf8e6fe0448766ce1ce3186830a844c908b619e7f7d2cd2e2",
+    "providers/gemini/contract.json": "4e79fa62adf4e043b8e552709edb1d41ab621137048e49d3a9b917d2127896c0"
+  }
+}
