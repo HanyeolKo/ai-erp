@@ -16,7 +16,7 @@ from concurrent.futures import ThreadPoolExecutor
 PROJECT = Path(sys.argv[1])
 if os.name == 'nt' and str(PROJECT).startswith('\\'):
     PROJECT = Path(subprocess.check_output(['D:/Git/bin/bash.exe', '-c', 'cygpath -w "$1"', '_', sys.argv[1]], text=True).strip())
-BASH = 'D:/Git/bin/bash.exe' if os.name == 'nt' else shutil.which('bash')
+BASH = next((path for path in ('D:/Git/bin/bash.exe', 'C:/Program Files/Git/bin/bash.exe') if Path(path).is_file()), shutil.which('bash')) if os.name == 'nt' else shutil.which('bash')
 A, B, C, D = (x * 40 for x in 'abcd')
 assertions = scenarios = 0
 
@@ -472,6 +472,73 @@ def caddy_checkout_checks(root):
               stage + ' must use the same current config as the immutable manifest')
     h.clean()
 
+def migration_checksum(checkout):
+    script = f'source "{posix(PROJECT / "scripts/lib-deploy.sh")}"; migration_checksum'
+    result = subprocess.run([BASH, '-c', script], env=dict(os.environ, AI_ERP_PROJECT_DIR=posix(checkout)),
+                            capture_output=True, text=True)
+    check(result.returncode == 0, 'migration checksum helper must succeed: ' + result.stderr)
+    return result.stdout.strip()
+
+def migration_guard_checks(root):
+    h = Host(root)
+    checkout = root / 'checkout'
+    shutil.copytree(PROJECT / 'infra', checkout / 'infra')
+    migration = Path('backend/src/main/resources/db/migration')
+    shutil.copytree(PROJECT / migration, checkout / migration)
+    h.env['AI_ERP_PROJECT_DIR'] = posix(checkout)
+    h.run('deploy', A)
+
+    def preflight_mutation(kind):
+        child = clone(h, 'migration-' + kind)
+        child_checkout = child.root / 'checkout'
+        shutil.copytree(checkout, child_checkout)
+        child.env['AI_ERP_PROJECT_DIR'] = posix(child_checkout)
+        files = child_checkout / migration
+        if kind == 'missing':
+            (files / 'V6__add_explicit_group_roles.sql').unlink()
+        elif kind == 'extra':
+            (files / 'V99__unexpected.sql').write_text('-- unexpected migration\n', encoding='utf-8')
+        elif kind == 'symlink':
+            target = files / 'V6__add_explicit_group_roles.sql'
+            original = child_checkout / 'V6__target.sql'
+            target.rename(original)
+            target.symlink_to(original)
+        result = child.run('preflight', C, success=False)
+        expected = 'symbolic links are forbidden in deployment paths' if kind == 'symlink' else ('required migration file missing' if kind == 'missing' else 'unexpected migration set')
+        check(expected in result.stderr, kind + ' migration input must be rejected')
+        child.clean()
+
+    for kind in ('missing', 'extra'):
+        preflight_mutation(kind)
+    if os.name != 'nt':
+        preflight_mutation('symlink')
+
+    before = migration_checksum(checkout)
+    tampered = checkout / migration / 'V6__add_explicit_group_roles.sql'
+    tampered.write_text(tampered.read_text(encoding='utf-8') + '\n-- tampered checksum fixture\n', encoding='utf-8')
+    after = migration_checksum(checkout)
+    check(after != before, 'V6 migration content must participate in migration checksum')
+
+    child = clone(h, 'migration-tampered-after-build')
+    child_checkout = child.root / 'checkout'
+    shutil.copytree(checkout, child_checkout)
+    child.env['AI_ERP_PROJECT_DIR'] = posix(child_checkout)
+    runtime = PROJECT / 'scripts/tests/fake-runtime.py'
+    v6 = child_checkout / migration / 'V6__add_explicit_group_roles.sql'
+    child.wrapper('docker', f'''if [[ "${{1:-}}" == build ]]; then
+  "{posix(sys.executable)}" "{posix(runtime)}" docker "$@"
+  printf '\\n-- tampered after build\\n' >> "{posix(v6)}"
+  exit 0
+fi
+exec "{posix(sys.executable)}" "{posix(runtime)}" docker "$@"''')
+    result = child.run('deploy', C, success=False)
+    check('migration inputs changed after build' in result.stderr,
+          'V6 tampering after checksum capture must abort deployment')
+    check(not any(call['event'] == 'migrate' for call in child.calls()),
+          'tampered migration set must never reach Flyway')
+    child.clean()
+    h.clean()
+
 def unsafe_delete_check(h):
     child = clone(h, 'mutation-unsafe-rm')
     child.entrypoints = child.root / 'scripts'
@@ -644,6 +711,9 @@ with tempfile.TemporaryDirectory(prefix='ai-erp-contract-') as temp:
             publisher_root = Path(temp) / 'publisher-id'
             publisher_root.mkdir()
             publisher_id_checks(publisher_root)
+            migration_root = Path(temp) / 'migration'
+            migration_root.mkdir()
+            migration_guard_checks(migration_root)
             suite(Path(temp))
             for point in ('reload', 'public', 'manifest', 'state'):
                 path = Path(temp) / point

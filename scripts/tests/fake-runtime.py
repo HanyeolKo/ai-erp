@@ -37,7 +37,10 @@ def fault(name):
         die('injected ' + name, 1)
 
 def native(name, values):
-    executable = f'D:/Git/usr/bin/{name}.exe' if os.name == 'nt' else '/usr/bin/' + name
+    if os.name == 'nt':
+        executable = next((path for path in (f'D:/Git/usr/bin/{name}.exe', f'C:/Program Files/Git/usr/bin/{name}.exe') if Path(path).is_file()), name)
+    else:
+        executable = '/usr/bin/' + name
     sys.exit(subprocess.call([executable, *values]))
 
 def response_body(path, container):
