@@ -1,0 +1,51 @@
+{
+  "task_id": "lifecycle-management-stage-1",
+  "contract_revision": 3,
+  "selected_model": "gpt-5.6-luna",
+  "reasoning_effort": "high",
+  "dispatch_evidence": "harness/maintenance/runs/lifecycle-management/dispatch-stage-1.json",
+  "fallback_reason": "Native gpt-5.3-codex-spark/high dispatch failed before execution with the provider usage limit; parent selected the explicit gpt-5.6-luna/high fallback.",
+  "checks": [
+    {
+      "name": "provider-path-preflight-before-projection",
+      "command": "python -B scripts/vendor/harness-factory/scripts/validate_runtime_neutral.py . --provider-path-preflight --construction-mode improve --delta-plan harness/maintenance/runs/lifecycle-management/delta-plan.json",
+      "initial_exit": 1,
+      "initial_output": "delta-plan receipt had unsupported artifact_language, descriptive task_evaluator, and purpose mismatch",
+      "final_exit": 0,
+      "final_output": "provider path preflight passed: D:\\onedrive\\Documents\\ChatGPT\\AI ERP"
+    },
+    {
+      "name": "structural-verification",
+      "command": "python -B scripts/verify-harness.py",
+      "exit": 0,
+      "output": "Harness verification passed: schema, permissions, DAG, Codex parity, UI routing, and pinned skill bytes."
+    },
+    {
+      "name": "focused-regressions",
+      "command": "python -B scripts/test_verify_harness.py",
+      "red_before_green": {"exit": 1, "output": "new assignment/protocol tests failed while artifacts and guards were absent"},
+      "green_exit": 0,
+      "green_output": "Ran 32 tests; OK"
+    },
+    {
+      "name": "ux-skill-smoke",
+      "command": "python -B scripts/smoke-ux-skills.py",
+      "exit": 0,
+      "output": "UI/UX skill smoke passed: relevant SaaS and accessible form guidance, offline."
+    },
+    {
+      "name": "diff-check",
+      "command": "git diff --check",
+      "exit": 0,
+      "output": "No whitespace errors; Git emitted only LF/CRLF working-copy warnings."
+    },
+    {
+      "name": "skill-projection-parity",
+      "exit": 0,
+      "output": "ai-erp, ai-erp-eval, and ai-erp-plan canonical/projection SHA-256 digests match."
+    }
+  ],
+  "checks_not_run": [
+    "No production deployment, release, external write, application feature execution, commit, push, or publish."
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "reviewer": "/root/config_review",
+  "model": "gpt-6-astra",
+  "effort": "high",
+  "stage_3_verdict": "pass",
+  "model_orchestration_verdict": "pass maintained",
+  "remaining_defects": 0,
+  "resolved": [
+    "S3-EXTERNAL-NEGATION"
+  ],
+  "independent_probe": "exec chunkeb9394; baseline and independent preceding sentence pass, Ignore stop and Disregard no-retry fail intended guards",
+  "evidence": [
+    "external-guard-terra-checks.json",
+    "final-preservation.json",
+    "evidence-rulings-final.json"
+  ],
+  "checks_not_run": [
+    "Native new-role invocation success",
+    "Live API/deployment/recovery",
+    "Measured token savings"
+  ]
+}

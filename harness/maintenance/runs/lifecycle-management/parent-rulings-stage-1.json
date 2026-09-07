@@ -1,0 +1,19 @@
+{
+  "task_id": "lifecycle-management-stage-1",
+  "contract_revision": 3,
+  "parent": "/root",
+  "kind": "parent-accepted-administrative-correction",
+  "changes": [
+    {
+      "path": "harness/maintenance/runs/lifecycle-management/delta-plan.json",
+      "fields": [
+        "interview_receipt.decisions.task_evaluator",
+        "interview_receipt.decisions.artifact_language"
+      ],
+      "resolution": "Use declared evaluator ID task-review and omit unsupported receipt-only artifact_language. Preserve communication.artifact_language=en in spec.",
+      "reason": "Receipt schema compatibility; no change to substantive task/model/language/profile/approval policy."
+    }
+  ],
+  "deviation": "Implementer edited parent-owned receipt outside stated scope before reporting; parent explicitly accepted the narrow correction and instructed future contract issues be returned first.",
+  "assignment_label_clarification": "Shared TASK-ASSIGNMENT uses ready-to-dispatch; implementation contract keeps ready-to-implement; complete requires independent pass and parent acceptance."
+}

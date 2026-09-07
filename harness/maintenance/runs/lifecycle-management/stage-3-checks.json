@@ -1,0 +1,95 @@
+{
+  "task_id": "lifecycle-management-stage-3",
+  "contract_revision": 2,
+  "selected_model": "gpt-5.6-luna",
+  "reasoning_effort": "high",
+  "dispatch_evidence": "harness/maintenance/runs/lifecycle-management/dispatch-stage-3.json",
+  "fallback_reason": "Native gpt-5.3-codex-spark/high dispatch was unavailable after quota failure; parent explicitly selected gpt-5.6-luna/high.",
+  "native_planner_smoke": "unknown agent_type; see harness/maintenance/runs/lifecycle-management/native-planner-smoke.json",
+  "capture_method": "subprocess.run(capture_output=True, text=True)",
+  "checks": [
+    {
+      "name": "saved-luna-negative-red",
+      "command": [
+        "C:\\Users\\USER\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
+        "-B",
+        "scripts/verify-harness.py",
+        "--root",
+        "D:\\workspace\\step_fps\\stage3-red-20260907-02"
+      ],
+      "cwd": "D:\\onedrive\\Documents\\ChatGPT\\AI ERP",
+      "exit": 1,
+      "stdout": "",
+      "stderr": "Harness verification failed:\n- saved implementer model must remain gpt-5.3-codex-spark; Luna is invocation-only fallback\n"
+    },
+    {
+      "name": "provider-path-preflight",
+      "command": [
+        "C:\\Users\\USER\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
+        "-B",
+        "scripts/vendor/harness-factory/scripts/validate_runtime_neutral.py",
+        ".",
+        "--provider-path-preflight",
+        "--construction-mode",
+        "improve",
+        "--delta-plan",
+        "harness/maintenance/runs/lifecycle-management/delta-plan.json"
+      ],
+      "cwd": "D:\\onedrive\\Documents\\ChatGPT\\AI ERP",
+      "exit": 0,
+      "stdout": "provider path preflight passed: D:\\onedrive\\Documents\\ChatGPT\\AI ERP\n",
+      "stderr": ""
+    },
+    {
+      "name": "structural-verification",
+      "command": [
+        "C:\\Users\\USER\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
+        "-B",
+        "scripts/verify-harness.py"
+      ],
+      "cwd": "D:\\onedrive\\Documents\\ChatGPT\\AI ERP",
+      "exit": 0,
+      "stdout": "Harness verification passed: schema, permissions, DAG, Codex parity, UI routing, and pinned skill bytes.\nRouter/ui-ux-designer/reviewer inherit native model settings; implementer defaults to gpt-5.3-codex-spark/high with explicit gpt-5.6-luna/high fallback evidence.\n",
+      "stderr": ""
+    },
+    {
+      "name": "full-regressions",
+      "command": [
+        "C:\\Users\\USER\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
+        "-B",
+        "scripts/test_verify_harness.py"
+      ],
+      "cwd": "D:\\onedrive\\Documents\\ChatGPT\\AI ERP",
+      "exit": 0,
+      "stdout": "",
+      "stderr": ".....................................................\n----------------------------------------------------------------------\nRan 53 tests in 46.010s\n\nOK\n"
+    },
+    {
+      "name": "ux-skill-smoke",
+      "command": [
+        "C:\\Users\\USER\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
+        "-B",
+        "scripts/smoke-ux-skills.py"
+      ],
+      "cwd": "D:\\onedrive\\Documents\\ChatGPT\\AI ERP",
+      "exit": 0,
+      "stdout": "UI/UX skill smoke passed: relevant SaaS and accessible form guidance, offline.\n",
+      "stderr": ""
+    },
+    {
+      "name": "diff-check",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "cwd": "D:\\onedrive\\Documents\\ChatGPT\\AI ERP",
+      "exit": 0,
+      "stdout": "",
+      "stderr": "warning: in the working copy of 'AGENTS.md', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'README.md', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'docs/architecture/ui-ux-agent-guide.md', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'harness/state/state.json', CRLF will be replaced by LF the next time Git touches it\nwarning: in the working copy of 'scripts/test_verify_harness.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'scripts/verify-harness.py', LF will be replaced by CRLF the next time Git touches it\n"
+    }
+  ],
+  "checks_not_run": [
+    "No external API/OAuth/account/permission operation, live activation, deployment, publication, commit, push, state/journal edit, parent evidence edit, or stage 4 work was performed."
+  ]
+}

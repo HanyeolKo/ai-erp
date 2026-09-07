@@ -1,0 +1,39 @@
+{
+  "sync_date": "2026-09-07",
+  "canonical": "local workspace",
+  "verification": "Fetched each updated archive and confirmed matching source hash, current sections, no replacement characters; unrelated archive sections preserved.",
+  "pages": [
+    {
+      "name": "guide",
+      "page_id": "3d4a8ad6-aa4a-812a-9086-cf283528263f",
+      "source_sha256": "e90f4b2ff6865e82c76c4cc279d177eb75cf8063a907d63cc787b9857c9c4b3c",
+      "hash_present": true,
+      "corrupt": false,
+      "isError": false
+    },
+    {
+      "name": "readme",
+      "page_id": "3d4a8ad6-aa4a-8159-9360-cd533b6f3c43",
+      "source_sha256": "2c0dd7421ed1d3a9d27ec9106ab170aaf20e7c5e68907cb4b287a03306c2dd3f",
+      "hash_present": true,
+      "corrupt": false,
+      "isError": false
+    },
+    {
+      "name": "decisions",
+      "page_id": "3d4a8ad6-aa4a-818b-ab66-c5463926f09a",
+      "source_sha256": "363356535b7004d71a1070999c505efa067fe11f22ff09c101137fdddd256786",
+      "hash_present": true,
+      "corrupt": false,
+      "isError": false
+    },
+    {
+      "name": "design",
+      "page_id": "3d4a8ad6-aa4a-8109-92be-ebf92b418f87",
+      "source_sha256": "b90859a3e986fd8908e480a4b8a7ff70eadac0ecfb27b9ccac9355b076b5248e",
+      "hash_present": true,
+      "corrupt": false,
+      "isError": false
+    }
+  ]
+}

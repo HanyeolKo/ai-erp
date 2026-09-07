@@ -1,0 +1,14 @@
+{
+  "task_id": "lifecycle-management-stage-2",
+  "contract_revision": 1,
+  "correction_round": 1,
+  "reviewer": "/root/config_review",
+  "reviewer_verdict": "pass",
+  "remaining_stage_defects": 0,
+  "resolved_defects": ["S2-REVIEW-MODE", "S2-PUBLICATION-CI-POLICY", "S2-VERIFICATION-SOURCES", "S2-EVAL-EXECUTOR"],
+  "evidence": ["stage-2-correction-1-result.md", "stage-2-correction-1-checks.json", "stage-2-preservation.json"],
+  "parent": "/root",
+  "parent_acceptance": "accepted",
+  "next_action": "Dispatch stage-3-contract.md plus stage-3-contract-r2.md as effective revision 2.",
+  "limitations": ["Initial red evidence is excerpted.", "No successful live new-role invocation, application, deployment or recovery execution."]
+}

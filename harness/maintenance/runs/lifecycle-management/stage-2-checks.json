@@ -1,0 +1,60 @@
+{
+  "task_id": "lifecycle-management-stage-2",
+  "contract_revision": 1,
+  "selected_model": "gpt-5.6-luna",
+  "reasoning_effort": "high",
+  "dispatch_evidence": "harness/maintenance/runs/lifecycle-management/dispatch-stage-2.json",
+  "fallback_reason": "Native gpt-5.3-codex-spark/high dispatch failed before execution with the provider usage limit; parent continued the explicit gpt-5.6-luna/high fallback.",
+  "checks": [
+    {
+      "name": "new-release-mutations-red-before-guards",
+      "command": "python -B -m unittest scripts.test_verify_harness.HarnessContractTests.test_missing_release_contract_fails scripts.test_verify_harness.HarnessContractTests.test_missing_release_result_fails scripts.test_verify_harness.HarnessContractTests.test_release_skill_requires_release_review scripts.test_verify_harness.HarnessContractTests.test_release_review_requires_reviewer_owner scripts.test_verify_harness.HarnessContractTests.test_release_review_requires_router_runner",
+      "exit": 1,
+      "evidence_kind": "initial-failure-excerpt-retained; tool output omitted middle failure details",
+      "stdout_excerpt": "FFF.F\\r\\n======================================================================\\r\\nFAIL: test_missing_release_contract_fails (scripts.test_verify_harness.HarnessContractTests.test_missing_release_contract_fails)\\r\\n----------------------------------------------------------------------\\r\\nTraceback (most recent call last):\\r\\n  File \"D:\\\\onedrive\\\\Documents\\\\ChatGPT\\\\AI ERP\\\\scripts\\\\test_verify_harness.py\", line 226, in test_missing_release_contract_fails\\r\\n    self.assertIn(\"RELEASE-CONTRACT.md\", self.errors())\\r\\nAssertionError: 'RELEASE-CONTRACT.md' not found in ''\\r\\n\\r\\nFAIL: test_missing_release_result_fails ...\\r\\nFAIL: test_release_skill_requires_release_review ...\\r\\nFAIL: test_release_review_requires_router_runner ...\\r\\n\\r\\nRan 5 tests in 3.396s\\r\\n\\r\\nFAILED (failures=4)"
+    },
+    {
+      "name": "provider-path-preflight",
+      "command": "python -B scripts/vendor/harness-factory/scripts/validate_runtime_neutral.py . --provider-path-preflight --construction-mode improve --delta-plan harness/maintenance/runs/lifecycle-management/delta-plan.json",
+      "exit": 0,
+      "stdout": "provider path preflight passed: D:\\onedrive\\Documents\\ChatGPT\\AI ERP\\n",
+      "stderr": ""
+    },
+    {
+      "name": "structural-verification",
+      "command": "python -B scripts/verify-harness.py",
+      "exit": 0,
+      "stdout": "Harness verification passed: schema, permissions, DAG, Codex parity, UI routing, and pinned skill bytes.\\nRouter/ui-ux-designer/reviewer inherit native model settings; implementer defaults to gpt-5.3-codex-spark/high with explicit gpt-5.6-luna/high fallback evidence.\\n",
+      "stderr": ""
+    },
+    {
+      "name": "full-regressions",
+      "command": "python -B scripts/test_verify_harness.py",
+      "exit": 0,
+      "stdout": "",
+      "stderr": "........................................\\n----------------------------------------------------------------------\\nRan 40 tests in 35.411s\\n\\nOK\\n"
+    },
+    {
+      "name": "ux-skill-smoke",
+      "command": "python -B scripts/smoke-ux-skills.py",
+      "exit": 0,
+      "stdout": "UI/UX skill smoke passed: relevant SaaS and accessible form guidance, offline.\\n",
+      "stderr": ""
+    },
+    {
+      "name": "diff-check",
+      "command": "git diff --check",
+      "exit": 0,
+      "stdout": "",
+      "stderr": "warning: in the working copy of 'AGENTS.md', LF will be replaced by CRLF the next time Git touches it\\nwarning: in the working copy of 'harness/state/state.json', CRLF will be replaced by LF the next time Git touches it\\nwarning: in the working copy of 'scripts/test_verify_harness.py', LF will be replaced by CRLF the next time Git touches it\\nwarning: in the working copy of 'scripts/verify-harness.py', LF will be replaced by CRLF the next time Git touches it\\n"
+    },
+    {
+      "name": "projection-parity",
+      "exit": 0,
+      "stdout": "Canonical/projection SHA-256 digests match for ai-erp, ai-erp-eval, ai-erp-implement, ai-erp-plan, and ai-erp-release."
+    }
+  ],
+  "checks_not_run": [
+    "No production deployment, release execution, external write, app/deploy code execution, commit, push, publish, or state/journal edit by this worker."
+  ]
+}

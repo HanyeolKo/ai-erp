@@ -1,0 +1,48 @@
+{
+  "task_id": "lifecycle-management-stage-1",
+  "contract_revision": 3,
+  "correction_round": 1,
+  "selected_model": "gpt-5.6-luna",
+  "reasoning_effort": "high",
+  "fallback_reason": "Native gpt-5.3-codex-spark/high dispatch failed before execution with the provider usage limit; parent selected the explicit gpt-5.6-luna/high fallback.",
+  "preflight": {
+    "command": "python -B scripts/vendor/harness-factory/scripts/validate_runtime_neutral.py . --provider-path-preflight --construction-mode improve --delta-plan harness/maintenance/runs/lifecycle-management/delta-plan.json",
+    "exit": 0,
+    "stdout": "provider path preflight passed: D:\\onedrive\\Documents\\ChatGPT\\AI ERP"
+  },
+  "checks": [
+    {
+      "command": "python -B scripts/verify-harness.py",
+      "exit": 0,
+      "stdout": "Harness verification passed: schema, permissions, DAG, Codex parity, UI routing, and pinned skill bytes.\nRouter/ui-ux-designer/reviewer inherit native model settings; implementer defaults to gpt-5.3-codex-spark/high with explicit gpt-5.6-luna/high fallback evidence."
+    },
+    {
+      "command": "python -B scripts/test_verify_harness.py",
+      "exit": 0,
+      "stdout": "...................................\n----------------------------------------------------------------------\nRan 35 tests in 31.029s\n\nOK"
+    },
+    {
+      "command": "python -B scripts/smoke-ux-skills.py",
+      "exit": 0,
+      "stdout": "UI/UX skill smoke passed: relevant SaaS and accessible form guidance, offline."
+    },
+    {
+      "command": "git diff --check",
+      "exit": 0,
+      "stdout": "warning: in the working copy of 'AGENTS.md', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'scripts/test_verify_harness.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'scripts/verify-harness.py', LF will be replaced by CRLF the next time Git touches it"
+    },
+    {
+      "command": "Get-FileHash harness/skills/ai-erp-eval/SKILL.md and .agents/skills/ai-erp-eval/SKILL.md",
+      "exit": 0,
+      "stdout": "canonical=2EBCEF84CAFCB3429C351D6B04E1A0F271009899C6D43DD82087A5DA6C70D6B2 projection=2EBCEF84CAFCB3429C351D6B04E1A0F271009899C6D43DD82087A5DA6C70D6B2 equal=True"
+    }
+  ],
+  "new_regression_coverage": [
+    "Removing assignment contract revision fails with the intended assignment-template field error.",
+    "Removing assignment acceptance criteria fails with the intended assignment-template field error.",
+    "Changing ai-erp-plan evaluator from increment-plan-review fails with the intended skill role/evaluator mapping error."
+  ],
+  "checks_not_run": [
+    "No production deployment, release, external write, application feature execution, commit, push, or publish."
+  ]
+}

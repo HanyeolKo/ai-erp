@@ -3,16 +3,16 @@
   "profile": "core",
   "harness": {
     "id": "ai-erp",
-    "purpose": "Route all UI/UX planning through specialist review and execute all code, tests, and behavior-affecting configuration through an explicit lightweight implementer using a parent-owned contract, result, and independent review process.",
+    "purpose": "Manage iterative product planning and design, frontend/backend implementation, verification, authorized deployment/recovery, and feedback through bounded parent-owned increments.",
     "root": "harness",
-    "construction_receipt": "harness/maintenance/runs/add-spark-implementer/delta-plan.json"
+    "construction_receipt": "harness/maintenance/runs/verification-proportionality/delta-plan.json"
   },
   "runtime_targets": [
     "codex"
   ],
   "limits": {
-    "max_parallelism": 4,
-    "max_delegation_depth": 2,
+    "max_parallelism": 2,
+    "max_delegation_depth": 1,
     "max_instruction_lines": 100,
     "target_markdown_lines": 50,
     "max_markdown_lines": 100
@@ -55,6 +55,23 @@
         "pnpm-workspace.yaml"
       ],
       "coordinator": "implementer"
+    },
+    {
+      "id": "planning",
+      "paths": [
+        "docs/planning"
+      ],
+      "coordinator": "product-planner"
+    },
+    {
+      "id": "release",
+      "paths": [
+        "docs/releases",
+        "scripts",
+        "infra",
+        ".github"
+      ],
+      "coordinator": "release-manager"
     }
   ],
   "agents": [
@@ -69,7 +86,9 @@
       "domains": [
         "ui-ux",
         "harness",
-        "implementation"
+        "implementation",
+        "planning",
+        "release"
       ],
       "model_tier": "deep",
       "access": "read-only"
@@ -99,7 +118,9 @@
       "domains": [
         "ui-ux",
         "harness",
-        "implementation"
+        "implementation",
+        "planning",
+        "release"
       ],
       "model_tier": "deep",
       "access": "read-only"
@@ -119,6 +140,34 @@
       ],
       "model_tier": "fast",
       "access": "workspace-write"
+    },
+    {
+      "id": "product-planner",
+      "description": "Plan bounded product increments and cross-layer requirements for parent approval.",
+      "lane": "execution",
+      "capabilities": [
+        "product-planning"
+      ],
+      "domains": [
+        "planning"
+      ],
+      "model_tier": "deep",
+      "access": "workspace-write"
+    },
+    {
+      "id": "release-manager",
+      "description": "Prepare authorized release and recovery evidence without editing source, tests, or configuration.",
+      "lane": "execution",
+      "capabilities": [
+        "release-preparation",
+        "release-operations",
+        "verification"
+      ],
+      "domains": [
+        "release"
+      ],
+      "model_tier": "fast",
+      "access": "workspace-write"
     }
   ],
   "skills": [
@@ -126,11 +175,7 @@
       "id": "ai-erp",
       "kind": "entry",
       "entry_agent": "router",
-      "domains": [
-        "ui-ux",
-        "harness",
-        "implementation"
-      ],
+      "domains": ["ui-ux", "harness", "implementation", "planning", "release"],
       "instructions": "harness/skills/ai-erp/SKILL.md",
       "evaluator": "task-review"
     },
@@ -138,10 +183,7 @@
       "id": "ai-erp-eval",
       "kind": "evaluation",
       "entry_agent": "reviewer",
-      "domains": [
-        "ui-ux",
-        "implementation"
-      ],
+      "domains": ["ui-ux", "implementation", "planning", "release"],
       "instructions": "harness/skills/ai-erp-eval/SKILL.md",
       "evaluator": "task-review"
     },
@@ -206,6 +248,26 @@
       ],
       "instructions": "harness/skills/ai-erp-implement/SKILL.md",
       "evaluator": "task-review"
+    },
+    {
+      "id": "ai-erp-plan",
+      "kind": "domain",
+      "entry_agent": "product-planner",
+      "domains": [
+        "planning"
+      ],
+      "instructions": "harness/skills/ai-erp-plan/SKILL.md",
+      "evaluator": "increment-plan-review"
+    },
+    {
+      "id": "ai-erp-release",
+      "kind": "domain",
+      "entry_agent": "release-manager",
+      "domains": [
+        "release"
+      ],
+      "instructions": "harness/skills/ai-erp-release/SKILL.md",
+      "evaluator": "release-review"
     }
   ],
   "orchestration": {
@@ -216,6 +278,43 @@
         "to": "ui-ux-designer",
         "when": "Screen planning request including pages, flows, forms, tables, layouts, navigation, states, interactions, and accessibility.",
         "artifacts": [
+          "harness/templates/SCREEN-PLAN.md"
+        ]
+      },
+      {
+        "from": "router",
+        "to": "product-planner",
+        "when": "A product planning request has a complete parent assignment and no screen decisions are being made.",
+        "artifacts": [
+          "harness/templates/TASK-ASSIGNMENT.md",
+          "harness/templates/INCREMENT-PLAN.md"
+        ]
+      },
+      {
+        "from": "product-planner",
+        "to": "reviewer",
+        "when": "A bounded increment plan is ready for independent increment-plan-review.",
+        "artifacts": [
+          "harness/templates/INCREMENT-PLAN.md",
+          "harness/templates/INCREMENT-REVIEW.md"
+        ]
+      },
+      {
+        "from": "reviewer",
+        "to": "release-manager",
+        "when": "Accepted implementation evidence and a complete parent release assignment require release preparation or authorized execution.",
+        "artifacts": [
+          "harness/templates/INCREMENT-RECORD.md",
+          "harness/templates/RELEASE-CONTRACT.md",
+          "harness/templates/RELEASE-RESULT.md"
+        ]
+      },
+      {
+        "from": "product-planner",
+        "to": "ui-ux-designer",
+        "when": "An accepted product plan requires screen structure or interaction decisions; parent dispatches after increment-plan-review.",
+        "artifacts": [
+          "harness/templates/INCREMENT-PLAN.md",
           "harness/templates/SCREEN-PLAN.md"
         ]
       },
@@ -232,6 +331,8 @@
         "to": "implementer",
         "when": "A UI plan has passed independent ui-plan-review and the parent has completed the implementation contract.",
         "artifacts": [
+          "harness/templates/SCREEN-PLAN.md",
+          "harness/templates/UI-REVIEW.md",
           "harness/templates/IMPLEMENTATION-CONTRACT.md",
           "harness/templates/IMPLEMENTATION-RESULT.md"
         ]
@@ -254,8 +355,26 @@
       "owner": "reviewer",
       "runner": "router",
       "type": "rubric",
-      "command": "Review the contract and result evidence with harness/evaluation/TASK-REVIEW-RUBRIC.md; compare `harness/templates/IMPLEMENTATION-CONTRACT.md`, `harness/templates/IMPLEMENTATION-RESULT.md`, and actual check evidence.",
-      "pass_condition": "Every applicable required criterion must pass; failed or pending required criteria cannot pass. Only explicitly out-of-scope criteria may be marked N/A with a recorded reason. Planning-only UI tasks complete through passing ui-plan-review evidence with implementation criteria marked N/A."
+      "command": "Read harness/policies/VERIFICATION.json and review the contract/result or compact TASK-RECORD evidence with harness/evaluation/TASK-REVIEW-RUBRIC.md; apply the selected risk tier and actual check evidence.",
+      "pass_condition": "Every applicable required criterion must pass; failed or pending required criteria cannot pass. Only explicitly out-of-scope criteria may be marked N/A with a recorded reason. Low and standard work may pass through applicable checks and parent acceptance; standard Sol/medium review is optional with one N/A reason when unused. High-risk work requires relevant integration checks and an independent Astra/high review. Planning-only UI tasks still require ui-plan-review; UI, release, access, and external prerequisites remain mandatory."
+    },
+    {
+      "id": "increment-plan-review",
+      "scope": "task",
+      "owner": "reviewer",
+      "runner": "router",
+      "type": "rubric",
+      "command": "Review the increment plan using harness/evaluation/INCREMENT-PLAN-RUBRIC.md and record harness/templates/INCREMENT-REVIEW.md evidence.",
+      "pass_condition": "Every applicable planning criterion must pass with matching plan revision and independent evidence; failed, stale, missing, or pending required evidence cannot pass. Screen decisions require a later ui-plan-review."
+    },
+    {
+      "id": "release-review",
+      "scope": "task",
+      "owner": "reviewer",
+      "runner": "router",
+      "type": "rubric",
+      "command": "Review release preparation or outcome using harness/evaluation/RELEASE-REVIEW-RUBRIC.md and record harness/templates/RELEASE-REVIEW.md evidence.",
+      "pass_condition": "Every applicable release criterion must pass with matching increment, contract, commit, CI, authorization, environment, recovery, and observation evidence; missing, stale, failed, or pending required evidence fails. Preparation readiness is not deployment completion."
     },
     {
       "id": "ui-plan-review",

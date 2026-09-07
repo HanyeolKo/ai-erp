@@ -1,0 +1,14 @@
+{
+  "page_id": "3d4a8ad6-aa4a-81a0-98b6-c25f5465952c",
+  "url": "https://app.notion.com/p/3d4a8ad6aa4a81a098b6c25f5465952c",
+  "local_source": "docs/reports/harness-lifecycle-improvements-2026-09-07.md",
+  "source_sha256": "8013e134a7de75cf0a1d8942f1986e7722681921856053db370062fa4b202388",
+  "sync_date": "2026-09-07",
+  "fetched_verification": {
+    "matching_hash": true,
+    "regression_77": true,
+    "final_acceptance": true,
+    "last_section_present": true,
+    "no_replacement_characters": true
+  }
+}

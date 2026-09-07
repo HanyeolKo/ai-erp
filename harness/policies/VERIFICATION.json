@@ -1,0 +1,87 @@
+{
+  "schema_version": "1.0",
+  "policy_id": "verification-proportionality",
+  "selection": {
+    "risk_tiers": ["low", "standard", "high"],
+    "selected_by": "parent",
+    "worker_may_downgrade": false,
+    "ambiguity_action": "return-to-parent"
+  },
+  "tiers": {
+    "low": {
+      "definition": "Documentation or trivial reversible work without security, API/data contract, or operational impact.",
+      "parent_acceptance_required": true,
+      "independent_review": {"required": false, "default": "none", "owner": "parent"},
+      "checks": ["applicable-quick-checks"],
+      "repeat_policy": "reuse-valid-evidence"
+    },
+    "standard": {
+      "definition": "An ordinary bounded feature or defect change with limited impact.",
+      "parent_acceptance_required": true,
+      "independent_review": {
+        "required": false,
+        "default": "optional",
+        "role": "reviewer",
+        "model": "gpt-5.6-sol",
+        "effort": "medium",
+        "when": ["uncertainty", "cross-module-impact", "explicit-request"],
+        "unused": "N/A with one recorded reason"
+      },
+      "checks": ["changed-area-tests"],
+      "repeat_policy": "reuse-valid-evidence"
+    },
+    "high": {
+      "definition": "Authentication or authorization, sensitive data, schema or migrations, destructive operations, deployment or recovery, external activation, or core harness routing/access/model/verification guards.",
+      "triggers": ["authentication", "authorization", "sensitive-data", "db-schema-or-migration", "destructive-operation", "deployment-or-recovery", "external-activation", "core-harness-guard"],
+      "parent_acceptance_required": true,
+      "independent_review": {
+        "required": true,
+        "role": "reviewer",
+        "model": "gpt-6-astra",
+        "effort": "high",
+        "evidence": "independent-review-result"
+      },
+      "checks": ["relevant-integration-checks"],
+      "reject_without": ["independent-review-result", "relevant-integration-checks"],
+      "repeat_policy": "reuse-valid-evidence"
+    }
+  },
+  "execution": {
+    "iteration": "targeted-relevant-checks",
+    "batch_boundary": "run-full-applicable-suite-once-after-behavior-affecting-batch",
+    "ux_smoke": "only-when-ux-guidance-search-or-runtime-changes",
+    "provider_preflight": "only-when-provider-adapters-or-projections-change",
+    "git_tracking": "only-when-tracking-or-delivery-is-requested",
+    "raw_evidence": "capture-command-array-cwd-exit-stdout-stderr-once",
+    "reuse": "reviewers read valid existing evidence and rerun only changed-invalidated-or-inadequate checks"
+  },
+  "preserved_gates": {
+    "ui": "specialist-plan-and-independent-ui-plan-review-before-ui-implementation",
+    "product_planning": "product-planner-and-increment-plan-review",
+    "release": "independent-release-review-exact-sha-ci-authorization-and-recovery-evidence",
+    "external": "missing-or-unknown-required-external-setup-stops-dependent-work",
+    "access": "router-and-reviewer-read-only; workers-cannot-self-approve-or-self-escalate"
+  },
+  "record": {
+    "canonical_template": "harness/templates/TASK-RECORD.md",
+    "low_standard_single_record": true,
+    "high_detail_templates": "retain-existing-contract-result-and-review-artifacts",
+    "escalation_only": "MODEL-ESCALATION.md-is-required-only-for-real-capability-escalation"
+  },
+  "plan_reviews": {
+    "normal": {
+      "required": true,
+      "role": "reviewer",
+      "model": "gpt-5.6-sol",
+      "effort": "medium",
+      "gates": ["increment-plan-review", "ui-plan-review"]
+    },
+    "high": {
+      "required": true,
+      "role": "reviewer",
+      "model": "gpt-6-astra",
+      "effort": "high",
+      "gates": ["increment-plan-review", "ui-plan-review", "release-review"]
+    }
+  }
+}

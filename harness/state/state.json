@@ -10,7 +10,32 @@
       "id": "add-spark-implementer",
       "status": "done",
       "evaluator": "task-review"
+    },
+    {
+      "id": "lifecycle-management-stage-1",
+      "status": "done",
+      "evaluator": "task-review"
+    },
+    {
+      "id": "lifecycle-management-stage-2",
+      "status": "done",
+      "evaluator": "task-review"
+    },
+    {
+      "id": "lifecycle-management-stage-3",
+      "status": "done",
+      "evaluator": "task-review"
+    },
+    {
+      "id": "lifecycle-management-model-orchestration",
+      "status": "done",
+      "evaluator": "task-review"
+    },
+    {
+      "id": "verification-proportionality",
+      "status": "done",
+      "evaluator": "task-review"
     }
   ],
-  "next_action": "Complete authorized Git PR delivery and reader archive synchronization; for the next task use specialist planning, lightweight implementation, and upper-agent judgment."
+  "next_action": "Apply risk-proportionate verification and compact records to the next authorized increment; preserve specialist, external and release gates."
 }

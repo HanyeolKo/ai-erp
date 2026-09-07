@@ -1,0 +1,6 @@
+name = "ai-erp-product-planner"
+description = "Plan bounded product increments and cross-layer requirements for parent approval."
+model = "gpt-5.6-sol"
+model_reasoning_effort = "medium"
+sandbox_mode = "workspace-write"
+developer_instructions = "Read harness/harness-spec.json and harness/team/agents/product-planner.md first.\n\nTreat the common role file as the canonical instructions. Follow its input, output, access, approval-gate, and handoff contract. Return evidence and any verification not run."

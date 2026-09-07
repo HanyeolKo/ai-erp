@@ -1,0 +1,66 @@
+{
+  "checked_at": "2026-09-07",
+  "workspace": "D:/onedrive/Documents/ChatGPT/AI ERP",
+  "head": "a7f9b329d676a5babd6feae4b95043b5010a506d",
+  "branch": "main",
+  "runtime": "Python 3.14.3 / Windows",
+  "checks": [
+    {
+      "id": "factory",
+      "cmd": "python -B 'C:\\Users\\USER\\.codex\\plugins\\cache\\harness-factory-marketplace\\harness-factory\\0.3.0\\scripts\\validate_runtime_neutral.py' 'D:\\onedrive\\Documents\\ChatGPT\\AI ERP'",
+      "chunk_id": "ba0602",
+      "wall_time_seconds": 0.0000044,
+      "exit_code": 1,
+      "original_token_count": 79,
+      "output": "runtime-neutral harness validation failed:\r\n- Codex agent ai-erp-router.toml is missing keys: ['model', 'model_reasoning_effort']\r\n- Codex agent ai-erp-reviewer.toml is missing keys: ['model', 'model_reasoning_effort']\r\n- Codex agent ai-erp-ui-ux-designer.toml is missing keys: ['model', 'model_reasoning_effort']\r\n"
+    },
+    {
+      "id": "project",
+      "cmd": "python -B scripts/verify-harness.py",
+      "chunk_id": "c0d222",
+      "wall_time_seconds": 0.0529622,
+      "exit_code": 0,
+      "original_token_count": 68,
+      "output": "Harness verification passed: schema, permissions, DAG, Codex parity, UI routing, and pinned skill bytes.\r\nRouter/ui-ux-designer/reviewer inherit native model settings; implementer defaults to gpt-5.3-codex-spark/high with explicit gpt-5.6-luna/high fallback evidence.\r\n"
+    },
+    {
+      "id": "regression",
+      "cmd": "python -B scripts/test_verify_harness.py",
+      "chunk_id": "4849a9",
+      "wall_time_seconds": 9.54864,
+      "exit_code": 0,
+      "original_token_count": 32,
+      "output": "......................\r\n----------------------------------------------------------------------\r\nRan 22 tests in 9.182s\r\n\r\nOK\r\n"
+    },
+    {
+      "id": "ux-smoke",
+      "cmd": "python -B scripts/smoke-ux-skills.py",
+      "chunk_id": "3c6f53",
+      "wall_time_seconds": 0.9374527,
+      "exit_code": 0,
+      "original_token_count": 20,
+      "output": "UI/UX skill smoke passed: relevant SaaS and accessible form guidance, offline.\r\n"
+    }
+  ],
+  "tracked_check": {
+    "status": "fulfilled",
+    "value": {
+      "chunk_id": "6c66d3",
+      "wall_time_seconds": 0.8153517,
+      "exit_code": 0,
+      "original_token_count": 68,
+      "output": "Harness verification passed: schema, permissions, DAG, Codex parity, UI routing, and pinned skill bytes.\r\nRouter/ui-ux-designer/reviewer inherit native model settings; implementer defaults to gpt-5.3-codex-spark/high with explicit gpt-5.6-luna/high fallback evidence.\r\n"
+    }
+  },
+  "repository_snapshot": {
+    "status": "fulfilled",
+    "value": {
+      "chunk_id": "38381c",
+      "wall_time_seconds": 0.7195756,
+      "exit_code": 0,
+      "original_token_count": 242,
+      "output": "a7f9b329d676a5babd6feae4b95043b5010a506d\nmain\na7f9b32 feat : UI/UX 전담 기획과 경량 모델 구현 하네스 도입\n24659a6 fix: enable domain login and HTTPS redirects (#6)\n6e4c5c9 fix: avoid reserved deploy ref variable (#5)\n[agents]\r\nmax_threads = 4\r\nmax_depth = 2\r\n\r\n* text=auto\r\n*.sh text eol=lf\r\ngradlew text eol=lf\r\n*.bat text eol=crlf\r\n*.jar binary\r\n\r\n# Immutable upstream snapshots must retain their downloaded bytes on Windows.\r\n/vendor/ux-skills/** -text -whitespace\r\n/scripts/vendor/harness-factory/** -text -whitespace\r\n/vendor/ux-skills/skills.lock.json text eol=lf !whitespace\r\n/vendor/ux-skills/THIRD-PARTY.md text eol=lf !whitespace\r\n/scripts/vendor/harness-factory/SOURCE.json text eol=lf !whitespace\r\n/scripts/vendor/harness-factory/README.md text eol=lf !whitespace\r\n# Canonical instructions and their discovery copies must match across platforms.\r\n/harness/** text eol=lf\r\n/.agents/skills/** text eol=lf\r\n/.codex/agents/** text eol=lf\r\n\r\n"
+    }
+  }
+}
+

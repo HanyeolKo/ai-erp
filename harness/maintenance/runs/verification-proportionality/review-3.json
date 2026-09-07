@@ -1,0 +1,19 @@
+{
+  "verdict": "pass",
+  "reviewer": "/root/proportionate_review",
+  "model": "gpt-6-astra",
+  "effort": "high",
+  "resolved": [
+    "VP-01",
+    "VP-02",
+    "VP-03",
+    "VP-04"
+  ],
+  "evidence": [
+    "final-correction-checks.json",
+    "checks.json",
+    "correction-checks.json"
+  ],
+  "review_scope": "Only remaining instruction/structured-policy defects; no suite rerun",
+  "reader_clarification": "Parent applied reviewer non-blocking high/complex prefix in guide contract paragraph; reader prose only."
+}

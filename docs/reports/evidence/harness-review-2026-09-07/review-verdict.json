@@ -1,0 +1,29 @@
+{
+  "date": "2026-09-07",
+  "owner": "/root/config_review",
+  "native_role": "ai-erp-reviewer",
+  "mode": "read-only independent evidence review",
+  "evidence": "docs/reports/evidence/harness-review-2026-09-07/checks.json",
+  "structural_verdict": "pass",
+  "lifecycle_fitness_verdict": "fail",
+  "lifecycle_criterion": "점진적 기획설계 → 프런트·백엔드 개발 → 검증 → 배포·복구 → 다음 기획 반영",
+  "defects": [
+    {
+      "id": "H-MODEL-DEFAULT-GUARD",
+      "priority": "P2",
+      "source": "scripts/verify-harness.py:173"
+    },
+    {
+      "id": "H-UI-PREREQUISITE-GUARD",
+      "priority": "P2",
+      "source": "scripts/verify-harness.py:203"
+    }
+  ],
+  "defect_count": 2,
+  "limits": [
+    "Unmodified Factory 0.3.0 fails optional inherited model keys; project compatibility pass is separate.",
+    "Reviewer did not independently repeat overlay probes; source audit agrees with explorer execution.",
+    "Lifecycle gap is contract/evidence linkage, not proof production deployment is broken.",
+    "No outcome improvement benchmark or live deployment executed."
+  ]
+}

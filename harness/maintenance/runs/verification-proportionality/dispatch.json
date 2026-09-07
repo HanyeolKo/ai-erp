@@ -1,0 +1,11 @@
+{
+  "recipient": "/root/proportionate_verification",
+  "model": "gpt-5.6-luna",
+  "reasoning_effort": "high",
+  "fork_turns": "none",
+  "canonical_role": "implementer",
+  "contract": "contract.md",
+  "risk": "high",
+  "context": "bounded contract and relevant active source; no historical full fork",
+  "token_usage": null
+}

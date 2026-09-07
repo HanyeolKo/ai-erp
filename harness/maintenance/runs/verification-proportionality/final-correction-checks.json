@@ -1,0 +1,48 @@
+{
+  "task": "verification-proportionality",
+  "attempt": 3,
+  "review_defects": ["MODEL-ORCHESTRATION.md:7", "CHECKPOINT.md:5", "ai-erp-verify canonical/projection:16", "prohibited prose blacklist"],
+  "capture": "subprocess.run(capture_output=True, text=True, encoding=\"utf-8\")",
+  "checks": [
+    {
+      "name": "affected-policy-regressions",
+      "command": ["python", "-B", "-m", "unittest", "scripts.test_verify_harness.HarnessContractTests.test_verification_policy_is_required", "scripts.test_verify_harness.HarnessContractTests.test_low_risk_cannot_require_independent_review", "scripts.test_verify_harness.HarnessContractTests.test_standard_review_is_optional_sol_medium", "scripts.test_verify_harness.HarnessContractTests.test_high_risk_requires_astra_review_and_integration", "scripts.test_verify_harness.HarnessContractTests.test_verification_policy_keeps_conditional_suite_triggers", "scripts.test_verify_harness.HarnessContractTests.test_compact_task_record_is_required", "scripts.test_verify_harness.HarnessContractTests.test_each_risk_tier_keeps_its_check_class", "scripts.test_verify_harness.HarnessContractTests.test_compact_record_and_escalation_scope_guards", "scripts.test_verify_harness.HarnessContractTests.test_normal_plan_review_selection_is_sol_medium"],
+      "cwd": "D:\\onedrive\\Documents\\ChatGPT\\AI ERP",
+      "exit": 0,
+      "stdout": "",
+      "stderr": ".........\n----------------------------------------------------------------------\nRan 9 tests in 6.052s\n\nOK\n"
+    },
+    {
+      "name": "project-structural-and-projection-verification",
+      "command": ["python", "scripts/verify-harness.py"],
+      "cwd": "D:\\onedrive\\Documents\\ChatGPT\\AI ERP",
+      "exit": 0,
+      "stdout": "Harness verification passed: schema, permissions, DAG, Codex parity, UI routing, and pinned skill bytes.\nAstra owns orchestration/final review; Sol owns lower planning/design; Luna owns implementation/release; executor escalation is Luna -> Terra -> Sol and never Astra.\n",
+      "stderr": ""
+    },
+    {
+      "name": "diff-check",
+      "command": ["git", "diff", "--check"],
+      "cwd": "D:\\onedrive\\Documents\\ChatGPT\\AI ERP",
+      "exit": 0,
+      "stdout": "",
+      "stderr": "warning: in the working copy of '.codex/config.toml', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'AGENTS.md', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'README.md', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'docs/architecture/ui-ux-agent-guide.md', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'harness/ledger/DECISIONS.md', CRLF will be replaced by LF the next time Git touches it\nwarning: in the working copy of 'harness/ledger/journal.jsonl', CRLF will be replaced by LF the next time Git touches it\nwarning: in the working copy of 'harness/state/state.json', CRLF will be replaced by LF the next time Git touches it\nwarning: in the working copy of 'scripts/test_verify_harness.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'scripts/verify-harness.py', LF will be replaced by CRLF the next time Git touches it\n"
+    }
+  ],
+  "reused": [
+    "harness/maintenance/runs/verification-proportionality/checks.json full83 suite; no rerun per correction contract",
+    "harness/maintenance/runs/verification-proportionality/correction-checks.json provider preflight passed; receipt and provider projections unchanged"
+  ],
+  "not_run": [
+    "full83 suite: reused valid prior evidence",
+    "UX smoke: UX/search/runtime unchanged",
+    "standalone Factory: no provider projection changed; project verifier embeds parity validation",
+    "Git tracking: delivery/tracking not requested",
+    "live external integration, deployment, and application tests: offline-contract-only scope"
+  ],
+  "notes": [
+    "Original result.md/checks.json and correction-result.md/correction-checks.json are preserved unchanged.",
+    "The removed prose blacklist test was not rerun; structured escalation validation remains covered by compact_record_and_escalation_scope_guards.",
+    "The embedded project verifier covers canonical/projection parity; no provider preflight rerun was required for this correction."
+  ]
+}

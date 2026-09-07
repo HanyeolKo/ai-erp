@@ -1,0 +1,9 @@
+{
+  "source": "docs/architecture/orchestration-model-policy.md",
+  "sha256": "daf259655d1c80e88243d0789c09dadedda1b24733f35d9fac954c61f7a87098",
+  "page_id": "3d4a8ad6-aa4a-8109-92be-ebf92b418f87",
+  "url": "https://app.notion.com/p/3d4a8ad6aa4a810992beebf92b418f87",
+  "synchronized_date": "2026-09-07",
+  "source_status": "Implementation and independent review pending",
+  "encoding_note": "Initial shell stdout transcoding corrupted the archive body; immediately replaced from UTF-8 source transported as ASCII-escaped JSON and fetched again."
+}
