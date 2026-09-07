@@ -1,0 +1,11 @@
+{
+  "recipient": "/root/external_guard_terra",
+  "tool": "collaboration.spawn_agent",
+  "agent_type": "worker",
+  "model": "gpt-5.6-terra",
+  "reasoning_effort": "medium",
+  "fork_turns": "none",
+  "contract": "external-guard-escalation.md",
+  "provider_usage": null,
+  "scope": "one unresolved external semantic guard, verifier/tests only"
+}

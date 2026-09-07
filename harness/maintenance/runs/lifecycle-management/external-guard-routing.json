@@ -1,0 +1,10 @@
+{
+  "source": "User requested fail-stop and resolution guidance for external API setup blockers, including goal-mode persistence.",
+  "router": "/root/lifecycle_router",
+  "mode": "read-only routing recommendation",
+  "confirmed_gaps": ["No explicit external prerequisite readiness/owner/resume fields.", "Generic three-attempt repair rules can be misapplied to unchanged external blockers.", "EVAL-LOOP stop-only-at-parent-ready conflicts with immediate blocked return."],
+  "parent_decision": "Add stage-3-contract-r2.md; immediate affected-task stop, concrete external-owner actions and evidence-based resume; retain explicitly authorized independent offline work without live-success claims.",
+  "goal_distinction": "Task blocked immediately does not claim the runtime goal was paused. Tool status thresholds never authorize retrying unchanged external blockers.",
+  "runtime_cause": "Not investigated; user suspicion of goal-mode causality is not asserted as fact.",
+  "checks_not_run": ["No actual external service call or reproduction."]
+}

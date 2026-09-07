@@ -1,0 +1,103 @@
+{
+  "scope": "Final frozen Terra external guard correction, third affected-scope attempt",
+  "runner": "parent /root; implementation selected gpt-5.6-terra/medium",
+  "timestamp": "2026-09-07T06:42:06.172287+00:00",
+  "capture_method": "subprocess.run actual command arrays, stdout, stderr and returncode",
+  "worker_evidence_limitation": "Submitted checks.json has summarized batch output and non-executable placeholder commands, not raw output. Preserved as worker summary; this fresh capture supersedes it for validation. Extra filename is recorded as evidence-only deviation.",
+  "checks": [
+    {
+      "name": "project",
+      "command": [
+        "C:\\Users\\USER\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
+        "-B",
+        "scripts/verify-harness.py"
+      ],
+      "cwd": "D:\\onedrive\\Documents\\ChatGPT\\AI ERP",
+      "exit_code": 0,
+      "stdout": "Harness verification passed: schema, permissions, DAG, Codex parity, UI routing, and pinned skill bytes.\nAstra owns orchestration/final review; Sol owns lower planning/design; Luna owns implementation/release; executor escalation is Luna -> Terra -> Sol and never Astra.\n",
+      "stderr": "",
+      "elapsed_seconds": 0.682
+    },
+    {
+      "name": "regressions",
+      "command": [
+        "C:\\Users\\USER\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
+        "-B",
+        "scripts/test_verify_harness.py"
+      ],
+      "cwd": "D:\\onedrive\\Documents\\ChatGPT\\AI ERP",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ".............................................................................\n----------------------------------------------------------------------\nRan 77 tests in 65.855s\n\nOK\n",
+      "elapsed_seconds": 66.218
+    },
+    {
+      "name": "ux-smoke",
+      "command": [
+        "C:\\Users\\USER\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
+        "-B",
+        "scripts/smoke-ux-skills.py"
+      ],
+      "cwd": "D:\\onedrive\\Documents\\ChatGPT\\AI ERP",
+      "exit_code": 0,
+      "stdout": "UI/UX skill smoke passed: relevant SaaS and accessible form guidance, offline.\n",
+      "stderr": "",
+      "elapsed_seconds": 0.844
+    },
+    {
+      "name": "factory",
+      "command": [
+        "C:\\Users\\USER\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
+        "-B",
+        "scripts/vendor/harness-factory/scripts/validate_runtime_neutral.py",
+        ".",
+        "--construction-mode",
+        "improve",
+        "--delta-plan",
+        "harness/maintenance/runs/lifecycle-management/delta-plan.json"
+      ],
+      "cwd": "D:\\onedrive\\Documents\\ChatGPT\\AI ERP",
+      "exit_code": 0,
+      "stdout": "runtime-neutral harness validation passed: D:\\onedrive\\Documents\\ChatGPT\\AI ERP\n",
+      "stderr": "",
+      "elapsed_seconds": 0.365
+    },
+    {
+      "name": "preflight",
+      "command": [
+        "C:\\Users\\USER\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
+        "-B",
+        "scripts/vendor/harness-factory/scripts/validate_runtime_neutral.py",
+        ".",
+        "--provider-path-preflight",
+        "--construction-mode",
+        "improve",
+        "--delta-plan",
+        "harness/maintenance/runs/lifecycle-management/delta-plan.json"
+      ],
+      "cwd": "D:\\onedrive\\Documents\\ChatGPT\\AI ERP",
+      "exit_code": 0,
+      "stdout": "provider path preflight passed: D:\\onedrive\\Documents\\ChatGPT\\AI ERP\n",
+      "stderr": "",
+      "elapsed_seconds": 0.432
+    },
+    {
+      "name": "diff",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "cwd": "D:\\onedrive\\Documents\\ChatGPT\\AI ERP",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "warning: in the working copy of '.codex/config.toml', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'AGENTS.md', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'README.md', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'docs/architecture/ui-ux-agent-guide.md', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'harness/ledger/DECISIONS.md', CRLF will be replaced by LF the next time Git touches it\nwarning: in the working copy of 'harness/ledger/journal.jsonl', CRLF will be replaced by LF the next time Git touches it\nwarning: in the working copy of 'harness/state/state.json', CRLF will be replaced by LF the next time Git touches it\nwarning: in the working copy of 'scripts/test_verify_harness.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'scripts/verify-harness.py', LF will be replaced by CRLF the next time Git touches it\n",
+      "elapsed_seconds": 0.176
+    }
+  ],
+  "checks_not_run": [
+    "Real native planner invocation success",
+    "Live API/OAuth/deployment/recovery",
+    "Measured task token comparison"
+  ]
+}

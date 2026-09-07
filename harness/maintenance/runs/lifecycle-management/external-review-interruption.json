@@ -1,0 +1,9 @@
+{
+  "reviewer": "/root/external_guard_review",
+  "scope": "Stage-3 external dependency guardrails",
+  "status": "incomplete",
+  "provisional_finding": {"key": "EXT-EVAL-STOP-CONFLICT", "path": "harness/loops/EVAL-LOOP.md", "detail": "Old stop-only-at-parent-ready instruction remains alongside new external-blocker return instruction."},
+  "raw_error": "You've hit your usage limit. Visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at Sep 14th, 2026 11:20 AM.",
+  "verdict": "not-issued",
+  "parent_action": "Preserve finding; no repeated review dispatch without availability evidence. Prioritize user-requested model/token orchestration design and bounded execution."
+}

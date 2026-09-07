@@ -1,0 +1,16 @@
+{
+  "task_id": "lifecycle-management-stage-2",
+  "contract_revision": 1,
+  "contract": "stage-2-contract.md",
+  "prerequisite": "stage-1-acceptance.json",
+  "base": "stage-2-before.json",
+  "sender": "/root",
+  "recipient": "/root/lifecycle_luna_implementation",
+  "recipient_role": "implementer",
+  "tool": "collaboration.followup_task",
+  "selected_model": "gpt-5.6-luna",
+  "reasoning_effort": "high",
+  "selection_evidence": "Same live agent created by explicit parent override in dispatch-stage-1.json; Spark quota failure remains the reason.",
+  "reviewer": "/root/config_review",
+  "permission": "Bounded local stage-2 harness files only; no production or Git publication."
+}

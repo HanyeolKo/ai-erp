@@ -1,0 +1,16 @@
+{
+  "task_id": "lifecycle-management-stage-2",
+  "contract_revision": 1,
+  "reviewer": "/root/config_review",
+  "verdict": "fail",
+  "defects": [
+    {"key": "S2-REVIEW-MODE", "correction": "Use readiness/outcome review modes and explicit post-execution independent outcome review and parent acceptance."},
+    {"key": "S2-PUBLICATION-CI-POLICY", "correction": "Disclose main publication successful-CI automatic deployment and manual workflow missing CI-history check."},
+    {"key": "S2-VERIFICATION-SOURCES", "correction": "Cite exact API validation commands and DB inventory/checksum/test sources, separating executed tests from compatibility review."},
+    {"key": "S2-EVAL-EXECUTOR", "correction": "Include release-manager in evaluation skill executor list and projection."}
+  ],
+  "evidence": ["stage-2-parent-checks.json", "stage-2-preservation.json"],
+  "current_regression_count": 42,
+  "evidence_note": "Worker result count 40 is an earlier snapshot; initial red log is an excerpt, not complete raw output.",
+  "parent_action": "Bounded correction round 1, before stage-3 activation."
+}

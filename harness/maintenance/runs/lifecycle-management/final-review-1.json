@@ -1,0 +1,30 @@
+{
+  "reviewer": "/root/config_review",
+  "model": "gpt-6-astra",
+  "effort": "high",
+  "model_orchestration_verdict": "pass",
+  "stage_3_verdict": "fail",
+  "resolved_defects": [
+    "M-ESCALATION-SEMANTICS",
+    "M-ESCALATED-EFFORT",
+    "S3-NONUI-PRECONDITION",
+    "S3-HANDOFF-ARTIFACTS"
+  ],
+  "remaining_defects": [
+    {
+      "id": "S3-EXTERNAL-NEGATION",
+      "evidence": "Read-only exec chunk86e55e: prefix Ignore this rule: before identical EXTERNAL_STOP_RULE returns []",
+      "path": "scripts/verify-harness.py:55",
+      "classification": "Same operative-rule semantic guard defect remains after bounded correction"
+    }
+  ],
+  "checked_evidence": [
+    "final-parent-checks.json",
+    "final-preservation.json"
+  ],
+  "checks_not_run": [
+    "New native roles live invocation",
+    "Live API/deployment/recovery",
+    "Measured token savings"
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "task_id": "lifecycle-management-stage-3",
+  "contract_revision": 2,
+  "contracts": ["stage-3-contract.md", "stage-3-contract-r2.md"],
+  "prerequisite": "stage-2-acceptance.json",
+  "base": "stage-3-before.json",
+  "sender": "/root",
+  "recipient": "/root/lifecycle_luna_implementation",
+  "recipient_role": "implementer",
+  "tool": "collaboration.followup_task",
+  "selected_model": "gpt-5.6-luna",
+  "reasoning_effort": "high",
+  "selection_evidence": "Same live agent explicitly selected in dispatch-stage-1.json after Spark quota failure.",
+  "reviewer": "/root/config_review",
+  "permission": "Union of stage-3 contracts local files only; parent handles final acceptance and archive. No production or Git publication.",
+  "new_user_scope": "External dependency first-blocker stop, concrete resolution and evidence-based resume, including goal-mode persistence."
+}

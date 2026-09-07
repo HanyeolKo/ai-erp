@@ -1,0 +1,28 @@
+{
+  "synced_date": "2026-09-07",
+  "destination": "AI 생성문서 관리",
+  "source_of_truth": "local",
+  "copies": [
+    {
+      "document": "guide",
+      "page_id": "3d4a8ad6-aa4a-812a-9086-cf283528263f",
+      "source": "docs/architecture/ui-ux-agent-guide.md",
+      "sha256": "29ade40f2c4d89e4058443521ad2e2afeee616fdcacd027ff52432eb469e5465",
+      "verified": true
+    },
+    {
+      "document": "design",
+      "page_id": "3d4a8ad6-aa4a-8109-92be-ebf92b418f87",
+      "source": "docs/architecture/orchestration-model-policy.md",
+      "sha256": "eb692683ff12a0d832aaee2cb6c6852df33112beaa0a2a8c8f8e2806cd178713",
+      "verified": true
+    },
+    {
+      "document": "decisions",
+      "page_id": "3d4a8ad6-aa4a-818b-ab66-c5463926f09a",
+      "source": "harness/ledger/DECISIONS.md",
+      "sha256": "355a1ae06e5e8ce97945df1554cb0543e84fdd8a39f1d21ce8f3c0f24f29ef6d",
+      "verified": true
+    }
+  ]
+}

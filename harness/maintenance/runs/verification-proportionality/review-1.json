@@ -1,0 +1,29 @@
+{
+  "verdict": "fail",
+  "reviewer": "/root/proportionate_review",
+  "model": "gpt-6-astra",
+  "effort": "high",
+  "defects": [
+    {
+      "id": "VP-01",
+      "finding": "Active HARNESS/EXECUTION-LOOP/DELEGATION and eval still require separate detailed contract/all budgets/context/usage for all code; compact low/standard exception absent."
+    },
+    {
+      "id": "VP-02",
+      "finding": "eval skill and reviewer role still require MODEL-ESCALATION for any reassignment."
+    },
+    {
+      "id": "VP-03",
+      "finding": "reviewer role prohibits downgrading all required reviews; mandatory normal UI/product planning Sol/medium exception missing."
+    },
+    {
+      "id": "VP-04",
+      "finding": "verify-harness.py risk-policy guard ignores tier checks arrays, record.low_standard_single_record and record.escalation_only."
+    }
+  ],
+  "evidence_note": "Four projections changed; no-projection-change skip explanation is wrong. Embedded Factory validator covers actual parity, no missing validation demonstrated.",
+  "tests_reused": [
+    "checks.json full83 and focused6"
+  ],
+  "scope_deviation": "Worker changed budget/CONTEXT-BUDGET.md outside initial enumerated scope; parent authorizes corrective reference-only alignment below, preserving original deviation."
+}

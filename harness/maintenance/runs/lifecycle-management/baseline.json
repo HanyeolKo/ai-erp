@@ -1,0 +1,31 @@
+{
+  "recorded_by": "parent orchestrator /root",
+  "checks": [
+    {
+      "cmd": "python -B scripts/verify-harness.py",
+      "chunk_id": "c53b4d",
+      "wall_time_seconds": 0.6476809,
+      "exit_code": 0,
+      "original_token_count": 68,
+      "output": "Harness verification passed: schema, permissions, DAG, Codex parity, UI routing, and pinned skill bytes.\r\nRouter/ui-ux-designer/reviewer inherit native model settings; implementer defaults to gpt-5.3-codex-spark/high with explicit gpt-5.6-luna/high fallback evidence.\r\n"
+    },
+    {
+      "cmd": "python -B scripts/test_verify_harness.py",
+      "chunk_id": "23c198",
+      "wall_time_seconds": 9.3139043,
+      "exit_code": 0,
+      "original_token_count": 32,
+      "output": "......................\r\n----------------------------------------------------------------------\r\nRan 22 tests in 8.748s\r\n\r\nOK\r\n"
+    },
+    {
+      "cmd": "python -B scripts/smoke-ux-skills.py",
+      "chunk_id": "248126",
+      "wall_time_seconds": 0.9447416,
+      "exit_code": 0,
+      "original_token_count": 20,
+      "output": "UI/UX skill smoke passed: relevant SaaS and accessible form guidance, offline.\r\n"
+    }
+  ],
+  "prior_review": "docs/reports/harness-review-2026-09-07.md",
+  "factory_compatibility_evidence": "docs/reports/evidence/harness-review-2026-09-07/checks.json"
+}

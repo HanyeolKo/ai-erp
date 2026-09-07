@@ -1,0 +1,16 @@
+{
+  "task_id": "lifecycle-management-stage-1",
+  "contract_revision": 3,
+  "reviewer": "/root/config_review",
+  "verdict": "fail",
+  "defects": [
+    {"key": "S1-PLANNING-DOMAIN", "correction": "Add planning domain to router/reviewer spec and canonical roles."},
+    {"key": "S1-PLANNING-BRANCHES", "correction": "Document planning-only completion and current-plan reuse/scoped amendment."},
+    {"key": "S1-PLANNING-EVALUATOR", "correction": "Separate increment-plan-review from ui-plan-review and include product-planner executor."},
+    {"key": "S1-REGRESSION-COVERAGE", "correction": "Add missing contract-revision, acceptance and wrong plan evaluator mutations."}
+  ],
+  "green_evidence": ["stage-1-parent-checks.json", "stage-1-parent-test-completion.json"],
+  "limitations": ["Worker initial red/preflight evidence is summarized, not independently confirmed raw output.", "No live planner invocation, app or deployment execution."],
+  "deviation": "Narrow receipt edit accepted after the fact in parent-rulings-stage-1.json.",
+  "parent_action": "Bounded correction round 1 dispatched to existing Luna/high implementer; no stage 2 activation."
+}

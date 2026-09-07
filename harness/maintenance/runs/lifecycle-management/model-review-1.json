@@ -1,0 +1,30 @@
+{
+  "reviewer": "/root/config_review",
+  "model": "gpt-6-astra",
+  "effort": "high",
+  "status": "partial review; correction required",
+  "defects": [
+    {
+      "id": "M-ESCALATION-SEMANTICS",
+      "raw_probe_reference": "exec chunk49d745",
+      "baseline_errors": [],
+      "mutations_accepted": [
+        "Prefix no-Astra operative rule with Disregard the restriction that",
+        "Prefix Sol-ceiling self-review rule with Ignore this requirement:",
+        "Replace Parent-owned executor escalation follows with Worker-owned executor escalation follows"
+      ],
+      "expected": "Each mutation fails the intended operative semantic guard."
+    },
+    {
+      "id": "M-ESCALATED-EFFORT",
+      "evidence": [
+        "harness/skills/ai-erp-implement/SKILL.md:10 requires high while next line allows medium rungs",
+        "harness/team/agents/reviewer.md:29 unconditional high",
+        "harness/templates/IMPLEMENTATION-RESULT.md:5-6 only Luna/Spark high",
+        "RELEASE-RESULT lacks applicable escalation/usage linkage"
+      ],
+      "expected": "Validate authorized model/effort rung and record escalation references while preserving Luna/high saved defaults."
+    }
+  ],
+  "parent_action": "Dispatched focused semantic-guard correction to existing Luna/high; no model escalation; final verdict pending."
+}

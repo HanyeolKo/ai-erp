@@ -1,0 +1,51 @@
+{
+  "timestamp": "2026-09-07T06:45:45.993607+00:00",
+  "semantics": "Prospective tracking check using isolated temporary index and objects, not real staging or a claim that new files are already tracked.",
+  "checks": [
+    {
+      "name": "structural-with-prospective-tracking",
+      "command": [
+        "C:\\Users\\USER\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
+        "-B",
+        "scripts/verify-harness.py",
+        "--require-tracked"
+      ],
+      "exit_code": 0,
+      "stdout": "Harness verification passed: schema, permissions, DAG, Codex parity, UI routing, and pinned skill bytes.\nAstra owns orchestration/final review; Sol owns lower planning/design; Luna owns implementation/release; executor escalation is Luna -> Terra -> Sol and never Astra.\n",
+      "stderr": ""
+    },
+    {
+      "name": "normal-index-clean",
+      "command": [
+        "git",
+        "diff",
+        "--cached",
+        "--quiet"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "name": "final-diff-check",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "warning: in the working copy of '.codex/config.toml', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'AGENTS.md', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'README.md', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'docs/architecture/ui-ux-agent-guide.md', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'harness/ledger/DECISIONS.md', CRLF will be replaced by LF the next time Git touches it\nwarning: in the working copy of 'harness/ledger/journal.jsonl', CRLF will be replaced by LF the next time Git touches it\nwarning: in the working copy of 'harness/state/state.json', CRLF will be replaced by LF the next time Git touches it\nwarning: in the working copy of 'scripts/test_verify_harness.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'scripts/verify-harness.py', LF will be replaced by CRLF the next time Git touches it\n"
+    }
+  ],
+  "normal_git_index_unchanged_during_final_check": true,
+  "scratch_cleanup": "Complete: normal-permission Git scratch removed with native PowerShell Force for read-only objects; two inaccessible empty mkdtemp folders removed through approved elevated non-recursive empty-directory deletion.",
+  "operational_notes": [
+    "Two tempfile.mkdtemp directories denied child creation.",
+    "Normal-permission UUID scratch supported Git read-tree/add and structural check, but Python cleanup failed on read-only Git objects before saving output.",
+    "This capture directly reruns structural verification against the same temporary index; native PowerShell cleanup follows."
+  ],
+  "latest_regression_evidence": "external-guard-terra-checks.json (77 tests)",
+  "independent_verdict": "final-review-2.json",
+  "all_created_tracking_scratch_removed": true
+}

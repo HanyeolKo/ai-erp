@@ -1,0 +1,26 @@
+{
+  "reviewer": "/root/config_review",
+  "selected_model": "gpt-6-astra",
+  "selected_effort": "high",
+  "status": "partial review; no final verdict",
+  "independent_raw_probe_reference": "exec chunk401d80",
+  "baseline": {
+    "routing": [],
+    "external": []
+  },
+  "defects": [
+    {
+      "id": "S3-NONUI-PRECONDITION",
+      "evidence": "Negated router->implementer condition passed verify_routing; exact whitespace-normalized canonical condition required."
+    },
+    {
+      "id": "S3-HANDOFF-ARTIFACTS",
+      "evidence": "Removing RELEASE-CONTRACT.md from reviewer->release-manager artifacts passed verify_routing."
+    },
+    {
+      "id": "S3-EXTERNAL-NEGATION",
+      "evidence": "Prefixing central stop rule with Do not enforce this rule: passed verify_external_policy."
+    }
+  ],
+  "parent_action": "Bounded correction dispatched to current Luna/high implementer; existing contracts require these guards; no model escalation."
+}

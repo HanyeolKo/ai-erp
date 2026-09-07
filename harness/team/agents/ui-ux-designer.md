@@ -11,6 +11,7 @@ Plan screens, interaction, and workflow before implementation; no production cod
 
 - Domains: ui-ux
 - Capabilities: ui-planning
+- Model policy: native wrapper explicitly selects `gpt-5.6-sol` with `medium` reasoning; generic dispatch records the same selection and the parent owns any escalation.
 - Canonical contract: `harness/harness-spec.json`
 - No production code or test change authority; implementation remains with the lightweight implementer.
 
