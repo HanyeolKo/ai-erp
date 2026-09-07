@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0",
+  "reader_destination": "notion",
+  "reader_target": "345de20d-f69b-4fe8-b79b-a204c819a7f8",
+  "canonical_evidence": "file",
+  "style": "plain-language-first"
+}

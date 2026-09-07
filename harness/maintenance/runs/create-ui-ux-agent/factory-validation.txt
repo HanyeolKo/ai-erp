@@ -1,0 +1,11 @@
+Command: python <factory>/scripts/validate_runtime_neutral.py . --construction-mode create --delta-plan harness/maintenance/runs/create-ui-ux-agent/delta-plan.json
+Factory source: https://github.com/HanyeolKo/harness-factory.git
+Ref: 0.3.0
+Commit: 537ef692042bf9f1895fbd6d3fac48c364307cf4
+Exit code: 1
+runtime-neutral harness validation failed:
+- Codex agent ai-erp-reviewer.toml is missing keys: ['model', 'model_reasoning_effort']
+- Codex agent ai-erp-router.toml is missing keys: ['model', 'model_reasoning_effort']
+- Codex agent ai-erp-ui-ux-designer.toml is missing keys: ['model', 'model_reasoning_effort']
+
+The installed wrappers intentionally omit optional native model settings to inherit the user's model and reasoning configuration. The project verifier makes only these two factory-required keys optional; it retains the remaining factory validation.

@@ -1,0 +1,111 @@
+{
+  "schema_version": "1.0",
+  "change_id": "add-spark-implementer",
+  "mode": "improve",
+  "interview_receipt": {
+    "status": "complete",
+    "decisions": {
+        "purpose": {
+        "value": "Route all UI/UX planning through specialist review and execute all code, tests, and behavior-affecting configuration through an explicit lightweight implementer using a parent-owned contract, result, and independent review process.",
+        "source": "request"
+      },
+      "deliverable_type": {
+        "value": "Project-owned four-role UI/UX and lightweight implementation harness with task review",
+        "source": "approved-decision"
+      },
+      "task_evaluator": {
+        "value": "task-review",
+        "source": "request"
+      },
+      "operation_mode": {
+        "value": "attended bounded tasks",
+        "source": "approved-decision"
+      },
+      "cost_sensitivity": {
+        "value": "lightweight implementation execution with deep upper decisions",
+        "source": "request"
+      },
+      "report_language": {
+        "value": "ko",
+        "source": "repository-confirmed"
+      },
+      "terminology": {
+        "value": "localized",
+        "source": "repository-confirmed"
+      },
+      "runtime_targets": {
+        "value": ["codex"],
+        "source": "repository-confirmed"
+      },
+      "approval_gates": {
+        "value": ["destructive-change", "external-write"],
+        "source": "approved-decision"
+      },
+      "reporting": {
+        "enabled": {
+          "value": true,
+          "source": "approved-decision"
+        },
+        "reader_destination": {
+          "value": "notion",
+          "source": "approved-decision"
+        },
+        "reader_target": {
+          "value": "345de20d-f69b-4fe8-b79b-a204c819a7f8",
+          "source": "approved-decision"
+        }
+      }
+    },
+    "profile": {
+      "current": "core",
+      "recommended": "core",
+      "selected": "core",
+      "reason_codes": [
+        "bounded-task-work"
+      ],
+      "confirmation_source": "request",
+      "override_reason": null
+    }
+  },
+  "deltas": [
+    {
+      "classification": "add",
+      "paths": [
+        "harness/harness-spec.json",
+        "harness/HARNESS.md",
+        "harness/ENVIRONMENT.md",
+        "harness/budget/CONTEXT-BUDGET.md",
+        "harness/recovery/CHECKPOINT.md",
+        "harness/recovery/RECOVERY-PLAYBOOK.md",
+        "harness/loops/EXECUTION-LOOP.md",
+        "harness/loops/EVAL-LOOP.md",
+        "harness/ledger/DECISIONS.md",
+        "harness/ledger/journal.jsonl",
+        "harness/state/state.json",
+        "harness/team/TEAM-ARCHITECTURE.md",
+        "harness/team/agents/router.md",
+        "harness/team/agents/ui-ux-designer.md",
+        "harness/team/agents/reviewer.md",
+        "harness/team/agents/implementer.md",
+        "harness/skills/ai-erp/SKILL.md",
+        "harness/skills/ai-erp-eval/SKILL.md",
+        "harness/skills/ai-erp-implement/SKILL.md",
+        "harness/evaluation/TASK-REVIEW-RUBRIC.md",
+        "harness/templates/IMPLEMENTATION-CONTRACT.md",
+        "harness/templates/IMPLEMENTATION-RESULT.md",
+        ".codex/agents/ai-erp-implementer.toml",
+        ".agents/skills/ai-erp-implement/SKILL.md",
+        "scripts/verify-harness.py",
+        "scripts/test_verify_harness.py",
+        "AGENTS.md",
+        "README.md",
+        "docs/architecture/ui-ux-agent-guide.md",
+        "harness/reports/create-ui-ux-agent/CHANGE-REPORT.md",
+        "harness/maintenance/runs/add-spark-implementer/provider-preflight.txt"
+      ],
+      "reason": "Add lightweight Spark-default implementation lane with documented Luna fallback, task-review split, role/skill projections, and updated verification checks."
+    }
+  ],
+  "conflicts": [],
+  "approval_required": []
+}
