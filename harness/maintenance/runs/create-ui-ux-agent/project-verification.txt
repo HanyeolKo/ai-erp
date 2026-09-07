@@ -1,0 +1,5 @@
+Command: python scripts/verify-harness.py
+Exit code: 0
+Scope: final canonical files, including the English Change Report and Korean reader guide reference
+Harness verification passed: schema, permissions, DAG, Codex parity, UI routing, and pinned skill bytes.
+Codex model/effort inherit from the parent; no model override is installed.

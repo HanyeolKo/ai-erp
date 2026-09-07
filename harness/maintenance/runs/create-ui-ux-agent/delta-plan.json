@@ -1,0 +1,90 @@
+{
+  "schema_version": "1.0",
+  "change_id": "create-ui-ux-agent",
+  "mode": "create",
+  "interview_receipt": {
+    "status": "complete",
+    "decisions": {
+      "purpose": {
+        "value": "Route every AI ERP screen planning task through a UI/UX specialist before implementation, using project-owned design skills and review evidence.",
+        "source": "request"
+      },
+      "deliverable_type": {
+        "value": "Project-owned UI/UX agent harness and callable design skills",
+        "source": "request"
+      },
+      "task_evaluator": {
+        "value": "ui-plan-review",
+        "source": "request"
+      },
+      "operation_mode": {
+        "value": "attended bounded tasks",
+        "source": "request"
+      },
+      "cost_sensitivity": {
+        "value": "balanced within requested setup",
+        "source": "request"
+      },
+      "report_language": {
+        "value": "ko",
+        "source": "repository-confirmed"
+      },
+      "terminology": {
+        "value": "localized",
+        "source": "request"
+      },
+      "runtime_targets": {
+        "value": [
+          "codex"
+        ],
+        "source": "repository-confirmed"
+      },
+      "approval_gates": {
+        "value": [
+          "destructive-change",
+          "external-write"
+        ],
+        "source": "request"
+      },
+      "reporting": {
+        "enabled": {
+          "value": true,
+          "source": "request"
+        },
+        "reader_destination": {
+          "value": "notion",
+          "source": "request"
+        },
+        "reader_target": {
+          "value": "345de20d-f69b-4fe8-b79b-a204c819a7f8",
+          "source": "request"
+        }
+      }
+    },
+    "profile": {
+      "current": null,
+      "recommended": "core",
+      "selected": "core",
+      "reason_codes": [
+        "bounded-task-work"
+      ],
+      "confirmation_source": "request",
+      "override_reason": null
+    }
+  },
+  "deltas": [
+    {
+      "classification": "add",
+      "paths": [
+        "harness/",
+        "AGENTS.md",
+        ".agents/skills/ai-erp*/SKILL.md",
+        ".codex/agents/ai-erp-*.toml",
+        ".codex/config.toml"
+      ],
+      "reason": "Implement the requested UI/UX specialist, mandatory screen planning route, and selected Codex skill setup; scope choices are explained in D-001."
+    }
+  ],
+  "conflicts": [],
+  "approval_required": []
+}

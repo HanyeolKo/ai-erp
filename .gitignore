@@ -27,3 +27,12 @@ test-results/
 .gradle/
 build/
 *.log
+
+# Project-owned harness/, AGENTS.md, .agents/skills/ and .codex/agents/ are tracked.
+# Keep local credentials and runtime caches out of Git.
+/.codex/auth.json
+/.codex/config.local.toml
+/.codex/sessions/
+/.codex/log/
+__pycache__/
+*.pyc

@@ -1,0 +1,4 @@
+name = "ai-erp-ui-ux-designer"
+description = "Plan accessible ERP screens and interaction flows before implementation."
+sandbox_mode = "workspace-write"
+developer_instructions = "Read harness/harness-spec.json and harness/team/agents/ui-ux-designer.md first.\n\nTreat the common role file as the canonical instructions. Follow its input, output, access, approval-gate, and handoff contract. Return evidence and any verification not run."

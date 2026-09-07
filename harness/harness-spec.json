@@ -1,0 +1,222 @@
+{
+  "schema_version": "1.2",
+  "profile": "core",
+  "harness": {
+    "id": "ai-erp",
+    "purpose": "Route every AI ERP screen planning task through a UI/UX specialist before implementation, using project-owned design skills and review evidence.",
+    "root": "harness",
+    "construction_receipt": "harness/maintenance/runs/create-ui-ux-agent/delta-plan.json"
+  },
+  "runtime_targets": [
+    "codex"
+  ],
+  "limits": {
+    "max_parallelism": 4,
+    "max_delegation_depth": 2,
+    "max_instruction_lines": 100,
+    "target_markdown_lines": 50,
+    "max_markdown_lines": 100
+  },
+  "communication": {
+    "artifact_language": "en",
+    "report_language": "ko",
+    "terminology": "localized"
+  },
+  "domains": [
+    {
+      "id": "ui-ux",
+      "paths": [
+        "frontend",
+        "docs/ux"
+      ],
+      "coordinator": "ui-ux-designer"
+    },
+    {
+      "id": "harness",
+      "paths": [
+        "harness",
+        "scripts/verify-harness.py"
+      ],
+      "coordinator": "router"
+    }
+  ],
+  "agents": [
+    {
+      "id": "router",
+      "description": "Classify requests, delegate screen planning, and collect task evidence.",
+      "lane": "control",
+      "capabilities": [
+        "routing",
+        "verification"
+      ],
+      "domains": [
+        "ui-ux",
+        "harness"
+      ],
+      "model_tier": "balanced",
+      "access": "read-only"
+    },
+    {
+      "id": "ui-ux-designer",
+      "description": "Plan accessible ERP screens and interaction flows before implementation.",
+      "lane": "execution",
+      "capabilities": [
+        "execution"
+      ],
+      "domains": [
+        "ui-ux"
+      ],
+      "model_tier": "balanced",
+      "access": "workspace-write"
+    },
+    {
+      "id": "reviewer",
+      "description": "Review independent evidence, issue task verdicts, and count stable defects.",
+      "lane": "evaluation",
+      "capabilities": [
+        "verification",
+        "verdict",
+        "defect-counting"
+      ],
+      "domains": [
+        "ui-ux",
+        "harness"
+      ],
+      "model_tier": "balanced",
+      "access": "read-only"
+    }
+  ],
+  "skills": [
+    {
+      "id": "ai-erp",
+      "kind": "entry",
+      "entry_agent": "router",
+      "domains": [
+        "ui-ux",
+        "harness"
+      ],
+      "instructions": "harness/skills/ai-erp/SKILL.md",
+      "evaluator": "ui-plan-review"
+    },
+    {
+      "id": "ai-erp-eval",
+      "kind": "evaluation",
+      "entry_agent": "reviewer",
+      "domains": [
+        "ui-ux"
+      ],
+      "instructions": "harness/skills/ai-erp-eval/SKILL.md",
+      "evaluator": "ui-plan-review"
+    },
+    {
+      "id": "ai-erp-verify",
+      "kind": "verification",
+      "entry_agent": "reviewer",
+      "domains": [
+        "harness"
+      ],
+      "instructions": "harness/skills/ai-erp-verify/SKILL.md",
+      "evaluator": "harness-structure"
+    },
+    {
+      "id": "ai-erp-ui-ux",
+      "kind": "domain",
+      "entry_agent": "ui-ux-designer",
+      "domains": [
+        "ui-ux"
+      ],
+      "instructions": "harness/skills/ai-erp-ui-ux/SKILL.md",
+      "evaluator": "ui-plan-review"
+    },
+    {
+      "id": "ai-erp-frontend-design",
+      "kind": "domain",
+      "entry_agent": "ui-ux-designer",
+      "domains": [
+        "ui-ux"
+      ],
+      "instructions": "harness/skills/ai-erp-frontend-design/SKILL.md",
+      "evaluator": "ui-plan-review"
+    },
+    {
+      "id": "ai-erp-ui-ux-pro-max",
+      "kind": "domain",
+      "entry_agent": "ui-ux-designer",
+      "domains": [
+        "ui-ux"
+      ],
+      "instructions": "harness/skills/ai-erp-ui-ux-pro-max/SKILL.md",
+      "evaluator": "ui-plan-review"
+    },
+    {
+      "id": "ai-erp-web-design-guidelines",
+      "kind": "domain",
+      "entry_agent": "ui-ux-designer",
+      "domains": [
+        "ui-ux"
+      ],
+      "instructions": "harness/skills/ai-erp-web-design-guidelines/SKILL.md",
+      "evaluator": "ui-plan-review"
+    }
+  ],
+  "orchestration": {
+    "entry_skill": "ai-erp",
+    "handoffs": [
+      {
+        "from": "router",
+        "to": "ui-ux-designer",
+        "when": "Every screen planning request, including pages, user flows, layouts, navigation, forms, tables, dashboards, states, and interaction changes; delegate before writing the plan or implementing the screen.",
+        "artifacts": [
+          "harness/templates/SCREEN-PLAN.md"
+        ]
+      },
+      {
+        "from": "ui-ux-designer",
+        "to": "reviewer",
+        "when": "A screen plan and design rationale are available; require a reviewed plan before implementation.",
+        "artifacts": [
+          "harness/templates/UI-REVIEW.md"
+        ]
+      }
+    ]
+  },
+  "evaluators": [
+    {
+      "id": "ui-plan-review",
+      "scope": "task",
+      "owner": "reviewer",
+      "runner": "router",
+      "type": "rubric",
+      "command": "Review the screen plan using harness/evaluation/UI-PLAN-RUBRIC.md and record harness/templates/UI-REVIEW.md evidence.",
+      "pass_condition": "Every applicable rubric criterion passes with evidence and the specialist handoff is recorded; unresolved required criteria produce fail."
+    },
+    {
+      "id": "harness-structure",
+      "scope": "task",
+      "owner": "reviewer",
+      "runner": "router",
+      "type": "deterministic",
+      "command": "python scripts/verify-harness.py",
+      "pass_condition": "The verifier exits zero with canonical, provider, routing, and vendor integrity checks passing."
+    }
+  ],
+  "approval_gates": [
+    {
+      "id": "destructive-change",
+      "trigger": "A proposed action would delete user-owned data, discard uncommitted work, or rewrite shared history beyond the current authorization.",
+      "owner": "human",
+      "required_action": "Obtain explicit authorization for the exact destructive action."
+    },
+    {
+      "id": "external-write",
+      "trigger": "An external write, publication, message, or deployment has not already been authorized by the user.",
+      "owner": "human",
+      "required_action": "Prepare the concrete result and obtain user authorization; reuse authorization already provided for this task."
+    }
+  ],
+  "loops": {
+    "execution": "harness/loops/EXECUTION-LOOP.md",
+    "evaluation": "harness/loops/EVAL-LOOP.md",
+    "fail_threshold": 3
+  }
+}

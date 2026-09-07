@@ -1,0 +1,13 @@
+{
+  "id": "gemini",
+  "display_name": "Gemini CLI",
+  "capabilities": [
+    "root-guidance",
+    "skills",
+    "subagents"
+  ],
+  "root_guidance": "GEMINI.md",
+  "skill_root": ".gemini/skills",
+  "agent_root": ".gemini/agents",
+  "agent_extension": ".md"
+}

@@ -4,3 +4,14 @@ gradlew text eol=lf
 *.bat text eol=crlf
 *.jar binary
 
+# Immutable upstream snapshots must retain their downloaded bytes on Windows.
+/vendor/ux-skills/** -text -whitespace
+/scripts/vendor/harness-factory/** -text -whitespace
+/vendor/ux-skills/skills.lock.json text eol=lf !whitespace
+/vendor/ux-skills/THIRD-PARTY.md text eol=lf !whitespace
+/scripts/vendor/harness-factory/SOURCE.json text eol=lf !whitespace
+/scripts/vendor/harness-factory/README.md text eol=lf !whitespace
+# Canonical instructions and their discovery copies must match across platforms.
+/harness/** text eol=lf
+/.agents/skills/** text eol=lf
+/.codex/agents/** text eol=lf

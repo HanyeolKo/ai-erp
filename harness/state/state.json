@@ -1,0 +1,11 @@
+{
+  "phase": "delivery",
+  "queue": [
+    {
+      "id": "create-ui-ux-agent",
+      "status": "done",
+      "evaluator": "harness-structure"
+    }
+  ],
+  "next_action": "Finish the authorized Git review, PR merge, and Notion archive synchronization; then route the next screen planning task through the specialist."
+}

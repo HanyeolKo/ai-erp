@@ -1,0 +1,15 @@
+{
+  "id": "codex",
+  "display_name": "Codex",
+  "capabilities": [
+    "root-guidance",
+    "skills",
+    "subagents",
+    "agent-limits"
+  ],
+  "root_guidance": "AGENTS.md",
+  "skill_root": ".agents/skills",
+  "agent_root": ".codex/agents",
+  "agent_extension": ".toml",
+  "config": ".codex/config.toml"
+}
