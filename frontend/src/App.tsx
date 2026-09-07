@@ -19,6 +19,8 @@ import {
 import { Dashboard, Schedules } from "./screens/Schedules";
 import { ScheduleForm } from "./screens/ScheduleForm";
 import { Detail } from "./screens/Detail";
+import { Drive, GoogleWorkspace, Gmail } from "./screens/GoogleWorkspace";
+import { ProjectCalendarSettings, ProjectFiles } from "./screens/ProjectFiles";
 import { Link, Shell } from "./ui";
 import { ApiError } from "./api/client";
 import { keys, resetAccessState, SESSION_EXPIRED_EVENT } from "./state";
@@ -64,6 +66,9 @@ function Routes() {
       <JoinPreview key={join[1].toUpperCase()} code={join[1].toUpperCase()} />
     );
   if (path === "/account") return <Account />;
+  if (path === "/account/google") return <GoogleWorkspace />;
+  if (path === "/account/drive") return <Drive />;
+  if (path === "/account/mail") return <Gmail />;
   if (path === "/notifications") return <Notifications />;
   if (path === "/calendar") return <Calendar />;
   if (project) {
@@ -71,6 +76,8 @@ function Routes() {
     if (rest === "") return <Dashboard key={id} id={id} />;
     if (rest === "invitations/new") return <InviteCreate key={id} id={id} />;
     if (rest === "members") return <Members key={id} id={id} />;
+    if (rest === "files") return <ProjectFiles key={id} id={id} />;
+    if (rest === "calendar") return <ProjectCalendarSettings key={id} id={id} />;
     if (rest === "schedules") return <Schedules key={id} id={id} />;
     if (rest === "schedules/new") return <ScheduleForm key={id} id={id} />;
     const edit = rest.match(/^schedules\/([A-Za-z0-9_-]+)\/edit$/);

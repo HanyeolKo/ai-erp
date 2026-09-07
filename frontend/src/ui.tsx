@@ -106,6 +106,9 @@ export function Shell({
                   <span className="account-menu-email">{me.data.email}</span>
                 )}
                 <Link to="/account">계정 설정</Link>
+                <Link to="/account/google">Google 서비스</Link>
+                <Link to="/account/drive">내 Drive</Link>
+                <Link to="/account/mail">Gmail</Link>
                 <button
                   type="button"
                   disabled={logout.isPending}
@@ -175,6 +178,22 @@ export function Shell({
                 }
               >
                 구성원
+              </Link>
+              <Link
+                to={`/projects/${project.id}/files`}
+                aria-current={
+                  current === `/projects/${project.id}/files` ? "page" : undefined
+                }
+              >
+                파일
+              </Link>
+              <Link
+                to={`/projects/${project.id}/calendar`}
+                aria-current={
+                  current === `/projects/${project.id}/calendar` ? "page" : undefined
+                }
+              >
+                Calendar 설정
               </Link>
             </nav>
             <Link className="sidebar-return" to="/">
@@ -370,6 +389,7 @@ export function Dialog({
   const ref = useRef<HTMLDialogElement>(null);
   const caller = useRef<HTMLElement | null>(null);
   const wasOpen = useRef(false);
+  const suppressClose = useRef(false);
   useEffect(() => {
     const d = ref.current;
     if (!d) return;
@@ -382,6 +402,7 @@ export function Dialog({
       else d.setAttribute("open", "");
       requestAnimationFrame(() => d.querySelector<HTMLElement>("h2")?.focus());
     } else if (!open && d.open) {
+      suppressClose.current = true;
       if (typeof d.close === "function") d.close();
       else d.removeAttribute("open");
       requestAnimationFrame(() => caller.current?.focus());
@@ -389,6 +410,7 @@ export function Dialog({
     wasOpen.current = open;
     return () => {
       if (d.open) {
+        suppressClose.current = true;
         if (typeof d.close === "function") d.close();
         else d.removeAttribute("open");
       }
@@ -398,10 +420,12 @@ export function Dialog({
     const d = ref.current;
     if (!d) return;
     const h = (e: Event) => {
-      if ((e as KeyboardEvent).key === "Escape") {
-        e.preventDefault();
-        onClose();
+      e.preventDefault();
+      if (suppressClose.current) {
+        suppressClose.current = false;
+        return;
       }
+      onClose();
     };
     d.addEventListener("cancel", h);
     return () => d.removeEventListener("cancel", h);
@@ -411,7 +435,13 @@ export function Dialog({
       ref={ref}
       className="modal"
       aria-labelledby={labelledBy}
-      onClose={onClose}
+      onClose={() => {
+        if (suppressClose.current) {
+          suppressClose.current = false;
+          return;
+        }
+        onClose();
+      }}
     >
       <div className="modal-header">
         <h2 id={labelledBy} tabIndex={-1}>

@@ -82,7 +82,7 @@ load_env() {
   local -A seen=()
   # .env is data, never executable shell. Unknown keys and shell interpolation
   # fail closed; APP_IMAGE is deliberately ignored and re-derived by the caller.
-  for key in POSTGRES_DB POSTGRES_USER POSTGRES_PASSWORD DB_USERNAME DB_PASSWORD DB_URL REDIS_URL REDIS_PASSWORD APP_OIDC_ENABLED GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET SITE_ADDRESS; do
+  for key in POSTGRES_DB POSTGRES_USER POSTGRES_PASSWORD DB_USERNAME DB_PASSWORD DB_URL REDIS_URL REDIS_PASSWORD APP_OIDC_ENABLED APP_GOOGLE_WORKSPACE_ENABLED GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET GOOGLE_TOKEN_ENCRYPTION_KEY SITE_ADDRESS; do
     unset "$key"
   done
   while IFS= read -r line || [[ -n "$line" ]]; do
@@ -91,7 +91,7 @@ load_env() {
     [[ "$line" =~ ^([A-Z_][A-Z_0-9]*)=(.*)$ ]] || fail 'environment syntax is invalid'
     key="${BASH_REMATCH[1]}"; value="${BASH_REMATCH[2]}"
     [[ "$key" == APP_IMAGE ]] && continue
-    case "$key" in POSTGRES_DB|POSTGRES_USER|POSTGRES_PASSWORD|DB_USERNAME|DB_PASSWORD|DB_URL|REDIS_URL|REDIS_PASSWORD|APP_OIDC_ENABLED|GOOGLE_CLIENT_ID|GOOGLE_CLIENT_SECRET|SITE_ADDRESS) :;; *) fail 'unknown environment key';; esac
+    case "$key" in POSTGRES_DB|POSTGRES_USER|POSTGRES_PASSWORD|DB_USERNAME|DB_PASSWORD|DB_URL|REDIS_URL|REDIS_PASSWORD|APP_OIDC_ENABLED|APP_GOOGLE_WORKSPACE_ENABLED|GOOGLE_CLIENT_ID|GOOGLE_CLIENT_SECRET|GOOGLE_TOKEN_ENCRYPTION_KEY|SITE_ADDRESS) :;; *) fail 'unknown environment key';; esac
     [[ ! -v "seen[$key]" ]] || fail 'duplicate environment key'
     seen[$key]=1
     if [[ "$value" == \"*\" || "$value" == \'*\' ]]; then value="${value:1:${#value}-2}"; fi
@@ -108,8 +108,11 @@ load_env() {
   [[ "$REDIS_PASSWORD" =~ ^[A-Za-z0-9._~-]{24,128}$ && "$REDIS_URL" == "redis://:$REDIS_PASSWORD@redis:6379/0" ]] || fail 'Redis must use the exact project URL and URL-safe password'
   case "$SITE_ADDRESS" in 192.168.219.100|ai-erp.duckdns.org|blackcow.duckdns.org) :;; *) fail 'SITE_ADDRESS must match an approved production IP or domain';; esac
   [[ "$APP_OIDC_ENABLED" == true || "$APP_OIDC_ENABLED" == false ]] || fail 'APP_OIDC_ENABLED must be true or false'
+  APP_GOOGLE_WORKSPACE_ENABLED="${APP_GOOGLE_WORKSPACE_ENABLED:-false}"
+  [[ "$APP_GOOGLE_WORKSPACE_ENABLED" == true || "$APP_GOOGLE_WORKSPACE_ENABLED" == false ]] || fail 'APP_GOOGLE_WORKSPACE_ENABLED must be true or false'
   [[ ( -z "${GOOGLE_CLIENT_ID:-}" && -z "${GOOGLE_CLIENT_SECRET:-}" ) || ( -n "${GOOGLE_CLIENT_ID:-}" && -n "${GOOGLE_CLIENT_SECRET:-}" ) ]] || fail 'Google credentials must be a complete pair'
   if [[ "$APP_OIDC_ENABLED" == true ]]; then [[ -n "${GOOGLE_CLIENT_ID:-}" && -n "${GOOGLE_CLIENT_SECRET:-}" ]] || fail 'OIDC requires Google credentials'; fi
+  if [[ "$APP_GOOGLE_WORKSPACE_ENABLED" == true ]]; then [[ "$APP_OIDC_ENABLED" == true && -n "${GOOGLE_TOKEN_ENCRYPTION_KEY:-}" ]] || fail 'Google Workspace requires OIDC and encryption key'; fi
   export CADDY_STATE_DIR="$STATE_DIR" RELEASE_SOURCE_DIR="$PROJECT_DIR"
 }
 verify_source() {
@@ -119,14 +122,14 @@ verify_source() {
 }
 verify_migrations() {
   local path
-  for path in "$MIGRATION_DIR"/V1__create_module_schemas.sql "$MIGRATION_DIR"/V2__create_phase1_tables.sql "$MIGRATION_DIR"/V4__add_phase1_concurrency_guards.sql "$MIGRATION_DIR"/V5__add_bounded_read_indexes.sql "$MIGRATION_DIR"/V6__add_explicit_group_roles.sql "$MIGRATION_DIR"/V7__add_project_share_invitations.sql; do
+  for path in "$MIGRATION_DIR"/V1__create_module_schemas.sql "$MIGRATION_DIR"/V2__create_phase1_tables.sql "$MIGRATION_DIR"/V4__add_phase1_concurrency_guards.sql "$MIGRATION_DIR"/V5__add_bounded_read_indexes.sql "$MIGRATION_DIR"/V6__add_explicit_group_roles.sql "$MIGRATION_DIR"/V7__add_project_share_invitations.sql "$MIGRATION_DIR"/V8__add_google_workspace_integrations.sql; do
     no_symlinks "$path"
     [[ -s "$path" && -f "$path" ]] || fail 'required migration file missing'
   done
-  [[ "$(find "$MIGRATION_DIR" -mindepth 1 -maxdepth 1 | wc -l)" == 6 ]] || fail 'unexpected migration set'
+  [[ "$(find "$MIGRATION_DIR" -mindepth 1 -maxdepth 1 | wc -l)" == 7 ]] || fail 'unexpected migration set'
 }
 migration_checksum() {
-  (cd "$MIGRATION_DIR" && sha256sum V1__create_module_schemas.sql V2__create_phase1_tables.sql V4__add_phase1_concurrency_guards.sql V5__add_bounded_read_indexes.sql V6__add_explicit_group_roles.sql V7__add_project_share_invitations.sql) | sha256sum | awk '{print $1}'
+  (cd "$MIGRATION_DIR" && sha256sum V1__create_module_schemas.sql V2__create_phase1_tables.sql V4__add_phase1_concurrency_guards.sql V5__add_bounded_read_indexes.sql V6__add_explicit_group_roles.sql V7__add_project_share_invitations.sql V8__add_google_workspace_integrations.sql) | sha256sum | awk '{print $1}'
 }
 verify_resources() {
   local kind list name label expected

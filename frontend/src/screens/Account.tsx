@@ -1358,6 +1358,11 @@ export function Account() {
           <div className="account-card">
             <strong>{me.data.displayName || "이름 없는 계정"}</strong>
             <span>{me.data.email || "이메일 비공개"}</span>
+            <Link className="button button-primary" to="/account/google">Google 서비스 연결</Link>
+            <div className="account-service-links">
+              <Link to="/account/drive">내 Drive</Link>
+              <Link to="/account/mail">Gmail</Link>
+            </div>
             <Link className="button button-secondary" to="/calendar">Calendar 연결 설정</Link>
             <AccountSwitch />
           </div>

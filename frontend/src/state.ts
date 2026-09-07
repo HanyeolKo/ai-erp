@@ -206,6 +206,14 @@ export const keys = {
   invitation: (t: string) => ["invite", t] as const,
   notifications: ["notifications"] as const,
   connection: ["connection"] as const,
+  googleConnection: ["google-connection"] as const,
+  driveFiles: ["google-drive-files"] as const,
+  projectFiles: (p: string) => ["project-files", p] as const,
+  mail: (folder: string) => ["google-mail", folder] as const,
+  mailDetail: (id: string) => ["google-mail-detail", id] as const,
+  mailSend: (id: string) => ["google-mail-send", id] as const,
+  googleCalendars: ["google-calendars"] as const,
+  projectCalendar: (p: string) => ["project-calendar", p] as const,
 };
 export const useMe = () => useQuery({ queryKey: keys.me, queryFn: api.me });
 export const useProject = (id: string) => {

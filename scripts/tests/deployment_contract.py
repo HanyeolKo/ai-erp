@@ -496,6 +496,8 @@ def migration_guard_checks(root):
         files = child_checkout / migration
         if kind == 'missing':
             (files / 'V7__add_project_share_invitations.sql').unlink()
+        elif kind == 'missing-v8':
+            (files / 'V8__add_google_workspace_integrations.sql').unlink()
         elif kind == 'extra':
             (files / 'V99__unexpected.sql').write_text('-- unexpected migration\n', encoding='utf-8')
         elif kind == 'symlink':
@@ -508,23 +510,23 @@ def migration_guard_checks(root):
         check(expected in result.stderr, kind + ' migration input must be rejected')
         child.clean()
 
-    for kind in ('missing', 'extra'):
+    for kind in ('missing', 'missing-v8', 'extra'):
         preflight_mutation(kind)
     if os.name != 'nt':
         preflight_mutation('symlink')
 
     before = migration_checksum(checkout)
-    tampered = checkout / migration / 'V7__add_project_share_invitations.sql'
+    tampered = checkout / migration / 'V8__add_google_workspace_integrations.sql'
     tampered.write_text(tampered.read_text(encoding='utf-8') + '\n-- tampered checksum fixture\n', encoding='utf-8')
     after = migration_checksum(checkout)
-    check(after != before, 'V7 migration content must participate in migration checksum')
+    check(after != before, 'V8 migration content must participate in migration checksum')
 
     child = clone(h, 'migration-tampered-after-build')
     child_checkout = child.root / 'checkout'
     shutil.copytree(checkout, child_checkout)
     child.env['AI_ERP_PROJECT_DIR'] = posix(child_checkout)
     runtime = PROJECT / 'scripts/tests/fake-runtime.py'
-    v7 = child_checkout / migration / 'V7__add_project_share_invitations.sql'
+    v7 = child_checkout / migration / 'V8__add_google_workspace_integrations.sql'
     child.wrapper('docker', f'''if [[ "${{1:-}}" == build ]]; then
   "{posix(sys.executable)}" "{posix(runtime)}" docker "$@"
   printf '\\n-- tampered after build\\n' >> "{posix(v7)}"
@@ -533,7 +535,7 @@ fi
 exec "{posix(sys.executable)}" "{posix(runtime)}" docker "$@"''')
     result = child.run('deploy', C, success=False)
     check('migration inputs changed after build' in result.stderr,
-          'V7 tampering after checksum capture must abort deployment')
+          'V8 tampering after checksum capture must abort deployment')
     check(not any(call['event'] == 'migrate' for call in child.calls()),
           'tampered migration set must never reach Flyway')
     child.clean()

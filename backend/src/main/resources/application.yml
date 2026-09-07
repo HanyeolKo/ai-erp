@@ -26,6 +26,7 @@ spring:
       - notification
       - calendar_integration
       - audit
+      - google_workspace
     create-schemas: true
 
 server:

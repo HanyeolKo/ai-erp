@@ -108,6 +108,20 @@ export type Projection = ResponseOf<
 export type ShareInvitation = ResponseOf<paths["/api/v1/projects/{projectId}/share-invitation"]["get"]>;
 export type ShareInvitationCreate = ResponseOf<paths["/api/v1/projects/{projectId}/share-invitation"]["post"]>;
 export type ProjectInvitationPreview = ResponseOf<paths["/api/v1/project-invitations/{code}"]["get"]>;
+export type GoogleServiceStatus = "CONNECTED" | "NOT_CONNECTED" | "PERMISSION_REQUIRED" | "REAUTH_REQUIRED";
+export type GoogleConnection = { configurationRequired: boolean; accountEmail: string | null; drive: { status: GoogleServiceStatus }; gmail: { status: GoogleServiceStatus }; calendar: { status: GoogleServiceStatus } };
+export type GoogleConnectResult = { authorizationUrl: string };
+export type DriveFile = { id: string; name: string | null; mimeType: string; url: string; modifiedTime: string };
+export type DriveFiles = { files: DriveFile[]; nextPageToken?: string | null };
+export type ProjectFileReference = { id: string; fileId: string; name: string; mimeType: string; url: string; attachedBy: string; attachedAt: string; canRemove: boolean };
+export type ProjectFiles = { files: ProjectFileReference[]; hasNext: boolean };
+export type MailMessage = { id: string; subject: string | null; from: string; to: string[]; snippet: string; internalDate: string; unread: boolean };
+export type MailMessages = { messages: MailMessage[]; nextPageToken?: string | null };
+export type MailDetail = { id: string; subject: string | null; from: string; to: string[]; cc: string[]; date: string; bodyText: string; truncated: boolean };
+export type MailSendReceipt = { requestId: string; status: "SENDING" | "SENT" | "UNKNOWN" | "FAILED"; messageId?: string | null };
+export type GoogleCalendar = { id: string; name: string };
+export type GoogleCalendars = { calendars: GoogleCalendar[]; nextPageToken?: string | null };
+export type ProjectCalendar = { status: "NOT_BOUND" | "BOUND" | "REAUTH_REQUIRED"; calendarName?: string | null; ownerName?: string | null; isOwner: boolean; canManage: boolean; backfillPending: boolean };
 type RetryResult = ResponseOf<
   paths["/api/v1/projects/{projectId}/schedules/{id}/calendar/retry"]["post"]
 >;
@@ -290,6 +304,22 @@ export const api = {
     ),
   joinProjectInvitation: (code: string) =>
     mutate<Project>(`/api/v1/project-invitations/${segment(code)}/join`),
+  googleConnection: () => read<GoogleConnection>("/api/v1/google/connection"),
+  connectGoogle: (feature: "DRIVE" | "GMAIL" | "CALENDAR") =>
+    mutate<GoogleConnectResult, { feature: "DRIVE" | "GMAIL" | "CALENDAR" }>("/api/v1/google/connect", "POST", { feature }),
+  disconnectGoogle: () => mutate<void>("/api/v1/google/connection", "DELETE"),
+  driveFiles: (query = "", pageToken = "") => read<DriveFiles>(`/api/v1/google/drive/files?query=${encodeURIComponent(query)}&pageToken=${encodeURIComponent(pageToken)}`),
+  projectFiles: (p: string, page = "") => read<ProjectFiles>(`${base(p)}/files?page=${encodeURIComponent(page)}`),
+  attachProjectFile: (p: string, fileId: string) => mutate<ProjectFileReference, { fileId: string }>(`${base(p)}/files`, "POST", { fileId }),
+  removeProjectFile: (p: string, referenceId: string) => mutate<void>(`${base(p)}/files/${segment(referenceId)}`, "DELETE"),
+  mailMessages: (folder: "INBOX" | "SENT", query = "", pageToken = "") => read<MailMessages>(`/api/v1/google/mail/messages?folder=${folder}&query=${encodeURIComponent(query)}&pageToken=${encodeURIComponent(pageToken)}`),
+  mailDetail: (id: string) => read<MailDetail>(`/api/v1/google/mail/messages/${segment(id)}`),
+  sendMail: (body: { requestId: string; to: string[]; cc: string[]; bcc: string[]; subject: string; body: string }) => mutate<MailSendReceipt, typeof body>("/api/v1/google/mail/send", "POST", body),
+  mailSendReceipt: (requestId: string) => read<MailSendReceipt>(`/api/v1/google/mail/sends/${segment(requestId)}`),
+  googleCalendars: (pageToken = "") => read<GoogleCalendars>(`/api/v1/google/calendars?pageToken=${encodeURIComponent(pageToken)}`),
+  projectCalendar: (p: string) => read<ProjectCalendar>(`${base(p)}/calendar`),
+  bindProjectCalendar: (p: string, calendarId: string) => mutate<ProjectCalendar, { calendarId: string }>(`${base(p)}/calendar`, "POST", { calendarId }),
+  unbindProjectCalendar: (p: string) => mutate<void>(`${base(p)}/calendar`, "DELETE"),
   calendar: () => read<Connection>("/api/v1/calendar/connection"),
   reconnect: () => mutate<ReconnectResult>("/api/v1/calendar/reconnect"),
   projection: (p: string, s: string) =>
