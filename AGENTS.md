@@ -6,6 +6,16 @@ Treat the relevant local workspace file as the canonical source for substantial 
 Update the local source first, then archive a copy in the Notion database `AI 생성문서 관리` with the local source path and last synchronized date when practical.
 Do not archive short conversation replies, temporary notes, raw command output, or intermediate working material unless requested.
 
+### Notion reading queue
+
+- Keep local files as the canonical sources and update them before synchronizing to Notion. Notion is a concise reading archive; do not create a separate page for every output or revision.
+- Before creating a page in `AI 생성문서 관리`, search for existing documents in the same context (the same project, topic, purpose, and continuing decision or work; title similarity alone is insufficient) and inspect the actual reading-status property: `읽음`, `읽는중`, or `안읽음`.
+- If a same-context document is `안읽음`, update that existing page instead of creating a new one. Consolidate overlapping content into a concise, current document, retaining relevant decisions and necessary context rather than appending repeated reports. Keep its reading status as `안읽음` and refresh the local source path(s) and synchronization date.
+- Preserve same-context documents marked `읽음` or `읽는중`. If no suitable unread page exists, create a new page only for substantive new information the user needs to read; summarize the changes and link related documents rather than duplicating their full contents.
+- On every initial document registration, explicitly set the reading-status property to `안읽음`; do not rely on a database default or leave it empty.
+- If the reading-status property or its value cannot be verified, keep the local source updated and defer Notion synchronization rather than guessing the status or creating a duplicate.
+- This rule governs future synchronization. Do not bulk merge, delete, or change the reading status of existing documents unless the user requests it.
+
 <!-- harness-factory:start ai-erp -->
 ## AI ERP UI/UX and implementation routing
 
@@ -41,4 +51,5 @@ Do not archive short conversation replies, temporary notes, raw command output, 
 - Native defaults are explicit: root/final reviewer Astra/high; router, product-planner, and ui-ux-designer Sol/medium; implementer and release-manager Luna/high. Spark/high is an explicitly selected implementation alternative with reason and availability evidence.
 - Parent-owned executor escalation is Luna/high -> Terra/medium -> Sol/medium, never Astra execution. Sol-ceiling failures return to the Astra orchestrator for self-review; workers cannot self-escalate. Generic dispatch records model, effort, canonical role/contract, bounded context, and `MODEL-ESCALATION.md` when applicable. Limits are two active workers and delegation depth one.
 - Implementer is parent-assigned execution and verification only; it may not own verdicts, routing, or improvement actions.
+- Execution evidence and bounded retry guidance: `harness/loops/EXECUTION-LOOP.md`.
 <!-- harness-factory:end ai-erp -->
