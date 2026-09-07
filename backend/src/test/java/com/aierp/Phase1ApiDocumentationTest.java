@@ -41,6 +41,7 @@ class Phase1ApiDocumentationTest {
     @Autowired MockMvc mvc;
     @MockitoBean ProjectRepository projects;
     @MockitoBean ProjectMemberRepository members;
+    @MockitoBean com.aierp.group.api.GroupAccess groupAccess;
     @MockitoBean InvitationService invitations;
     @MockitoBean ScheduleService schedules;
     @MockitoBean NotificationRepository notifications;
@@ -49,6 +50,7 @@ class Phase1ApiDocumentationTest {
     @MockitoBean ScheduleDashboard scheduleDashboard;
     @MockitoBean CalendarDashboard calendarDashboard;
     final UUID project=UUID.fromString("10000000-0000-0000-0000-000000000001"),user=UUID.fromString("20000000-0000-0000-0000-000000000002"),id=UUID.fromString("30000000-0000-0000-0000-000000000003");
+    final UUID ownerGroup = UUID.fromString("40000000-0000-0000-0000-000000000001"), adminGroup = UUID.fromString("40000000-0000-0000-0000-000000000002"), memberGroup = UUID.fromString("40000000-0000-0000-0000-000000000003");
     final String base="/api/v1/projects/{projectId}/schedules";
     final UsernamePasswordAuthenticationToken auth=new UsernamePasswordAuthenticationToken(new ApplicationPrincipal(user,"member@example.test",true),null,List.of());
     final Instant starts=Instant.parse("2026-09-07T10:00:00Z");
@@ -86,6 +88,24 @@ class Phase1ApiDocumentationTest {
         var dashboardFields=new ArrayList<>(List.of(fields("projectId","memberCount","scheduleCount","pendingAcknowledgementCount","calendarRiskCount","upcomingSchedules","actionQueue")));
         dashboardFields.addAll(List.of(summaryFields("upcomingSchedules[].")));dashboardFields.addAll(List.of(summaryFields("actionQueue[].")));
         success("dashboard",get("/api/v1/projects/{projectId}/dashboard",project),dashboardFields.toArray(FieldDescriptor[]::new));
+    }
+    @Test void documentsProjectCreationContracts() throws Exception {
+        when(groupAccess.creationOptions(eq(user),eq(0),eq(100))).thenReturn(List.of(
+            new com.aierp.group.api.GroupAccess.CreationOption(ownerGroup,"Owner",true,null),
+            new com.aierp.group.api.GroupAccess.CreationOption(adminGroup,"Admin",true,null),
+            new com.aierp.group.api.GroupAccess.CreationOption(memberGroup,"Member",false,"GROUP_ROLE_REQUIRED")
+        ));
+        when(projects.save(any())).thenAnswer(i -> i.getArgument(0));
+        when(members.save(any())).thenAnswer(i -> i.getArgument(0));
+        success("project-creation-options",get("/api/v1/projects/creation-options").queryParam("page","0").queryParam("limit","100"),
+            optionFields());
+        success("project-create", post("/api/v1/projects").content("{\"groupId\":\""+ownerGroup+"\",\"name\":\"Project\"}"),fields("id","groupId","name","role"),fields("groupId","name"))
+            .andExpect(jsonPath("$.role").value("MANAGER"));
+    }
+    private FieldDescriptor[] optionFields() {
+        var result=fields("[].id","[].name","[].canCreate","[].reason");
+        result[3].optional().type(JsonFieldType.STRING);
+        return result;
     }
     @Test void documentsScheduleInventoryAndParticipantContract() throws Exception {
         success("schedule-list",get(base,project).queryParam("from","2026-09-01T00:00:00Z").queryParam("to","2026-10-01T00:00:00Z").queryParam("limit","20").queryParam("page","0"),summaryFields("[]."));
@@ -171,7 +191,7 @@ class Phase1ApiDocumentationTest {
         var parameters=ResourceSnippetParameters.builder().tag("Phase 1")
             .description(name+". Cookie session and CSRF are required for writes. UUID identifiers; ISO-8601 UTC timestamps.")
             .requestFields(input).responseFields(response);
-        if(Set.of("projects","project-members","notification-list","schedule-list").contains(name)) {
+        if(Set.of("projects","project-members","notification-list","schedule-list","project-creation-options").contains(name)) {
             var query=new ArrayList<ParameterDescriptorWithType>();
             query.add(parameterWithName("page").type(SimpleType.NUMBER).optional().defaultValue(0).description("Zero-based page, 0..10000."));
             query.add(parameterWithName("limit").type(SimpleType.NUMBER).optional().defaultValue(100).description("Maximum rows per page, 1..200; default 100."));
@@ -184,7 +204,8 @@ class Phase1ApiDocumentationTest {
         }
         if(name.equals("schedule-detail")) parameters.queryParameters(parameterWithName("historyLimit").type(SimpleType.NUMBER).optional().defaultValue(50).description("Most recent history entries, 1..200; default 50, returned chronologically."));
         if(name.equals("dashboard")) parameters.description("Database totals across this project. Pending ACK excludes current VIEWER/nonmembers. Upcoming schedules overlap now through 14 days, exclude cancelled, and are capped at 100. Action queue is capped at 100, and empty for VIEWER. Lists ordered by startsAt and id; changes is empty; open detail for history.");
-        return mvc.perform(request.with(authentication(auth)).with(csrf().asHeader()).contentType("application/json"))
+        if(name.equals("project-creation-options")) parameters.description("Owner/Admin group memberships can create; MEMBER and null-role memberships cannot.");
+        return mvc.perform(request.with(authentication(auth)).with(csrf().asHeader()).contentType("application/json;charset=UTF-8"))
             .andExpect(status().isOk()).andDo(document(name,resource(parameters.build())));
     }
     private void problem(String name,MockHttpServletRequestBuilder request,int expected,String code,boolean fieldErrors) throws Exception {

@@ -50,8 +50,23 @@ class OpenApiContractTest {
         assertNullable(notification,"readAt");assertNullable(notification,"link");
         assertNullable(responseSchema("/api/v1/system/configuration","get"),"loginUrl");
     }
+    @Test void projectCreationOptionsAndCreateResponseSchemasAreExplicit() {
+        var options=responseSchema("/api/v1/projects/creation-options","get");
+        assertThat(options.path("type").asText()).isEqualTo("array");
+        var option=resolve(options.path("items"));
+        assertThat(option.path("required").valueStream().map(JsonNode::asText).toList()).contains("id","name","canCreate");
+        assertThat(option.path("properties").path("canCreate").path("type").asText()).isEqualTo("boolean");
+        assertNullable(option,"reason");
+        var create=responseSchema("/api/v1/projects","post");
+        assertThat(create.path("required").valueStream().map(JsonNode::asText).toList()).contains("id","groupId","name","role");
+        assertThat(create.path("properties").path("role").path("type").asText()).isEqualTo("string");
+        assertThat(example("/api/v1/projects","post","project-create").path("role").asText()).isEqualTo("MANAGER");
+        var examples=example("/api/v1/projects/creation-options","get","project-creation-options");
+        assertThat(examples.isArray()).isTrue();
+        assertThat(examples.size()).isPositive();
+    }
     @Test void queryBoundsArePartOfTheGeneratedContract() {
-        for(var path:List.of("/api/v1/projects","/api/v1/projects/{projectId}/members","/api/v1/notifications",base)) {
+        for(var path:List.of("/api/v1/projects","/api/v1/projects/creation-options","/api/v1/projects/{projectId}/members","/api/v1/notifications",base)) {
             var query=operation(path,"get").path("parameters").valueStream().filter(p->p.path("in").asText().equals("query")).toList();
             assertThat(query).extracting(p->p.path("name").asText()).contains("page","limit");
             assertThat(query.stream().filter(p->p.path("name").asText().equals("limit")).findFirst().orElseThrow().path("schema").path("default").asInt()).isEqualTo(100);
@@ -79,6 +94,6 @@ class OpenApiContractTest {
     private static JsonNode resolve(JsonNode schema) {return schema.has("$ref")?document.at(schema.path("$ref").asText().substring(1)):schema;}
     private static JsonNode example(String path,String method,String name) {
         var value=operation(path,method).path("responses").path("200").path("content").path("application/json").path("examples").path(name).path("value");
-        return value.isString()?mapper.readTree(value.asText()):value;
+        return value.isString()?mapper.valueToTree(new Yaml().load(value.asText())):value;
     }
 }

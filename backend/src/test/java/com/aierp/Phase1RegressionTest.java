@@ -47,6 +47,6 @@ class Phase1RegressionTest {
     }
     @Test void nullRoleIsRejected() {
         var projects=mock(ProjectRepository.class);
-        assertThatThrownBy(()->new ProjectController(projects,members).changeRole(project,user,new ProjectController.RoleRequest(null),auth)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(()->new ProjectController(projects,members,mock(com.aierp.group.api.GroupAccess.class)).changeRole(project,user,new ProjectController.RoleRequest(null),auth)).isInstanceOf(IllegalArgumentException.class);
     }
 }

@@ -1,12 +1,13 @@
 package com.aierp;
 
+import com.aierp.platform.events.EventJournal;
 import com.aierp.schedule.*;
 import com.aierp.project.api.ProjectAccess;
-import com.aierp.platform.events.EventJournal;
+import com.aierp.project.api.ProjectController;
 import java.util.*;
 import org.junit.jupiter.api.Test;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import java.time.Instant;
 import com.aierp.platform.web.ValidationFailure;
@@ -31,10 +32,8 @@ class BoundedReadRegressionTest {
             mock(ProjectAccess.class), mock(EventJournal.class));
         service.list(UUID.randomUUID(), UUID.randomUUID());
         assertThat(mockingDetails(repository).getInvocations()).anySatisfy(invocation ->
-            assertThat(Arrays.asList(invocation.getArguments())).anySatisfy(argument -> {
-                assertThat(argument).isInstanceOf(Pageable.class);
-                assertThat(((Pageable) argument).getPageSize()).isBetween(1, 200);
-            }));
+            assertThat(Arrays.asList(invocation.getArguments())).anyMatch(argument ->
+                argument instanceof Pageable pageable && pageable.getPageSize() >= 1 && pageable.getPageSize() <= 200));
     }
     @Test void listUsesOneBatchPerChildTypeAndNeverReadsPerScheduleHistory() {
         var one=schedule(UUID.randomUUID());var two=schedule(UUID.randomUUID());
@@ -116,7 +115,7 @@ class BoundedReadRegressionTest {
         when(memberships.findByUserAccountId(user,bounds)).thenReturn(List.of(m));
         when(projects.findAllById(List.of(project))).thenReturn(List.of(new ProjectEntity(project,UUID.randomUUID(),"Planning")));
         var auth=new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(new com.aierp.identity.api.ApplicationPrincipal(user,"a@example.test",true),null,List.of());
-        assertThat(new com.aierp.project.api.ProjectController(projects,memberships).list(auth,null,null)).hasSize(1);
+        assertThat(new ProjectController(projects,memberships,mock(com.aierp.group.api.GroupAccess.class)).list(auth,null,null)).hasSize(1);
         verify(memberships).findByUserAccountId(user,bounds);verifyNoMoreInteractions(memberships);
         verify(projects).findAllById(List.of(project));verifyNoMoreInteractions(projects);
     }
