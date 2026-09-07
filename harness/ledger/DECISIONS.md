@@ -22,3 +22,11 @@ All other role metadata, instruction bytes, sandbox access, managed skills, path
 
 Upstream UI/UX skills are pinned under `vendor/ux-skills/`; concise project skills select them progressively and adapt paths to the project.
 Local files are canonical. Substantial reader documents are then archived to Notion database `AI 생성문서 관리` (`345de20d-f69b-4fe8-b79b-a204c819a7f8`) with their local source and synchronized date.
+
+## D-004: Lightweight implementer and task-review split
+
+- Source: explicit request to assign Spark or a comparable lightweight model to implementation while upper agents retain deep decisions, independent review, and final acceptance.
+- Scope: add `ai-erp-implementer`, `task-review`, implementation contracts/results, and explicit model policy for all code, tests, and behavior-affecting configuration.
+- Effect: D-004 supersedes D-001's three-role, balanced-tier, and backend ordinary-flow choices and supersedes D-002's blanket inheritance for implementation only. Router, designer, and reviewer retain inherited native model and effort; the native implementer defaults to `gpt-5.3-codex-spark` with `high`, and `gpt-5.6-luna` with `high` is the documented fallback when Spark cannot be invoked.
+- Route: `router -> ui-ux-designer -> reviewer -> implementer` for UI implementation; `router -> implementer` for non-UI implementation after a complete parent contract. Each stage returns to the upper orchestrator, which requests independent review after the result.
+- New artifacts: `harness/evaluation/TASK-REVIEW-RUBRIC.md`, `harness/templates/IMPLEMENTATION-CONTRACT.md`, `harness/templates/IMPLEMENTATION-RESULT.md`, and receipt evidence under `harness/maintenance/runs/add-spark-implementer`.

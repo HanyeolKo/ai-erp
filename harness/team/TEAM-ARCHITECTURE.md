@@ -1,14 +1,15 @@
 # Team architecture
 
-`harness/harness-spec.json` owns role IDs, capabilities, domains, handoffs, and evaluator links.
+`harness/harness-spec.json` owns role IDs, capabilities, handoffs, and evaluator links.
 
 | Role | Responsibility | Output |
 | --- | --- | --- |
-| `router` | Classify requests, delegate, collect reproducible evidence | Bounded task and evidence bundle |
-| `ui-ux-designer` | Plan ERP screens and interactions | Local screen plan with rationale |
-| `reviewer` | Independently assess evidence and stable defects | `pass` or `fail` with criteria |
+| `router` | Route bounded tasks and collect reproducible evidence | Routing assignment and evidence bundle |
+| `ui-ux-designer` | Plan ERP screens and interactions | Local plan under `docs/ux/` with rationale |
+| `reviewer` | Independently review evidence and issue verdicts | Pass/fail result with stable defects |
+| `implementer` | Execute parent-approved implementation contracts and verification | `IMPLEMENTATION-RESULT.md` and executed checks |
 
-Every screen planning task follows `router -> ui-ux-designer -> reviewer` before implementation.
-The requesting orchestrator runs checks and stores evidence; the designer does not approve its own plan.
-The reviewer returns findings to the orchestrator. Remediation is governed by the execution loop rather than a reverse normal handoff.
-Parallelize independent research or review only within declared limits. Native wrappers inherit the user's model; the `balanced` tier is a provider-neutral cost preference.
+UI implementation follows `router -> ui-ux-designer -> reviewer -> implementer` after the parent completes the contract.
+Non-UI implementation follows `router -> implementer` after a complete parent contract; results return to the parent, who requests independent review.
+These are artifact prerequisites controlled by the upper orchestrator, not nested spawn edges. No specialist shortcut or reverse implementation edge is part of the required route.
+Reviewer verdicts are never delegated to `implementer`.

@@ -1,0 +1,19 @@
+# Luna implementation report
+
+- Task: `add-spark-implementer`
+- Implementer identity: `gpt-5.6-luna`, `high` reasoning; used because the preferred Spark lane was quota-limited.
+- Scope: canonical harness spec, four-role routing, lightweight model policy, role/skill contracts, evaluator/routing guards, tests, receipts, recovery state, and provider parity.
+
+Changed canonical or provider files include `harness/harness-spec.json`, `harness/team/agents/{router,ui-ux-designer,reviewer,implementer}.md`, `harness/skills/ai-erp*.md`, `.agents/skills/ai-erp*.md`, `.codex/agents/ai-erp-*.toml`, `AGENTS.md`, verifier/tests, implementation templates/rubric, delta receipt/preflight evidence, ledger/state/recovery/loop files, and related reader docs.
+
+Checks completed with exit code 0:
+
+- `python -B scripts/verify-harness.py`
+- `python -B scripts/test_verify_harness.py` — 20 tests
+- `python -B scripts/smoke-ux-skills.py`
+- `python -B scripts/vendor/harness-factory/scripts/validate_runtime_neutral.py . --spec harness/harness-spec.json --provider-path-preflight`
+- `git diff --check`
+
+Known gap: full vendor factory validation reports missing optional `model` and `model_reasoning_effort` keys for inherited upper Codex wrappers. This is the preserved factory 0.3.0 compatibility limitation; the project verifier validates upper inheritance and implementer Spark/Luna high policy separately. Independent parent `task-review` and Git staging remain for the parent; application tests are not applicable because app code was untouched.
+
+Status: implementation evidence ready for parent independent review; no final approval or merge decision made by Luna.

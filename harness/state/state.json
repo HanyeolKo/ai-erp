@@ -5,7 +5,12 @@
       "id": "create-ui-ux-agent",
       "status": "done",
       "evaluator": "harness-structure"
+    },
+    {
+      "id": "add-spark-implementer",
+      "status": "done",
+      "evaluator": "task-review"
     }
   ],
-  "next_action": "Finish the authorized Git review, PR merge, and Notion archive synchronization; then route the next screen planning task through the specialist."
+  "next_action": "Complete authorized Git PR delivery and reader archive synchronization; for the next task use specialist planning, lightweight implementation, and upper-agent judgment."
 }

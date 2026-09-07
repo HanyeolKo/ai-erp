@@ -1,0 +1,55 @@
+{
+  "schema_version": "1.0",
+  "task": "add-spark-implementer",
+  "recorded_by": "parent orchestrator /root",
+  "record_kind": "Parent-observed dispatch metadata and outcomes; not an implementer self-certification",
+  "assignments": [
+    "harness/maintenance/runs/add-spark-implementer/spark-assignment.txt",
+    "harness/maintenance/runs/add-spark-implementer/accepted-amendments.txt"
+  ],
+  "runs": [
+    {
+      "executor": "gpt-5.3-codex-spark",
+      "reasoning_effort": "high",
+      "dispatch": "codex exec --ephemeral -m gpt-5.3-codex-spark -c model_reasoning_effort=high --approve-for-me --color never --json",
+      "thread_id": "01a07968-2da3-7622-b244-3419fc24bc47",
+      "observed_result": "The model executed file changes, then the CLI exited 1 with a GPT-5.3-Codex-Spark usage-limit error.",
+      "result": "interrupted"
+    },
+    {
+      "executor": "gpt-5.6-luna",
+      "reasoning_effort": "high",
+      "dispatch_tool": "collaboration.spawn_agent",
+      "dispatch_parameters": {
+        "task_name": "luna_harness_implementation",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "high",
+        "fork_turns": "none"
+      },
+      "returned_task_name": "/root/luna_harness_implementation",
+      "reason": "The user explicitly changed the preference to Spark or a comparable lightweight implementation model after Spark's quota interruption.",
+      "observed_result": "The worker completed three bounded review corrections after its initial 20-test result; the parent ran the final 22 tests, structural verifier, offline smoke and diff checks successfully.",
+      "result_evidence": "harness/maintenance/runs/add-spark-implementer/implementation-result.txt"
+    },
+    {
+      "executor": "gpt-5.6-luna",
+      "reasoning_effort": "high",
+      "dispatch_tool": "collaboration.spawn_agent",
+      "dispatch_parameters": {
+        "task_name": "luna_reader_docs",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "high",
+        "fork_turns": "none"
+      },
+      "returned_task_name": "/root/luna_reader_docs",
+      "observed_result": "The worker produced three reader-document candidates. The parent reviewed and copied them to the canonical reader-document paths."
+    }
+  ],
+  "verification_scope": "Harness setup and delegation-policy installation. Application screen implementation is a separate user-owned task.",
+  "parent_final_review": {
+    "verdict": "pass",
+    "reviewer": "/root/review_harness",
+    "scope": "Harness structure, lightweight delegation policy, source preservation and implementation evidence; excludes application screen implementation",
+    "evidence": "harness/maintenance/runs/add-spark-implementer/local-verification.json"
+  }
+}

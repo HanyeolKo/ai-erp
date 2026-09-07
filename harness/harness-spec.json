@@ -3,9 +3,9 @@
   "profile": "core",
   "harness": {
     "id": "ai-erp",
-    "purpose": "Route every AI ERP screen planning task through a UI/UX specialist before implementation, using project-owned design skills and review evidence.",
+    "purpose": "Route all UI/UX planning through specialist review and execute all code, tests, and behavior-affecting configuration through an explicit lightweight implementer using a parent-owned contract, result, and independent review process.",
     "root": "harness",
-    "construction_receipt": "harness/maintenance/runs/create-ui-ux-agent/delta-plan.json"
+    "construction_receipt": "harness/maintenance/runs/add-spark-implementer/delta-plan.json"
   },
   "runtime_targets": [
     "codex"
@@ -35,15 +35,32 @@
       "id": "harness",
       "paths": [
         "harness",
-        "scripts/verify-harness.py"
+        "scripts/verify-harness.py",
+        ".codex",
+        "vendor/ux-skills"
       ],
       "coordinator": "router"
+    },
+    {
+      "id": "implementation",
+      "paths": [
+        "frontend",
+        "backend",
+        "scripts",
+        "infra",
+        ".github",
+        "Dockerfile",
+        "package.json",
+        "pnpm-lock.yaml",
+        "pnpm-workspace.yaml"
+      ],
+      "coordinator": "implementer"
     }
   ],
   "agents": [
     {
       "id": "router",
-      "description": "Classify requests, delegate screen planning, and collect task evidence.",
+      "description": "Classify requests, construct bounded routing to specialist or implementation execution, and collect reproducible evidence.",
       "lane": "control",
       "capabilities": [
         "routing",
@@ -51,22 +68,23 @@
       ],
       "domains": [
         "ui-ux",
-        "harness"
+        "harness",
+        "implementation"
       ],
-      "model_tier": "balanced",
+      "model_tier": "deep",
       "access": "read-only"
     },
     {
       "id": "ui-ux-designer",
-      "description": "Plan accessible ERP screens and interaction flows before implementation.",
+      "description": "Plan screens, interaction, and workflow before implementation; no production code changes.",
       "lane": "execution",
       "capabilities": [
-        "execution"
+        "ui-planning"
       ],
       "domains": [
         "ui-ux"
       ],
-      "model_tier": "balanced",
+      "model_tier": "deep",
       "access": "workspace-write"
     },
     {
@@ -80,10 +98,27 @@
       ],
       "domains": [
         "ui-ux",
-        "harness"
+        "harness",
+        "implementation"
       ],
-      "model_tier": "balanced",
+      "model_tier": "deep",
       "access": "read-only"
+    },
+    {
+      "id": "implementer",
+      "description": "Execute parent-approved code, test, and behavior-affecting configuration changes for implementation domains; ALL code, tests, and behavior-affecting configuration regardless of path.",
+      "lane": "execution",
+      "capabilities": [
+        "execution",
+        "verification"
+      ],
+      "domains": [
+        "implementation",
+        "harness",
+        "ui-ux"
+      ],
+      "model_tier": "fast",
+      "access": "workspace-write"
     }
   ],
   "skills": [
@@ -93,20 +128,22 @@
       "entry_agent": "router",
       "domains": [
         "ui-ux",
-        "harness"
+        "harness",
+        "implementation"
       ],
       "instructions": "harness/skills/ai-erp/SKILL.md",
-      "evaluator": "ui-plan-review"
+      "evaluator": "task-review"
     },
     {
       "id": "ai-erp-eval",
       "kind": "evaluation",
       "entry_agent": "reviewer",
       "domains": [
-        "ui-ux"
+        "ui-ux",
+        "implementation"
       ],
       "instructions": "harness/skills/ai-erp-eval/SKILL.md",
-      "evaluator": "ui-plan-review"
+      "evaluator": "task-review"
     },
     {
       "id": "ai-erp-verify",
@@ -157,6 +194,18 @@
       ],
       "instructions": "harness/skills/ai-erp-web-design-guidelines/SKILL.md",
       "evaluator": "ui-plan-review"
+    },
+    {
+      "id": "ai-erp-implement",
+      "kind": "domain",
+      "entry_agent": "implementer",
+      "domains": [
+        "implementation",
+        "harness",
+        "ui-ux"
+      ],
+      "instructions": "harness/skills/ai-erp-implement/SKILL.md",
+      "evaluator": "task-review"
     }
   ],
   "orchestration": {
@@ -165,7 +214,7 @@
       {
         "from": "router",
         "to": "ui-ux-designer",
-        "when": "Every screen planning request, including pages, user flows, layouts, navigation, forms, tables, dashboards, states, and interaction changes; delegate before writing the plan or implementing the screen.",
+        "when": "Screen planning request including pages, flows, forms, tables, layouts, navigation, states, interactions, and accessibility.",
         "artifacts": [
           "harness/templates/SCREEN-PLAN.md"
         ]
@@ -173,14 +222,41 @@
       {
         "from": "ui-ux-designer",
         "to": "reviewer",
-        "when": "A screen plan and design rationale are available; require a reviewed plan before implementation.",
+        "when": "A screen plan is available and implementation awaits independent review.",
         "artifacts": [
           "harness/templates/UI-REVIEW.md"
+        ]
+      },
+      {
+        "from": "reviewer",
+        "to": "implementer",
+        "when": "A UI plan has passed independent ui-plan-review and the parent has completed the implementation contract.",
+        "artifacts": [
+          "harness/templates/IMPLEMENTATION-CONTRACT.md",
+          "harness/templates/IMPLEMENTATION-RESULT.md"
+        ]
+      },
+      {
+        "from": "router",
+        "to": "implementer",
+        "when": "A non-UI code, test, or behavior-affecting configuration request is complete against a parent-owned contract; UI implementation uses the reviewer-to-implementer prerequisite instead.",
+        "artifacts": [
+          "harness/templates/IMPLEMENTATION-CONTRACT.md",
+          "harness/templates/IMPLEMENTATION-RESULT.md"
         ]
       }
     ]
   },
   "evaluators": [
+    {
+      "id": "task-review",
+      "scope": "task",
+      "owner": "reviewer",
+      "runner": "router",
+      "type": "rubric",
+      "command": "Review the contract and result evidence with harness/evaluation/TASK-REVIEW-RUBRIC.md; compare `harness/templates/IMPLEMENTATION-CONTRACT.md`, `harness/templates/IMPLEMENTATION-RESULT.md`, and actual check evidence.",
+      "pass_condition": "Every applicable required criterion must pass; failed or pending required criteria cannot pass. Only explicitly out-of-scope criteria may be marked N/A with a recorded reason. Planning-only UI tasks complete through passing ui-plan-review evidence with implementation criteria marked N/A."
+    },
     {
       "id": "ui-plan-review",
       "scope": "task",
@@ -203,7 +279,7 @@
   "approval_gates": [
     {
       "id": "destructive-change",
-      "trigger": "A proposed action would delete user-owned data, discard uncommitted work, or rewrite shared history beyond the current authorization.",
+      "trigger": "A proposed action would delete user-owned data, discard uncommitted work, or rewrite shared history beyond current authorization.",
       "owner": "human",
       "required_action": "Obtain explicit authorization for the exact destructive action."
     },

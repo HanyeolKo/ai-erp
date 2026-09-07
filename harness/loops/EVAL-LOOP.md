@@ -1,12 +1,11 @@
 # Task evaluation loop
 
-The executor is `ui-ux-designer`, the evidence runner is `router`, and the verdict owner is `reviewer`.
+1. Select the evaluator declared by the skill and keep the routed path.
+2. For UI plans: use `ui-plan-review` with evidence from `harness/templates/UI-REVIEW.md`.
+3. For implementation contracts/results: use `task-review` with evidence from `harness/templates/IMPLEMENTATION-CONTRACT.md` and `harness/templates/IMPLEMENTATION-RESULT.md`.
+4. Keep criterion evidence by path, actual outputs, and checks not run.
+5. For harness changes, run `python scripts/verify-harness.py` and preserve its exit code and output.
+6. Only reviewer may issue `pass`/`fail`; all required criteria must pass, and only explicitly out-of-scope criteria may be marked N/A with justification.
+7. Record stable defects, route next action in journal, and stop only on a parent-ready state.
 
-1. Select the evaluator declared by the task's skill; do not substitute a weaker check.
-2. Collect specialist handoff evidence, local plan paths, source references, and actual check output.
-3. For screen planning, use `harness/evaluation/UI-PLAN-RUBRIC.md`. Mark each criterion `pass`, `fail`, or justified `not-applicable` with evidence.
-4. For harness changes, run `python scripts/verify-harness.py` and preserve its exit code and output.
-5. Only the reviewer issues the task verdict. All required criteria must pass; missing evidence is not a pass.
-6. Record defect keys, unrun checks, and the next action in the append-only journal.
-
-A structural pass proves contract integrity, not the quality of a screen or real delegation. A screen-plan pass is not proof of browser behavior or backend correctness.
+A structural pass proves contract integrity, not runtime behavior completeness.

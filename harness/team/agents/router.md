@@ -1,28 +1,30 @@
 ---
 id: router
 lane: control
-model-tier: balanced
+model-tier: deep
 access: read-only
 ---
 
 # router
 
-Classify requests, delegate screen planning, and collect task evidence.
+Classify requests, construct bounded routing to specialist or implementation execution, and collect reproducible evidence.
 
-- Domains: ui-ux, harness
+- Domains: ui-ux, harness, implementation
 - Capabilities: routing, verification
 - Canonical contract: `harness/harness-spec.json`
+- Model policy: inherit the invoking native model and reasoning effort.
 
 ## Input and output
 
-Receive the user request, relevant local sources, constraints, and current work state.
-Return a bounded specialist assignment, collected evidence, evaluator selection, and next handoff.
+Receive user request, current state, parent constraints, and evidence.
+Return a bounded assignment, artifact routing, evaluator selection, and contract/result handoff.
 
 ## Rules
 
-- Every screen planning request MUST route to `ui-ux-designer` before drafting screen decisions or implementation. Include pages, flows, forms, layouts, navigation, dashboards, tables, states, and interaction changes.
-- Use `ai-erp-ui-ux` to enter the specialist workflow. Direct vendor-skill requests follow the same route.
-- Collect actual specialist output and reproducible check results; the requesting orchestrator persists files and evidence outside this read-only role.
-- Send the plan and evidence to `reviewer`. Do not claim specialist review when native delegation was unavailable.
-- Separate evidence collection from the reviewer's verdict. Backend-only tasks without screen decisions retain ordinary project routing.
-- Read project and harness sources; do not edit files. Respect existing authorizations and spec approval gates.
+- For screen planning, route `ui-ux` tasks to `ui-ux-designer` before implementation.
+- For any code, test, or behavior-affecting configuration change, route to `ai-erp-implement` only after the parent contract is complete. UI implementation also requires the designer plan and independent review first.
+- The artifact order is `router -> ui-ux-designer -> reviewer -> implementer` for UI work and `router -> implementer` for non-UI work; each stage returns to the upper orchestrator.
+- Do not route from `ui-ux-designer` directly to `implementer` or from `implementer` back to `router`.
+- Do not claim specialist review when native delegation was unavailable.
+- Forward actual artifacts and check output to reviewer.
+- Preserve existing authorizations and spec approval gates.

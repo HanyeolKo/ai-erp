@@ -1,0 +1,26 @@
+{
+  "recorded_by": "parent orchestrator /root",
+  "scope": "Final local code and canonical document state before Git staging",
+  "checks": [
+    {
+      "command": "python -B scripts/verify-harness.py",
+      "exit_code": 0,
+      "output": "Harness verification passed: schema, permissions, DAG, Codex parity, UI routing, and pinned skill bytes.\r\nRouter/ui-ux-designer/reviewer inherit native model settings; implementer defaults to gpt-5.3-codex-spark/high with explicit gpt-5.6-luna/high fallback evidence.\r\n"
+    },
+    {
+      "command": "python -B scripts/test_verify_harness.py",
+      "exit_code": 0,
+      "output": "......................\r\n----------------------------------------------------------------------\r\nRan 22 tests in 14.597s\r\n\r\nOK\r\n"
+    },
+    {
+      "command": "python -B scripts/smoke-ux-skills.py",
+      "exit_code": 0,
+      "output": "UI/UX skill smoke passed: relevant SaaS and accessible form guidance, offline.\r\n"
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0,
+      "output": "warning: in the working copy of 'AGENTS.md', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'README.md', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'docs/architecture/ui-ux-agent-guide.md', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'scripts/test_verify_harness.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'scripts/verify-harness.py', LF will be replaced by CRLF the next time Git touches it\n"
+    }
+  ]
+}
