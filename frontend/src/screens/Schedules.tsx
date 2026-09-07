@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { api, PAGE_SIZE, type Schedules as Rows, type Dashboard as DashboardData } from "../api/client";
-import { acknowledgement, calendarStatus, capabilities, keys, useMe, useProject } from "../state";
+import { acknowledgement, calendarStatus, capabilities, isAccessError, keys, useMe, useProject } from "../state";
 import { Link, ProjectMissing, QueryState, Shell } from "../ui";
 import { civilDateBoundary, dateInZone, displayTime, navigateDate, shiftDate, validZone, viewWindow } from "../time";
 function TimedList({ rows }: {
@@ -14,12 +14,14 @@ export function Dashboard({ id }: {
 }) {
     const project = useProject(id);
     const me = useMe();
-    const dashboard = useQuery({ queryKey: keys.dashboard(id), queryFn: () => api.dashboard(id), enabled: !!project.data });
+    const dashboard = useQuery({ queryKey: keys.dashboard(id), queryFn: () => api.dashboard(id), enabled: project.isSuccess && !!project.data });
     if (!project.isSuccess)
-        return <Shell><QueryState query={project}/></Shell>;
+        return <Shell><QueryState query={project} loadingMessage="프로젝트를 불러오는 중입니다." errorMessage="프로젝트를 불러오지 못했습니다."/></Shell>;
     if (!project.data)
-        return <Shell><ProjectMissing /></Shell>;
-    return <Shell project={project.data}><h1>{project.data.name} 대시보드</h1><QueryState query={dashboard}/>{dashboard.isSuccess && <><div className="radar"><strong>일정 {dashboard.data.scheduleCount}</strong><strong>확인 대기 {dashboard.data.pendingAcknowledgementCount}</strong><strong>Calendar 위험 {dashboard.data.calendarRiskCount}</strong></div><h2>2주 일정</h2><TimedList rows={dashboard.data.upcomingSchedules}/><h2>처리 대기</h2>{dashboard.data.actionQueue.length ? <TimedList rows={dashboard.data.actionQueue}/> : <p>처리할 항목이 없습니다.</p>}</>}{capabilities(project.data, me.data!.id).create && <Link to={`/projects/${id}/schedules/new`}>일정 만들기</Link>}{project.data.role === "MANAGER" && <Link to={`/projects/${id}/invitations/new`}>구성원 초대</Link>}</Shell>;
+        return <Shell><ProjectMissing onRetry={() => project.refetch()} isFetching={project.isFetching}/></Shell>;
+    if (isAccessError(dashboard.error))
+        return <Shell><h1>대시보드를 불러올 수 없습니다</h1><QueryState query={dashboard}/></Shell>;
+    return <Shell project={project.data}><h1>{project.data.name} 대시보드</h1><QueryState query={dashboard}/>{dashboard.isSuccess && <><div className="radar"><strong>일정 {dashboard.data.scheduleCount}</strong><strong>확인 대기 {dashboard.data.pendingAcknowledgementCount}</strong><strong>Calendar 위험 {dashboard.data.calendarRiskCount}</strong></div><h2>2주 일정</h2><TimedList rows={dashboard.data.upcomingSchedules}/><h2>처리 대기</h2>{dashboard.data.actionQueue.length ? <TimedList rows={dashboard.data.actionQueue}/> : <p>처리할 항목이 없습니다.</p>}</>}{dashboard.isSuccess && capabilities(project.data, me.data!.id).create && <Link to={`/projects/${id}/schedules/new`}>일정 만들기</Link>}{dashboard.isSuccess && project.data.role === "MANAGER" && <Link to={`/projects/${id}/invitations/new`}>구성원 초대</Link>}</Shell>;
 }
 const weekdays = ["월", "화", "수", "목", "금", "토", "일"];
 function eventPosition(s: Rows[number], day: string, zone: string) {
@@ -59,18 +61,20 @@ export function Schedules({ id }: {
             return { from: "", to: "", error: error instanceof Error ? error.message : "날짜 범위를 확인하세요." };
         }
     }, [after, before, range.from, range.to, zone]);
-    const list = useQuery({ queryKey: [...keys.schedules(id), effectiveRange.from, effectiveRange.to, page], queryFn: () => api.schedules(id, effectiveRange.from, effectiveRange.to, page), enabled: !!project.data && !effectiveRange.error });
-    const connection = useQuery({ queryKey: keys.connection, queryFn: api.calendar, enabled: !!project.data });
+    const list = useQuery({ queryKey: [...keys.schedules(id), effectiveRange.from, effectiveRange.to, page], queryFn: () => api.schedules(id, effectiveRange.from, effectiveRange.to, page), enabled: project.isSuccess && !!project.data && !effectiveRange.error });
+    const connection = useQuery({ queryKey: keys.connection, queryFn: api.calendar, enabled: project.isSuccess && !!project.data });
     // The server page is bounded to 20; only that page's projections are observed.
-    const rows = effectiveRange.error ? [] : list.data ?? [];
+    const rows = effectiveRange.error || !project.isSuccess || !project.data || !list.isSuccess ? [] : list.data;
     const projections = useQueries({ queries: rows.slice(0, PAGE_SIZE).map(s => ({ queryKey: keys.projection(id, s.id), queryFn: () => api.projection(id, s.id), staleTime: 30000 })) });
     const enriched = rows.map((s, i) => ({ s, projection: projections[i], ack: acknowledgement(s, me.data!.id), calendar: calendarStatus(connection.data, projections[i]?.data) }));
     const filtered = enriched.filter(r => (!text || r.s.title.toLocaleLowerCase().includes(text.toLocaleLowerCase()) || r.s.description?.toLocaleLowerCase().includes(text.toLocaleLowerCase())) && (status === "ALL" || r.s.status === status) && (ack === "ALL" || r.ack === ack) && (calendar === "ALL" || r.calendar === calendar) && (!mine || r.s.createdBy === me.data!.id));
     const overlap = (s: Rows[number], day: string) => dateInZone(s.startsAt, zone) <= day && dateInZone(new Date(new Date(s.endsAt).getTime() - 1).toISOString(), zone) >= day;
     if (!project.isSuccess)
-        return <Shell><QueryState query={project}/></Shell>;
+        return <Shell><QueryState query={project} loadingMessage="프로젝트를 불러오는 중입니다." errorMessage="프로젝트를 불러오지 못했습니다."/></Shell>;
     if (!project.data)
-        return <Shell><ProjectMissing /></Shell>;
+        return <Shell><ProjectMissing onRetry={() => project.refetch()} isFetching={project.isFetching}/></Shell>;
+    if (isAccessError(list.error))
+        return <Shell><h1>일정을 불러올 수 없습니다</h1><QueryState query={list}/></Shell>;
     const move = (value: string) => { if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
         setAnchor(value);
         setPage(0);
@@ -110,6 +114,6 @@ export function Schedules({ id }: {
             })}
     </div><h2>일정 목록</h2>{!filtered.length && <p>조건에 맞는 일정이 없습니다.</p>}<ul className="schedule-list">{filtered.map(r => <li key={r.s.id}><Link to={`/projects/${id}/schedules/${r.s.id}`}>{r.s.title}</Link><time dateTime={r.s.startsAt}>{displayTime(r.s.startsAt, zone)}</time><span>~ {displayTime(r.s.endsAt, zone)}</span><span>작성자 {r.s.createdBy}</span><span>상태 {r.s.status}</span><span>확인 {r.ack}</span><span>Calendar {r.calendar ?? (r.projection?.isError || connection.isError ? "불러오기 실패" : "불러오는 중")}</span></li>)}</ul>
     <p>현재 {page + 1}페이지의 최대 {PAGE_SIZE}개 일정에 필터와 달력 신호를 적용합니다.</p><button disabled={!page || list.isFetching} onClick={() => setPage(page - 1)}>이전 일정 페이지</button><button disabled={rows.length < PAGE_SIZE || list.isFetching || page >= 10000} onClick={() => setPage(page + 1)}>다음 일정 페이지</button></>}
-    {capabilities(project.data, me.data!.id).create && <Link to={`/projects/${id}/schedules/new`}>일정 만들기</Link>}
+    {list.isSuccess && capabilities(project.data, me.data!.id).create && <Link to={`/projects/${id}/schedules/new`}>일정 만들기</Link>}
   </Shell>;
 }

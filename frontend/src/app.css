@@ -72,4 +72,14 @@ input, select { display:block; width:min(100%, 28rem); padding:.55rem; margin-to
 input[type="checkbox"] { display: inline-block; width: auto; margin-right: .5rem; }
 textarea { font: inherit; width: min(100%, 28rem); min-height: 6rem; }
 button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid #b16b00; outline-offset: 2px; }
+.recovery-panel { margin: 1.5rem 0; padding: 1.25rem; border: 1px solid #d9e0ea; border-radius: .5rem; background: #f6f8fb; overflow-wrap: anywhere; }
+.recovery-panel h2 { margin-top: 0; }
+.recovery-panel button, .account-recovery button { min-height: 44px; margin-left: 0; }
+.recovery-panel input { min-height: 44px; }
+.recovery-panel label { margin-bottom: .25rem; }
+.project-refresh { min-height: 44px; }
+.help { color: #52647f; font-size: .875rem; }
+.account-id { overflow-wrap: anywhere; }
+.project-list { list-style: none; padding: 0; }
+.project-list li { display: flex; flex-wrap: wrap; gap: .75rem; padding: .75rem 0; border-bottom: 1px solid #d9e0ea; overflow-wrap: anywhere; }
 @media (max-width: 40rem) { main { padding:.75rem; } header { align-items:flex-start; flex-direction:column; } section { padding:1rem; } .radar { grid-template-columns:1fr; } }

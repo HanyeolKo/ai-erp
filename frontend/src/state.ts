@@ -1,5 +1,57 @@
 import { useQuery, type QueryClient } from "@tanstack/react-query";
-import { api, type Project, type Schedule, type Schedules, type Connection, type Projection } from "./api/client";
+import { useEffect, useSyncExternalStore } from "react";
+import { api, ApiError, type Project, type Schedule, type Schedules, type Connection, type Projection } from "./api/client";
+export { SESSION_EXPIRED_EVENT } from "./session";
+export const isAccessError = (error: unknown) => error instanceof ApiError && (error.status === 403 || error.status === 404);
+const denials = new Map<string, number>();
+const accessVersions = new Map<string, number>();
+const uncertainCreations = new Set<string>();
+const listeners = new Set<() => void>();
+const readRevisions = new Map<string, number>();
+const denialRevision = (key: string) => accessVersions.get(key) ?? 0;
+export const accessKey = (...parts: string[]) => parts.join(":");
+export function recordAccessDenial(key: string) {
+    const revision = denialRevision(key) + 1;
+    accessVersions.set(key, revision);
+    denials.set(key, revision);
+    listeners.forEach(listener => listener());
+}
+export function clearAccessDenial(key: string) {
+    if (!denials.has(key)) return;
+    denials.delete(key);
+    readRevisions.delete(key);
+    listeners.forEach(listener => listener());
+}
+export const hasAccessDenial = (key: string) => denials.has(key);
+export function beginAccessRead(key: string) { return denialRevision(key); }
+export function completeAccessRead(key: string, revision: number) {
+    if (denialRevision(key) === revision)
+        readRevisions.set(key, revision);
+}
+export const accessReadCanClear = (key: string) => readRevisions.get(key) === denialRevision(key) && hasAccessDenial(key);
+export async function accessRead<T>(key: string, reader: () => Promise<T>) {
+    const revision = beginAccessRead(key);
+    try {
+        const value = await reader();
+        completeAccessRead(key, revision);
+        return value;
+    }
+    catch (error) {
+        if (isAccessError(error)) recordAccessDenial(key);
+        throw error;
+    }
+}
+export function useAccessDenied(key: string) {
+    return useSyncExternalStore(listener => { listeners.add(listener); return () => listeners.delete(listener); }, () => hasAccessDenial(key), () => false);
+}
+export function resetAccessState() {
+    denials.clear(); accessVersions.clear(); readRevisions.clear(); uncertainCreations.clear(); listeners.forEach(listener => listener());
+}
+export function recordCreationUncertainty(groupId: string) { uncertainCreations.add(groupId); listeners.forEach(listener => listener()); }
+export function clearCreationUncertainty(groupId: string) { if (uncertainCreations.delete(groupId)) listeners.forEach(listener => listener()); }
+export function useCreationUncertainty(groupId: string) {
+    return useSyncExternalStore(listener => { listeners.add(listener); return () => listeners.delete(listener); }, () => uncertainCreations.has(groupId), () => false);
+}
 export const keys = {
     configuration: ["configuration"] as const, me: ["me"] as const, projects: ["projects"] as const,
     dashboard: (p: string) => ["dashboard", p] as const,
@@ -11,20 +63,42 @@ export const keys = {
     connection: ["connection"] as const
 };
 export const useMe = () => useQuery({ queryKey: keys.me, queryFn: api.me });
-export const useProject = (id: string) => useQuery({
-    queryKey: [...keys.projects, "lookup", id],
-    queryFn: async () => {
-        for (let page = 0; page <= 10000; page++) {
-            const rows = await api.projects(page);
-            const project = rows.find(p => p.id === id);
-            if (project)
-                return project;
-            if (rows.length < 100)
-                return null;
+export const useProject = (id: string) => {
+    const denialKey = accessKey("project", id);
+    const denied = useAccessDenied(denialKey);
+    const query = useQuery({
+        queryKey: [...keys.projects, "lookup", id],
+        staleTime: denied ? 0 : 15000,
+        queryFn: async () => {
+            const revision = beginAccessRead(denialKey);
+            for (let page = 0; page <= 10000; page++) {
+                try {
+                    const rows = await api.projects(page);
+                    const project = rows.find(p => p.id === id);
+                    if (project) {
+                        completeAccessRead(denialKey, revision);
+                        return project;
+                    }
+                    if (rows.length < 100) {
+                        completeAccessRead(denialKey, revision);
+                        return null;
+                    }
+                }
+                catch (error) {
+                    if (isAccessError(error)) recordAccessDenial(denialKey);
+                    throw error;
+                }
+            }
+            completeAccessRead(denialKey, revision);
+            return null;
         }
-        return null;
-    }
-});
+    });
+    useEffect(() => {
+        if (query.isSuccess && !query.isFetching && accessReadCanClear(denialKey))
+            clearAccessDenial(denialKey);
+    }, [denialKey, query.isFetching, query.isSuccess]);
+    return query;
+};
 export function refreshSchedule(qc: QueryClient, p: string, s?: string) {
     return Promise.all([keys.schedules(p), keys.dashboard(p), keys.projection(p), keys.connection, keys.notifications, ...(s ? [keys.detail(p, s)] : [])].map(queryKey => qc.invalidateQueries({ queryKey })));
 }

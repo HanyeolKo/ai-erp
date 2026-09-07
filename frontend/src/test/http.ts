@@ -16,6 +16,7 @@ export function http() {
   on("GET", "/api/v1/me", () => json({ id: "u1", authorities: ["ROLE_USER"] }));
   on("GET", "/api/v1/csrf", () => json({ headerName: "X-CSRF-TOKEN", token: "csrf" }));
   on("GET", "/api/v1/projects", () => json([project]));
+  on("GET", "/api/v1/projects/creation-options", () => json([]));
   on("GET", "/api/v1/projects/p1/dashboard", () => json({ projectId: "p1", memberCount: 2, scheduleCount: 1, pendingAcknowledgementCount: 1, calendarRiskCount: 1, upcomingSchedules: [schedule], actionQueue: [schedule] }));
   on("GET", "/api/v1/projects/p1/schedules", () => json([schedule]));
   on("GET", "/api/v1/projects/p1/schedules/s1", () => json(schedule));
