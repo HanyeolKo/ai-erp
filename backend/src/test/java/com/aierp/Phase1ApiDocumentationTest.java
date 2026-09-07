@@ -41,6 +41,8 @@ class Phase1ApiDocumentationTest {
     @Autowired MockMvc mvc;
     @MockitoBean ProjectRepository projects;
     @MockitoBean ProjectMemberRepository members;
+    @MockitoBean ProjectCreationRequestRepository creationRequests;
+    @MockitoBean IdentityProfiles profiles;
     @MockitoBean com.aierp.group.api.GroupAccess groupAccess;
     @MockitoBean InvitationService invitations;
     @MockitoBean ScheduleService schedules;
@@ -58,11 +60,13 @@ class Phase1ApiDocumentationTest {
     @BeforeEach void setup() {
         var member=new ProjectMemberEntity();member.projectId=project;member.userAccountId=user;member.role=ProjectRole.MANAGER;
         when(members.findByProjectIdAndUserAccountId(project,user)).thenReturn(Optional.of(member));
+        when(members.countByProjectIdAndRole(project,ProjectRole.MANAGER)).thenReturn(2L);
         when(members.findByUserAccountId(eq(user),any())).thenReturn(List.of(member));when(members.findByProjectId(eq(project),any())).thenReturn(List.of(member));
         when(projects.findAllById(any())).thenReturn(List.of(new ProjectEntity(project,id,"Planning")));
         when(projects.findById(project)).thenReturn(Optional.of(new ProjectEntity(project,id,"Planning")));
+        when(projects.lockById(project)).thenReturn(Optional.of(new ProjectEntity(project,id,"Planning")));
         schedule=new ScheduleController.ScheduleResponse(id,project,"Planning",ScheduleEntity.Status.CONFIRMED,1,1,starts,starts.plusSeconds(3600),"Notes",user,
-            List.of(new ScheduleController.Participant(user,null,false),new ScheduleController.Participant(null,"guest@example.test",false)),
+            List.of(new ScheduleController.Participant(user,null,false,"Ada", "ada@example.test"),new ScheduleController.Participant(null,"guest@example.test",false,null,null)),
             List.of(new ScheduleController.Change(1,"SCHEDULE_CONFIRMED",user,starts)));
         var summary=new ScheduleController.ScheduleResponse(id,project,schedule.title(),schedule.status(),1,1,starts,schedule.endsAt(),null,user,schedule.participants(),List.of());
         when(schedules.list(eq(project),eq(user),any(),any(),any(),any())).thenReturn(List.of(summary));when(schedules.detail(eq(project),eq(id),eq(user),any())).thenReturn(schedule);
@@ -83,8 +87,10 @@ class Phase1ApiDocumentationTest {
     }
     @Test void documentsProjectAndMemberInventory() throws Exception {
         success("projects",get("/api/v1/projects"),fields("[].id","[].groupId","[].name","[].role"));
-        success("project-members",get("/api/v1/projects/{projectId}/members",project),fields("[].userId","[].role"));
-        success("member-role",patch("/api/v1/projects/{projectId}/members/{userId}",project,user).content("{\"role\":\"VIEWER\"}"),fields("userId","role"),fields("role"));
+        var memberFields=fields("[].userId","[].role","[].displayName","[].email");memberFields[3].optional().type(JsonFieldType.STRING);
+        success("project-members",get("/api/v1/projects/{projectId}/members",project),memberFields);
+        var roleFields=fields("userId","role","displayName","email");roleFields[3].optional().type(JsonFieldType.STRING);
+        success("member-role",patch("/api/v1/projects/{projectId}/members/{userId}",project,user).content("{\"role\":\"VIEWER\"}"),roleFields,fields("role"));
         var dashboardFields=new ArrayList<>(List.of(fields("projectId","memberCount","scheduleCount","pendingAcknowledgementCount","calendarRiskCount","upcomingSchedules","actionQueue")));
         dashboardFields.addAll(List.of(summaryFields("upcomingSchedules[].")));dashboardFields.addAll(List.of(summaryFields("actionQueue[].")));
         success("dashboard",get("/api/v1/projects/{projectId}/dashboard",project),dashboardFields.toArray(FieldDescriptor[]::new));
@@ -99,7 +105,8 @@ class Phase1ApiDocumentationTest {
         when(members.save(any())).thenAnswer(i -> i.getArgument(0));
         success("project-creation-options",get("/api/v1/projects/creation-options").queryParam("page","0").queryParam("limit","100"),
             optionFields());
-        success("project-create", post("/api/v1/projects").content("{\"groupId\":\""+ownerGroup+"\",\"name\":\"Project\"}"),fields("id","groupId","name","role"),fields("groupId","name"))
+        var createInput=fields("groupId","name","requestId");createInput[0].optional().type(JsonFieldType.STRING);createInput[2].optional().type(JsonFieldType.STRING);
+        success("project-create", post("/api/v1/projects").content("{\"groupId\":\""+ownerGroup+"\",\"name\":\"Project\"}"),fields("id","groupId","name","role"),createInput)
             .andExpect(jsonPath("$.role").value("MANAGER"));
     }
     private FieldDescriptor[] optionFields() {
@@ -226,9 +233,9 @@ class Phase1ApiDocumentationTest {
     private FieldDescriptor[] problemFields(boolean nested) {return nested?fields("code","traceId","fieldErrors","fieldErrors[].field","fieldErrors[].message"):fields("code","traceId","fieldErrors");}
     private FieldDescriptor[] fields(String... paths) {return Arrays.stream(paths).map(p->fieldWithPath(p).description(p)).toArray(FieldDescriptor[]::new);}
     private FieldDescriptor[] scheduleFields(String prefix) {
-        var result=fields(Arrays.stream(new String[]{"id","projectId","title","status","rowVersion","businessRevision","startsAt","endsAt","description","createdBy","participants","participants[].memberUserId","participants[].externalEmail","participants[].acknowledged","changes","changes[].businessRevision","changes[].type","changes[].changedBy","changes[].createdAt"}).map(p->prefix+p).toArray(String[]::new));
-        result[8].optional().type(JsonFieldType.STRING);result[11].optional().type(JsonFieldType.STRING);result[12].optional().type(JsonFieldType.STRING);
-        result[15].type(JsonFieldType.NUMBER);result[16].type(JsonFieldType.STRING);result[17].type(JsonFieldType.STRING);result[18].type(JsonFieldType.STRING);
+        var result=fields(Arrays.stream(new String[]{"id","projectId","title","status","rowVersion","businessRevision","startsAt","endsAt","description","createdBy","participants","participants[].memberUserId","participants[].externalEmail","participants[].acknowledged","participants[].displayName","participants[].email","changes","changes[].businessRevision","changes[].type","changes[].changedBy","changes[].createdAt"}).map(p->prefix+p).toArray(String[]::new));
+        result[8].optional().type(JsonFieldType.STRING);result[11].optional().type(JsonFieldType.STRING);result[12].optional().type(JsonFieldType.STRING);result[14].optional().type(JsonFieldType.STRING);result[15].optional().type(JsonFieldType.STRING);
+        result[17].type(JsonFieldType.NUMBER);result[18].type(JsonFieldType.STRING);result[19].type(JsonFieldType.STRING);result[20].type(JsonFieldType.STRING);
         return result;
     }
     private FieldDescriptor[] summaryFields(String prefix) {
@@ -253,7 +260,7 @@ class Phase1ApiDocumentationTest {
         var history=new ArrayList<ScheduleChangeEntity>();
         when(changes.save(any())).thenAnswer(i->{ScheduleChangeEntity c=i.getArgument(0);history.add(c);return c;});
         when(changes.findByScheduleId(any(),any())).thenAnswer(i->List.copyOf(history.reversed()));
-        return new ScheduleService(repository,participants,acks,changes,mock(ProjectAccess.class),mock(com.aierp.platform.events.EventJournal.class));
+        return new ScheduleService(repository,participants,acks,changes,mock(ProjectAccess.class),mock(com.aierp.platform.events.EventJournal.class),mock(com.aierp.identity.api.IdentityProfiles.class));
     }
     private InvitationService invitationFixture() {
         var repository=mock(ProjectInvitationRepository.class);var ps=mock(ProjectRepository.class);

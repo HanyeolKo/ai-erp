@@ -16,7 +16,7 @@ class ScheduleBehaviorTest {
     final ScheduleChangeRepository changes=mock(ScheduleChangeRepository.class);
     final ProjectAccess access=mock(ProjectAccess.class);
     final EventJournal events=mock(EventJournal.class);
-    final ScheduleService service=new ScheduleService(schedules,participants,acks,changes,access,events);
+    final ScheduleService service=new ScheduleService(schedules,participants,acks,changes,access,events,mock(com.aierp.identity.api.IdentityProfiles.class));
     ScheduleEntity schedule;
     @BeforeEach void setup() {
         schedule=new ScheduleEntity();schedule.id=id;schedule.projectId=project;schedule.createdBy=user;schedule.title="Planning";

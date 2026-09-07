@@ -13,6 +13,7 @@ import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import com.aierp.schedule.api.ScheduleDashboard;
+import com.aierp.identity.api.IdentityProfiles;
 import java.time.Duration;
 import java.util.stream.Collectors;
 
@@ -24,11 +25,12 @@ public class ScheduleService {
     private final ScheduleChangeRepository changes;
     private final ProjectAccess access;
     private final EventJournal events;
+    private final IdentityProfiles profiles;
     public ScheduleService(ScheduleRepository schedules, ScheduleParticipantRepository participants,
             ScheduleAcknowledgementRepository acknowledgements, ScheduleChangeRepository changes,
-            ProjectAccess access, EventJournal events) {
+            ProjectAccess access, EventJournal events, IdentityProfiles profiles) {
         this.schedules=schedules;this.participants=participants;this.acknowledgements=acknowledgements;
-        this.changes=changes;this.access=access;this.events=events;
+        this.changes=changes;this.access=access;this.events=events;this.profiles=profiles;
     }
     public List<ScheduleResponse> list(UUID projectId,UUID user) {
         return list(projectId,user,null,null,null,null);
@@ -44,7 +46,8 @@ public class ScheduleService {
         return detail(projectId,id,user,null);
     }
     public ScheduleResponse detail(UUID projectId,UUID id,UUID user,Integer historyLimit) {
-        access.role(projectId,user); return response(find(projectId,id),ReadLimits.history(historyLimit));
+        access.role(projectId,user);
+        return response(find(projectId,id),ReadLimits.history(historyLimit),true);
     }
     public ScheduleDashboard.Summary dashboard(UUID projectId,UUID user) {
         var role=access.role(projectId,user);
@@ -175,12 +178,19 @@ public class ScheduleService {
         return response(s,ReadLimits.HISTORY_DEFAULT);
     }
     private ScheduleResponse response(ScheduleEntity s,int historyLimit) {
+        return response(s,historyLimit,false);
+    }
+    private ScheduleResponse response(ScheduleEntity s,int historyLimit,boolean enrichProfiles) {
         var ps=participants.findByScheduleId(s.id);
         var acks=acknowledgements.findByScheduleIdAndBusinessRevision(s.id,s.businessRevision).stream().map(a->a.userAccountId).toList();
+        var profileMap=enrichProfiles ? profiles.find(ps.stream().map(p->p.memberUserAccountId).filter(Objects::nonNull).distinct().limit(200).toList()) : Map.<UUID,IdentityProfiles.PublicProfile>of();
         // Select the most recent N in SQL, then present that bounded slice chronologically.
         var history=changes.findByScheduleId(s.id,PageRequest.of(0,historyLimit,Sort.by(Sort.Direction.DESC,"createdAt","id"))).reversed();
         return new ScheduleResponse(s.id,s.projectId,s.title,s.status,s.rowVersion,s.businessRevision,s.startsAt,s.endsAt,s.description,s.createdBy,
-            ps.stream().map(p->new Participant(p.memberUserAccountId,p.externalEmail, p.memberUserAccountId!=null && acks.contains(p.memberUserAccountId))).toList(),
+            ps.stream().map(p->{
+                var profile=p.memberUserAccountId==null ? null : profileMap.get(p.memberUserAccountId);
+                return new Participant(p.memberUserAccountId,p.externalEmail, p.memberUserAccountId!=null && acks.contains(p.memberUserAccountId), profile==null?null:profile.displayName(), profile==null?null:profile.email());
+            }).toList(),
             history.stream().map(c->new Change(c.businessRevision,c.changeType,c.changedBy,c.createdAt)).toList());
     }
     private List<ScheduleResponse> summaries(List<ScheduleEntity> selected) {
@@ -192,6 +202,6 @@ public class ScheduleService {
         return selected.stream().map(s->new ScheduleResponse(s.id,s.projectId,s.title,s.status,s.rowVersion,s.businessRevision,
             s.startsAt,s.endsAt,s.description,s.createdBy,
             ps.getOrDefault(s.id,List.of()).stream().map(p->new Participant(p.memberUserAccountId,p.externalEmail,
-                p.memberUserAccountId!=null && acks.getOrDefault(s.id,Set.of()).contains(p.memberUserAccountId))).toList(),List.of())).toList();
+                p.memberUserAccountId!=null && acks.getOrDefault(s.id,Set.of()).contains(p.memberUserAccountId),null,null)).toList(),List.of())).toList();
     }
 }

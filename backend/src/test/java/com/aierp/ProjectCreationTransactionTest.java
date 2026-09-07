@@ -7,6 +7,7 @@ import com.aierp.group.GroupMemberRepository;
 import com.aierp.group.GroupRole;
 import com.aierp.group.api.GroupAccess;
 import com.aierp.identity.api.ApplicationPrincipal;
+import com.aierp.identity.api.IdentityProfiles;
 import com.aierp.project.ProjectMemberEntity;
 import com.aierp.project.ProjectMemberRepository;
 import com.aierp.project.ProjectRepository;
@@ -30,7 +31,7 @@ import static org.mockito.Mockito.doAnswer;
 
 @DataJpaTest(properties={"spring.flyway.enabled=false","spring.jpa.hibernate.ddl-auto=create-drop",
     "spring.jpa.properties.hibernate.hbm2ddl.create_namespaces=true","spring.jpa.properties.hibernate.auto_quote_keyword=true"})
-@Import({GroupAccess.class,ProjectController.class})
+@Import({GroupAccess.class,ProjectController.class,IdentityProfiles.class})
 class ProjectCreationTransactionTest {
     @Autowired ProjectController controller;
     @Autowired ProjectRepository projects;

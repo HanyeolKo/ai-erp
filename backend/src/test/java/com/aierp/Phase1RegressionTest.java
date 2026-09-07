@@ -26,7 +26,7 @@ class Phase1RegressionTest {
         schedule=new ScheduleEntity();schedule.id=id;schedule.projectId=project;schedule.createdBy=user;schedule.title="Planning";schedule.startsAt=Instant.parse("2026-09-06T10:00:00Z");schedule.endsAt=schedule.startsAt.plusSeconds(3600);schedule.status=ScheduleEntity.Status.CONFIRMED;schedule.businessRevision=1;
         when(schedules.findByIdAndProjectId(id,project)).thenReturn(Optional.of(schedule));
         when(schedules.saveAndFlush(any())).thenAnswer(i->i.getArgument(0));
-        controller=new ScheduleController(new ScheduleService(schedules,mock(ScheduleParticipantRepository.class),mock(ScheduleAcknowledgementRepository.class),mock(ScheduleChangeRepository.class),new com.aierp.project.api.ProjectAccess(members),mock(com.aierp.platform.events.EventJournal.class)));
+        controller=new ScheduleController(new ScheduleService(schedules,mock(ScheduleParticipantRepository.class),mock(ScheduleAcknowledgementRepository.class),mock(ScheduleChangeRepository.class),new com.aierp.project.api.ProjectAccess(members),mock(com.aierp.platform.events.EventJournal.class),mock(com.aierp.identity.api.IdentityProfiles.class)));
     }
     @Test void sessionPrincipalSurvivesSerialization() throws Exception {
         var bytes=new ByteArrayOutputStream();new ObjectOutputStream(bytes).writeObject(auth.getPrincipal());
@@ -47,6 +47,6 @@ class Phase1RegressionTest {
     }
     @Test void nullRoleIsRejected() {
         var projects=mock(ProjectRepository.class);
-        assertThatThrownBy(()->new ProjectController(projects,members,mock(com.aierp.group.api.GroupAccess.class)).changeRole(project,user,new ProjectController.RoleRequest(null),auth)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(()->new ProjectController(projects,members,mock(com.aierp.group.api.GroupAccess.class),mock(ProjectCreationRequestRepository.class),mock(com.aierp.identity.api.IdentityProfiles.class)).changeRole(project,user,new ProjectController.RoleRequest(null),auth)).isInstanceOf(IllegalArgumentException.class);
     }
 }

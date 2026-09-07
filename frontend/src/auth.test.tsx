@@ -1,9 +1,9 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 import App from "./App";
 import { http, json } from "./test/http";
 
-afterEach(() => { vi.unstubAllGlobals(); window.history.replaceState(null, "", "/"); sessionStorage.clear(); });
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); window.history.replaceState(null, "", "/"); sessionStorage.clear(); });
 
 const mount = (path = "/") => { window.location.hash = `#${path}`; render(<App />); };
 const expectNoBusinessNavigation = () => {
@@ -71,9 +71,12 @@ test.each(["/api/v1/system/configuration", "/api/v1/me"])("failed %s hides busin
 test("signed-in entry retains business navigation", async () => {
   http();
   mount();
-  await screen.findByRole("heading", { name: "프로젝트" });
-  const navigation = within(screen.getByRole("navigation", { name: "주 메뉴" }));
-  expect(navigation.getByRole("link", { name: "알림" })).toHaveAttribute("href", "#/notifications");
-  expect(navigation.getByRole("link", { name: "Calendar" })).toHaveAttribute("href", "#/calendar");
+  await screen.findByRole("heading", { name: "프로젝트 선택" });
+  const accountSummary = screen.getByText("김관리자");
+  expect(accountSummary.closest("details")).toBeInTheDocument();
+  fireEvent.click(accountSummary);
+  expect(screen.getByRole("link", { name: "계정 설정" })).toHaveAttribute("href", "#/account");
+  expect(screen.getByRole("button", { name: "다른 계정으로 로그인" })).toBeEnabled();
+  expect(screen.queryByRole("navigation", { name: "주 메뉴" })).not.toBeInTheDocument();
   expect(screen.queryByRole("link", { name: "Google로 로그인" })).not.toBeInTheDocument();
 });

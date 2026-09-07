@@ -495,12 +495,12 @@ def migration_guard_checks(root):
         child.env['AI_ERP_PROJECT_DIR'] = posix(child_checkout)
         files = child_checkout / migration
         if kind == 'missing':
-            (files / 'V6__add_explicit_group_roles.sql').unlink()
+            (files / 'V7__add_project_share_invitations.sql').unlink()
         elif kind == 'extra':
             (files / 'V99__unexpected.sql').write_text('-- unexpected migration\n', encoding='utf-8')
         elif kind == 'symlink':
-            target = files / 'V6__add_explicit_group_roles.sql'
-            original = child_checkout / 'V6__target.sql'
+            target = files / 'V7__add_project_share_invitations.sql'
+            original = child_checkout / 'V7__target.sql'
             target.rename(original)
             target.symlink_to(original)
         result = child.run('preflight', C, success=False)
@@ -514,26 +514,26 @@ def migration_guard_checks(root):
         preflight_mutation('symlink')
 
     before = migration_checksum(checkout)
-    tampered = checkout / migration / 'V6__add_explicit_group_roles.sql'
+    tampered = checkout / migration / 'V7__add_project_share_invitations.sql'
     tampered.write_text(tampered.read_text(encoding='utf-8') + '\n-- tampered checksum fixture\n', encoding='utf-8')
     after = migration_checksum(checkout)
-    check(after != before, 'V6 migration content must participate in migration checksum')
+    check(after != before, 'V7 migration content must participate in migration checksum')
 
     child = clone(h, 'migration-tampered-after-build')
     child_checkout = child.root / 'checkout'
     shutil.copytree(checkout, child_checkout)
     child.env['AI_ERP_PROJECT_DIR'] = posix(child_checkout)
     runtime = PROJECT / 'scripts/tests/fake-runtime.py'
-    v6 = child_checkout / migration / 'V6__add_explicit_group_roles.sql'
+    v7 = child_checkout / migration / 'V7__add_project_share_invitations.sql'
     child.wrapper('docker', f'''if [[ "${{1:-}}" == build ]]; then
   "{posix(sys.executable)}" "{posix(runtime)}" docker "$@"
-  printf '\\n-- tampered after build\\n' >> "{posix(v6)}"
+  printf '\\n-- tampered after build\\n' >> "{posix(v7)}"
   exit 0
 fi
 exec "{posix(sys.executable)}" "{posix(runtime)}" docker "$@"''')
     result = child.run('deploy', C, success=False)
     check('migration inputs changed after build' in result.stderr,
-          'V6 tampering after checksum capture must abort deployment')
+          'V7 tampering after checksum capture must abort deployment')
     check(not any(call['event'] == 'migrate' for call in child.calls()),
           'tampered migration set must never reach Flyway')
     child.clean()
@@ -689,6 +689,10 @@ with tempfile.TemporaryDirectory(prefix='ai-erp-contract-') as temp:
             h = Host(Path(temp))
             h.run('deploy', A)
             recovery_checks(h)
+        elif focus == 'migration':
+            migration_root = Path(temp) / 'migration'
+            migration_root.mkdir()
+            migration_guard_checks(migration_root)
         else:
             forwarded_headers_check()
             caddy_source_check()

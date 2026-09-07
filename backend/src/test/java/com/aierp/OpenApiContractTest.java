@@ -64,6 +64,17 @@ class OpenApiContractTest {
         var examples=example("/api/v1/projects/creation-options","get","project-creation-options");
         assertThat(examples.isArray()).isTrue();
         assertThat(examples.size()).isPositive();
+        var createInput=operation("/api/v1/projects","post").path("requestBody").path("content").path("application/json;charset=UTF-8").path("schema");
+        assertThat(createInput.has("$ref")).isTrue();
+        assertThat(document.toString()).contains("requestId");
+    }
+    @Test void sharedInvitationRoutesAndSafeNullableStatesAreGenerated() {
+        assertThat(document.path("paths").has("/api/v1/projects/{projectId}/share-invitation")).isTrue();
+        assertThat(operation("/api/v1/projects/{projectId}/share-invitation","delete").path("responses").has("204")).isTrue();
+        var manager=responseSchema("/api/v1/projects/{projectId}/share-invitation","get");
+        assertNullable(manager,"code"); assertNullable(manager,"expiresAt");
+        var preview=responseSchema("/api/v1/project-invitations/{code}","get");
+        assertNullable(preview,"projectId"); assertNullable(preview,"projectName"); assertNullable(preview,"inviterName"); assertNullable(preview,"role");
     }
     @Test void queryBoundsArePartOfTheGeneratedContract() {
         for(var path:List.of("/api/v1/projects","/api/v1/projects/creation-options","/api/v1/projects/{projectId}/members","/api/v1/notifications",base)) {

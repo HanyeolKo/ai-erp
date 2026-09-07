@@ -8,6 +8,7 @@ public interface ProjectMemberRepository extends JpaRepository<ProjectMemberEnti
     Optional<ProjectMemberEntity> findByProjectIdAndUserAccountId(UUID projectId, UUID userAccountId);
     List<ProjectMemberEntity> findByProjectId(UUID projectId, Pageable page);
     long countByProjectId(UUID projectId);
+    long countByProjectIdAndRole(UUID projectId, ProjectRole role);
     @Query("select m.userAccountId from ProjectMemberEntity m where m.projectId = :projectId and m.userAccountId in :userIds and m.role <> com.aierp.project.ProjectRole.VIEWER")
     Set<UUID> findEligibleAcknowledgers(UUID projectId, Collection<UUID> userIds);
 }

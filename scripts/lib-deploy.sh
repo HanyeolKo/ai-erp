@@ -119,14 +119,14 @@ verify_source() {
 }
 verify_migrations() {
   local path
-  for path in "$MIGRATION_DIR"/V1__create_module_schemas.sql "$MIGRATION_DIR"/V2__create_phase1_tables.sql "$MIGRATION_DIR"/V4__add_phase1_concurrency_guards.sql "$MIGRATION_DIR"/V5__add_bounded_read_indexes.sql "$MIGRATION_DIR"/V6__add_explicit_group_roles.sql; do
+  for path in "$MIGRATION_DIR"/V1__create_module_schemas.sql "$MIGRATION_DIR"/V2__create_phase1_tables.sql "$MIGRATION_DIR"/V4__add_phase1_concurrency_guards.sql "$MIGRATION_DIR"/V5__add_bounded_read_indexes.sql "$MIGRATION_DIR"/V6__add_explicit_group_roles.sql "$MIGRATION_DIR"/V7__add_project_share_invitations.sql; do
     no_symlinks "$path"
     [[ -s "$path" && -f "$path" ]] || fail 'required migration file missing'
   done
-  [[ "$(find "$MIGRATION_DIR" -mindepth 1 -maxdepth 1 | wc -l)" == 5 ]] || fail 'unexpected migration set'
+  [[ "$(find "$MIGRATION_DIR" -mindepth 1 -maxdepth 1 | wc -l)" == 6 ]] || fail 'unexpected migration set'
 }
 migration_checksum() {
-  (cd "$MIGRATION_DIR" && sha256sum V1__create_module_schemas.sql V2__create_phase1_tables.sql V4__add_phase1_concurrency_guards.sql V5__add_bounded_read_indexes.sql V6__add_explicit_group_roles.sql) | sha256sum | awk '{print $1}'
+  (cd "$MIGRATION_DIR" && sha256sum V1__create_module_schemas.sql V2__create_phase1_tables.sql V4__add_phase1_concurrency_guards.sql V5__add_bounded_read_indexes.sql V6__add_explicit_group_roles.sql V7__add_project_share_invitations.sql) | sha256sum | awk '{print $1}'
 }
 verify_resources() {
   local kind list name label expected
