@@ -34,12 +34,13 @@ class HarnessContractTests(unittest.TestCase):
     def tearDown(self):
         if self.root.resolve().parent != self.parent:
             raise RuntimeError("Test cleanup escaped its workspace")
-        def remove_readonly(function, path, exception):
+        def remove_readonly(function, path, exc_info):
+            exception = exc_info[1]
             if not isinstance(exception, PermissionError) or not Path(path).resolve().is_relative_to(self.root.resolve()):
                 raise exception
             Path(path).chmod(stat.S_IWRITE | stat.S_IREAD)
             function(path)
-        shutil.rmtree(self.root, onexc=remove_readonly)
+        shutil.rmtree(self.root, onerror=remove_readonly)
 
     def errors(self):
         return "\n".join(verifier.verify_project(self.root))

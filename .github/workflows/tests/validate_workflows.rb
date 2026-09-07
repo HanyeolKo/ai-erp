@@ -86,6 +86,16 @@ def assert_steps!(actual, expected, description)
   actual.zip(expected).each_with_index { |(step, contract), index| assert_step!(step, contract, "#{description} step #{index + 1}") }
 end
 
+def harness_steps
+  [
+    { "uses" => "actions/checkout@v5" },
+    { "uses" => "actions/setup-python@v6", "with" => { "python-version" => "3.14" } },
+    { "run" => "python -B scripts/verify-harness.py --require-tracked" },
+    { "run" => "python -B scripts/test_verify_harness.py" },
+    { "name" => "Smoke-test installed UI/UX search runtime", "run" => "python -B scripts/smoke-ux-skills.py" }
+  ]
+end
+
 def ci_steps
   [
     { "uses" => "actions/checkout@v5" },
@@ -125,7 +135,11 @@ def validate_ci!(ci)
   assert!(ci["on"] == { "push" => { "branches" => ["main"] }, "pull_request" => nil }, "CI triggers")
   assert!(ci["permissions"] == { "contents" => "read" }, "CI permissions")
   assert!(ci["concurrency"] == { "group" => "ci-${{ github.workflow }}-${{ github.ref }}", "cancel-in-progress" => true }, "CI concurrency")
-  assert!(ci.fetch("jobs").keys == ["verify"], "CI job list")
+  assert!(ci.fetch("jobs").keys.sort == ["harness", "verify"], "CI job list")
+  harness = ci.fetch("jobs").fetch("harness")
+  assert!(harness.keys.sort == ["runs-on", "steps"], "CI harness job keys")
+  assert!(harness["runs-on"] == "ubuntu-latest", "CI harness GitHub-hosted runner")
+  assert_steps!(harness.fetch("steps"), harness_steps, "CI harness")
   verify = ci.fetch("jobs").fetch("verify")
   assert!(verify.keys.sort == ["runs-on", "steps"], "CI job keys")
   assert!(verify["runs-on"] == "ubuntu-latest", "CI GitHub-hosted runner")
@@ -210,6 +224,13 @@ def self_test!(documents)
     assert_rejected!("continue-on-error deployment step #{index}") { mutated = deep_copy(baseline); deploy_job(mutated)["steps"][index]["continue-on-error"] = true; validate!(mutated) }
     assert_rejected!("shell substitution deployment step #{index}") { mutated = deep_copy(baseline); deploy_job(mutated)["steps"][index]["shell"] = "sh"; validate!(mutated) }
   end
+  assert_rejected!("missing CI harness job") { mutated = deep_copy(baseline); mutated["ci.yml"]["jobs"].delete("harness"); validate!(mutated) }
+  harness_steps.each_index do |index|
+    assert_rejected!("deleted CI harness step #{index}") { mutated = deep_copy(baseline); mutated["ci.yml"]["jobs"]["harness"]["steps"].delete_at(index); validate!(mutated) }
+    assert_rejected!("disabled CI harness step #{index}") { mutated = deep_copy(baseline); mutated["ci.yml"]["jobs"]["harness"]["steps"][index]["if"] = "false"; validate!(mutated) }
+    assert_rejected!("continue-on-error CI harness step #{index}") { mutated = deep_copy(baseline); mutated["ci.yml"]["jobs"]["harness"]["steps"][index]["continue-on-error"] = true; validate!(mutated) }
+  end
+  assert_rejected!("bypassed tracked harness validation") { mutated = deep_copy(baseline); mutated["ci.yml"]["jobs"]["harness"]["steps"][2]["run"] = "true"; validate!(mutated) }
   ci_steps.each_index do |index|
     assert_rejected!("disabled CI step #{index}") { mutated = deep_copy(baseline); mutated["ci.yml"]["jobs"]["verify"]["steps"][index]["if"] = "false"; validate!(mutated) }
     assert_rejected!("continue-on-error CI step #{index}") { mutated = deep_copy(baseline); mutated["ci.yml"]["jobs"]["verify"]["steps"][index]["continue-on-error"] = true; validate!(mutated) }
