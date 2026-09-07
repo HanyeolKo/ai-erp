@@ -1,4 +1,5 @@
 import type { paths } from "./generated";
+import { currentSessionGeneration, isSessionActive, SessionTerminatedError, terminateSession } from "../session";
 type ResponseOf<T> = T extends {
     responses: {
         200: {
@@ -19,6 +20,8 @@ export type Configuration = ResponseOf<paths["/api/v1/system/configuration"]["ge
 export type Me = ResponseOf<paths["/api/v1/me"]["get"]>;
 export type Projects = ResponseOf<paths["/api/v1/projects"]["get"]>;
 export type Project = Projects[number];
+export type CreationOptions = ResponseOf<paths["/api/v1/projects/creation-options"]["get"]>;
+type ProjectCreateBody = BodyOf<paths["/api/v1/projects"]["post"]>;
 export type Dashboard = ResponseOf<paths["/api/v1/projects/{projectId}/dashboard"]["get"]>;
 export type Schedules = ResponseOf<paths["/api/v1/projects/{projectId}/schedules"]["get"]>;
 export type Schedule = ResponseOf<paths["/api/v1/projects/{projectId}/schedules/{id}"]["get"]>;
@@ -50,9 +53,16 @@ type Csrf = ResponseOf<paths["/api/v1/csrf"]["get"]>;
 type ProblemContract = paths["/api/v1/projects/{projectId}/members/{userId}"]["patch"]["responses"][400]["content"]["application/problem+json"];
 export type Problem = Partial<ProblemContract>;
 export class ApiError extends Error {
-    constructor(readonly status: number, readonly problem: Problem) { super(problem.code ?? `HTTP_${status}`); }
+    constructor(readonly status: number, readonly problem: Problem, readonly sessionGeneration?: number) { super(problem.code ?? `HTTP_${status}`); }
 }
-async function parse<T>(response: Response): Promise<T> {
+async function parse<T>(response: Response, expectedGeneration?: number, allowTerminatedSuccess = false, protectedRequest = true): Promise<T> {
+    if (response.status === 401) {
+        if (expectedGeneration === undefined || isSessionActive(expectedGeneration))
+            terminateSession(expectedGeneration);
+        throw new ApiError(401, {}, expectedGeneration);
+    }
+    if (protectedRequest && expectedGeneration !== undefined && !isSessionActive(expectedGeneration) && !(allowTerminatedSuccess && response.ok))
+        throw new SessionTerminatedError();
     if (!response.ok) {
         let problem: Problem = {};
         try {
@@ -67,14 +77,36 @@ async function parse<T>(response: Response): Promise<T> {
             }
         }
         catch { /* A proxy may return an empty or non-JSON error. */ }
-        throw new ApiError(response.status, problem);
+        if (protectedRequest && expectedGeneration !== undefined && !isSessionActive(expectedGeneration))
+            throw new SessionTerminatedError();
+        throw new ApiError(response.status, problem, expectedGeneration);
     }
-    return response.status === 204 ? undefined as T : response.json() as Promise<T>;
+    if (protectedRequest && expectedGeneration !== undefined && !allowTerminatedSuccess && !isSessionActive(expectedGeneration))
+        throw new SessionTerminatedError();
+    if (response.status === 204)
+        return undefined as T;
+    const value = await response.json() as T;
+    if (protectedRequest && expectedGeneration !== undefined && !allowTerminatedSuccess && !isSessionActive(expectedGeneration))
+        throw new SessionTerminatedError();
+    return value;
 }
-export async function read<T>(path: string): Promise<T> { return parse<T>(await fetch(path, { credentials: "include" })); }
+const isPublicPath = (path: string) => path === "/api/v1/system/configuration";
+export async function read<T>(path: string, expectedGeneration = currentSessionGeneration()): Promise<T> {
+    const protectedRequest = !isPublicPath(path);
+    const response = await fetch(path, { credentials: "include" });
+    return parse<T>(response, expectedGeneration, false, protectedRequest);
+}
 async function mutate<T, B = never>(path: string, method = "POST", body?: B): Promise<T> {
-    const csrf = await read<Csrf>("/api/v1/csrf");
-    return parse<T>(await fetch(path, { method, credentials: "include", headers: { "content-type": "application/json", [csrf.headerName]: csrf.token }, body: body === undefined ? undefined : JSON.stringify(body) }));
+    const expectedGeneration = currentSessionGeneration();
+    const csrf = await read<Csrf>("/api/v1/csrf", expectedGeneration);
+    if (!isSessionActive(expectedGeneration))
+        throw new SessionTerminatedError();
+    const response = await fetch(path, { method, credentials: "include", headers: { "content-type": "application/json", [csrf.headerName]: csrf.token }, body: body === undefined ? undefined : JSON.stringify(body) });
+    const isLogout = path === "/api/v1/logout";
+    const ownLogoutSuccess = isLogout && response.ok && isSessionActive(expectedGeneration);
+    if (ownLogoutSuccess)
+        terminateSession(expectedGeneration);
+    return parse<T>(response, expectedGeneration, ownLogoutSuccess, true);
 }
 const segment = encodeURIComponent;
 const base = (p: string) => `/api/v1/projects/${segment(p)}`;
@@ -83,7 +115,10 @@ export const PAGE_SIZE = 20;
 export const api = {
     configuration: () => read<Configuration>("/api/v1/system/configuration"),
     me: () => read<Me>("/api/v1/me"),
+    logout: () => mutate<void>("/api/v1/logout"),
     projects: (page = 0) => read<Projects>(`/api/v1/projects?page=${page}&limit=100`),
+    creationOptions: (page = 0) => read<CreationOptions>(`/api/v1/projects/creation-options?page=${page}&limit=100`),
+    createProject: (body: ProjectCreateBody) => mutate<Project, ProjectCreateBody>("/api/v1/projects", "POST", body),
     dashboard: (p: string) => read<Dashboard>(`${base(p)}/dashboard`),
     schedules: (p: string, from: string, to: string, page = 0) => read<Schedules>(`${base(p)}/schedules?page=${page}&limit=${PAGE_SIZE}&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`),
     detail: (p: string, s: string) => read<Schedule>(`${item(p, s)}?historyLimit=100`),

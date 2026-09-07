@@ -1,23 +1,43 @@
 package com.aierp.project.api;
 
+import com.aierp.group.api.GroupAccess;
 import com.aierp.identity.api.ApplicationPrincipal;
+import com.aierp.platform.web.ReadLimits;
+import com.aierp.platform.web.ValidationFailure;
 import com.aierp.project.*;
 import java.util.*;
-import org.springframework.http.HttpStatus;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
-import com.aierp.platform.web.ReadLimits;
-import org.springframework.data.domain.Sort;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /** Project reads and membership changes backed by the project schema. */
 @RestController @RequestMapping("/api/v1/projects")
 public class ProjectController {
     private final ProjectRepository projects;
     private final ProjectMemberRepository members;
-    public ProjectController(ProjectRepository projects, ProjectMemberRepository members) { this.projects = projects; this.members = members; }
+    private final GroupAccess groups;
+    public ProjectController(ProjectRepository projects, ProjectMemberRepository members, GroupAccess groups) { this.projects = projects; this.members = members; this.groups = groups; }
+
+    @GetMapping("/creation-options")
+    public List<GroupAccess.CreationOption> creationOptions(Authentication auth,@RequestParam(required=false) Integer page,@RequestParam(required=false) Integer limit) {
+        return groups.creationOptions(principal(auth).userId(),page,limit);
+    }
+    @PostMapping @Transactional public ProjectResponse create(@RequestBody CreateRequest body,Authentication auth) {
+        var user = principal(auth);
+        if (body == null) throw new ValidationFailure("groupId","A group is required");
+        if (body.groupId() == null) throw new ValidationFailure("groupId","A group is required");
+        var name = body.name() == null ? "" : body.name().trim();
+        if (name.isBlank() || name.length() > 200) throw new ValidationFailure("name","Project name must contain 1 to 200 characters");
+        groups.requireProjectCreator(body.groupId(),user.userId());
+        var project = new ProjectEntity(UUID.randomUUID(),body.groupId(),name);
+        projects.save(project);
+        var creator = new ProjectMemberEntity();creator.projectId=project.id;creator.userAccountId=user.userId();creator.role=ProjectRole.MANAGER;
+        members.save(creator);
+        return new ProjectResponse(project.id,project.groupId,project.name,creator.role);
+    }
 
     @GetMapping public List<ProjectResponse> list(Authentication auth, @RequestParam(required=false) Integer page, @RequestParam(required=false) Integer limit) {
         var user = principal(auth);
@@ -42,6 +62,7 @@ public class ProjectController {
     private void requireManager(UUID projectId, ApplicationPrincipal user) { if (requireMember(projectId, user).role != ProjectRole.MANAGER) throw new org.springframework.security.access.AccessDeniedException("MANAGER_REQUIRED"); }
     private static ApplicationPrincipal principal(Authentication a) { if (a.getPrincipal() instanceof ApplicationPrincipal p) return p; throw new org.springframework.security.access.AccessDeniedException("APPLICATION_PRINCIPAL_REQUIRED"); }
     public record ProjectResponse(UUID id, UUID groupId, String name, ProjectRole role) { }
+    public record CreateRequest(UUID groupId,String name) { }
     public record MemberResponse(UUID userId, ProjectRole role) { }
     public record RoleRequest(ProjectRole role) { }
 }
