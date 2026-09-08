@@ -19,10 +19,17 @@ For bounded low/standard implementation work, record the minimal result in `TASK
   - Blocking reason:
 - External dependency status and mode; owner, sanitized evidence, and resume checks (unknown is never ready):
 - Exact changed paths:
+- Reviewed revision and evidence validity:
+  - Reviewed revision or commit:
+  - Evidence collected after the final edit: yes / no
+  - Affected checks rerun after edits:
 - Numbered acceptance criteria mapping to concrete diff/test evidence:
   1. Contract criterion → evidence path / result
   2. Contract criterion → evidence path / result
   3. Contract criterion → evidence path / result
+- Regression evidence:
+  - Failure-before-fix and pass-after-fix evidence, when a regression check was warranted:
+  - If not run, conditional rationale and alternative evidence:
 - Checks and evidence (actual command, exit code, output path):
 - Checks not run:
 - Deviations and uncertainties:

@@ -11,3 +11,9 @@
 9. Follow `DELEGATION-PROTOCOL.md`; allow at most three total attempts for a repairable implementation task, including the initial attempt and any escalation, and preserve failed attempts. External or quota blockers stop immediately, consume no attempt, and cannot authorize escalation.
 
 If a required external prerequisite is missing or unknown, stop the affected task before dependent edits or execution and return a BLOCKER-REPORT to the parent. Do not retry an unchanged external blocker; At most three total attempts apply only to repairable implementation defects, including the initial attempt and any escalation. External blockers stop immediately, consume no retry attempt, and cannot authorize model escalation or a model sweep. External or quota blockers stop immediately, consume no attempt, and cannot authorize escalation. Goal-mode continuation does not override external prerequisites; a blocked task remains blocked until evidence resolves the blocker.
+
+Conditional implementation practices:
+
+- For defect work, including configuration defects, inspect errors and recent changes, reproduce where feasible, and state one testable root-cause hypothesis before one focused change. If reproduction is infeasible, record why and the alternative diagnostic evidence; N/A applies only to non-defect wording or configuration maintenance.
+- When warranted and feasible, record failure-before-fix and pass-after-fix regression evidence; otherwise record the rationale. Tie rerun evidence to the reviewed revision and assess review feedback against requirements and code, recording evidence-based disagreement when feedback does not apply.
+- Keep scope small, preserve user edits, and delegate only independent bounded work with explicit ownership when authorized; use a worktree only when isolation is needed.

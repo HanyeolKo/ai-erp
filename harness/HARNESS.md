@@ -1,6 +1,6 @@
 # AI ERP harness
 
-Read in order: `harness-spec.json`, `state/state.json`, the entry skill, and the relevant role.
+Read in order: `harness-spec.json`, `state/state.json`, the entry skill, the relevant role, and `loops/EXECUTION-LOOP.md`.
 
 ## Routing
 

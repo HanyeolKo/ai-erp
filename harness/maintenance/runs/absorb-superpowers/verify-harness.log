@@ -1,0 +1,2 @@
+Harness verification passed: schema, permissions, DAG, Codex parity, UI routing, and pinned skill bytes.
+Router/ui-ux-designer/reviewer inherit native model settings; implementer defaults to gpt-5.3-codex-spark/high with explicit gpt-5.6-luna/high fallback evidence.

@@ -13,6 +13,16 @@ Complete this contract before any implementation worker starts.
 - Preserved user changes and explicit exclusions:
 - Interfaces, data, permissions, state, and test rules:
 - External dependency readiness: ready / blocked / justified N/A; mode: none / offline-contract-only / live-integration; provider, target, contract/version, owner, evidence date, safe check, expected result, and dependent work:
+- Verification strategy:
+  - Defect evidence (errors/recent changes/reproduction), including configuration defects:
+  - Root-cause hypothesis and focused change; N/A only for non-defect wording/configuration maintenance:
+  - If reproduction is infeasible, reason and alternative diagnostic evidence:
+  - Conditional regression check: required / not warranted / infeasible
+  - If required: failure-before-fix and pass-after-fix evidence:
+  - If not run, rationale and alternative evidence:
+- Review and evidence validity:
+  - Reviewed revision or commit:
+  - Affected checks to rerun after edits:
 - Numbered observable acceptance criteria (each required):
   1.
   2.
