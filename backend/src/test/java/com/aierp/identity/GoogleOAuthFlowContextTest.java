@@ -157,7 +157,7 @@ class GoogleOAuthFlowContextTest {
     private static void putPending(HttpSession session,String intent,Map<String,String> value) {
         synchronized (session) {
             var current=(Map<String,Map<String,String>>)session.getAttribute("google.connect.pending");
-            var copy=current == null ? new LinkedHashMap<>() : new LinkedHashMap<>(current);
+            Map<String,Map<String,String>> copy=current == null ? new LinkedHashMap<>() : new LinkedHashMap<>(current);
             copy.put(intent,new LinkedHashMap<>(value));
             session.setAttribute("google.connect.pending",copy);
         }
