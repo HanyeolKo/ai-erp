@@ -506,7 +506,7 @@ def migration_guard_checks(root):
             target.rename(original)
             target.symlink_to(original)
         result = child.run('preflight', C, success=False)
-        expected = 'symbolic links are forbidden in deployment paths' if kind == 'symlink' else ('required migration file missing' if kind == 'missing' else 'unexpected migration set')
+        expected = 'symbolic links are forbidden in deployment paths' if kind == 'symlink' else ('required migration file missing' if kind in ('missing', 'missing-v8') else 'unexpected migration set')
         check(expected in result.stderr, kind + ' migration input must be rejected')
         child.clean()
 

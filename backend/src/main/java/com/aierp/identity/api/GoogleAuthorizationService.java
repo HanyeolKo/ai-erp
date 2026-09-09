@@ -52,6 +52,27 @@ public class GoogleAuthorizationService implements GoogleAccess {
         return grants.findByUserAccountId(userId).map(g->g.generation==generation && !"REAUTH_REQUIRED".equals(g.status)).orElse(false);
     }
 
+    /**
+     * A terminal provider result must be committed against the same grant
+     * generation that supplied its credential. This method deliberately uses
+     * the pessimistic grant query. When called inside a receipt transaction,
+     * Spring joins that transaction and retains the row lock through commit;
+     * disconnect/connect therefore cannot invalidate the check in between.
+     */
+    @Override
+    public boolean isCurrentForCommit(UUID userId, long generation) {
+        if (transactions == null) return isCurrent(userId, generation);
+        return transactions.execute(status -> {
+            // Keep the same account -> grant lock order used by connect and
+            // disconnect. A disconnect that began first must invalidate the
+            // credential before the receipt can commit.
+            if (accounts != null && accounts.lockById(userId).isEmpty()) return false;
+            return grants.lockByUserAccountId(userId)
+                    .map(g -> g.generation == generation && !"REAUTH_REQUIRED".equals(g.status))
+                    .orElse(false);
+        });
+    }
+
     @Transactional(readOnly=true)
     public long generation(UUID userId) { return grants.findByUserAccountId(userId).map(g -> g.generation).orElse(0L); }
     public boolean configured() { return vault.configured() && (environment==null || (Boolean.parseBoolean(environment.getProperty("APP_GOOGLE_WORKSPACE_ENABLED","false")) && com.aierp.platform.web.OidcSettings.enabled(environment))); }

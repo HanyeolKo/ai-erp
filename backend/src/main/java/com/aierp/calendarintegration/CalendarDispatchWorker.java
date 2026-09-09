@@ -52,7 +52,9 @@ public class CalendarDispatchWorker {
             // Credential acquisition may refresh and therefore must occur outside the claim transaction.
             credentialGeneration = google.credential(claim.owner(), GoogleAccess.Feature.CALENDAR).generation();
         } catch (GoogleAccess.GoogleAccessException failure) {
-            release(claim, failure.status() == GoogleAccess.Status.REAUTH_REQUIRED ? "REAUTH_REQUIRED" : "PERMISSION_REQUIRED");
+            // A refresh/network failure is retryable. Preserve the provider category instead of
+            // presenting every credential problem as a permanent permission denial.
+            release(claim, googleFailureClassification(failure));
             return true;
         }
         claim = attachCredentialGeneration(claim, credentialGeneration);
@@ -134,7 +136,16 @@ public class CalendarDispatchWorker {
         if (access != null && !"MANAGER".equals(access.role(calendar.projectId, owner))) {
             row.retryClassification = "PERMISSION_REQUIRED"; row.updatedAt = Instant.now(); projections.save(row); return null;
         }
-        var status = google.status(owner).status(GoogleAccess.Feature.CALENDAR);
+        final GoogleAccess.Connection connection;
+        try {
+            connection = google.status(owner);
+        } catch (GoogleAccess.GoogleAccessException failure) {
+            row.retryClassification = googleFailureClassification(failure);
+            row.updatedAt = Instant.now();
+            projections.save(row);
+            return null;
+        }
+        var status = connection.status(GoogleAccess.Feature.CALENDAR);
         if (status != GoogleAccess.Status.CONNECTED) {
             row.retryClassification = status == GoogleAccess.Status.REAUTH_REQUIRED ? "REAUTH_REQUIRED" : "PERMISSION_REQUIRED";
             row.updatedAt = Instant.now(); projections.save(row); return null;
@@ -240,6 +251,16 @@ public class CalendarDispatchWorker {
         if (row.reconcileUntil == null || row.reconcileUntil.isBefore(horizon)) row.reconcileUntil = horizon;
         if (auditDue && (row.nextReconcileAt == null || row.nextReconcileAt.isAfter(now))) row.nextReconcileAt = now;
         if (!auditDue) row.nextReconcileAt = null;
+    }
+
+    private static String googleFailureClassification(GoogleAccess.GoogleAccessException failure) {
+        return switch (failure.category()) {
+            case REAUTH_REQUIRED -> "REAUTH_REQUIRED";
+            case PERMISSION_REQUIRED -> "PERMISSION_REQUIRED";
+            case CONFIGURATION_REQUIRED -> "CONFIGURATION_REQUIRED";
+            case TEMPORARY -> "TRANSIENT";
+            case DEFINITIVE -> "PERMANENT";
+        };
     }
 
     record Claim(UUID projectionId, UUID claimToken, UUID owner, String calendarId, long bindingGeneration,

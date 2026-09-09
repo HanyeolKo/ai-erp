@@ -19,18 +19,15 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import jakarta.mail.Message;
 import jakarta.mail.Session;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.springframework.transaction.TransactionStatus;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -102,41 +99,54 @@ public class GmailService {
         validate(request);
         String payloadHash = payloadHash(request);
         var key = new MailSendRequestEntity.Id(user, request.requestId());
-        MailSendRequestEntity row;
-        try { row = claim(key, payloadHash); }
-        catch (DataIntegrityViolationException race) { row = null; }
-        if (row == null) {
-            var existing = sends.findById(key).orElseThrow(() -> new IllegalStateException("SEND_CLAIM_RACE"));
-            if (!Objects.equals(existing.payloadHash, payloadHash)) throw new IllegalStateException("REQUEST_ID_PAYLOAD_MISMATCH");
-            return receipt(existing);
+        Claim claim = claim(key, payloadHash);
+        if (claim == null) throw new IllegalStateException("SEND_CLAIM_RACE");
+        MailSendRequestEntity row = claim.row();
+        if (!claim.owner()) {
+            if (row == null) throw new IllegalStateException("SEND_CLAIM_RACE");
+            if (!Objects.equals(row.payloadHash, payloadHash)) throw new IllegalStateException("REQUEST_ID_PAYLOAD_MISMATCH");
+            return receipt(row);
         }
         try {
             var credential = access.credential(user, GoogleAccess.Feature.GMAIL);
             row.credentialGeneration = credential.generation();
-            if (!access.isCurrent(user, credential.generation())) throw new StaleProviderResult();
             String sender = access.status(user).accountEmail();
             String raw = Base64.getUrlEncoder().withoutPadding().encodeToString(mime(request, sender).getBytes(StandardCharsets.UTF_8));
+            // Keep this check immediately adjacent to the provider request;
+            // the terminal transaction repeats it under the grant lock.
+            if (!access.isCurrent(user, credential.generation())) throw new StaleProviderResult();
             var response = http.execute("POST", URI.create("https://gmail.googleapis.com/gmail/v1/users/me/messages/send"), credential.accessToken(), "{\"raw\":\"" + raw + "\"}");
-            if (response.status() == 401) throw new GoogleAccess.GoogleAccessException(GoogleAccess.Status.REAUTH_REQUIRED);
-            if (response.status() == 403 || response.status() == 429) throw new DefinitiveSendFailure();
-            if (response.status() < 200 || response.status() >= 300) throw new RuntimeException("PROVIDER_FAILURE");
+            if (response.status() == 401 || response.status() == 403 || response.status() == 429)
+                GoogleHttpClient.requireSuccess(response);
+            if (response.status() >= 400 && response.status() < 500)
+                throw new GoogleAccess.GoogleAccessException("GOOGLE_INVALID_RESPONSE", com.aierp.platform.web.ExternalServiceFailure.Category.DEFINITIVE);
+            if (response.status() < 200 || response.status() >= 300) GoogleHttpClient.requireSuccess(response);
             if (!access.isCurrent(user, credential.generation())) throw new StaleProviderResult();
             JsonNode body = parse(response.body());
             row.status = "SENT";
             row.messageId = bounded(body.path("id").asText(null), 255);
-        } catch (GoogleAccess.GoogleAccessException | DefinitiveSendFailure failure) {
-            row.status = "FAILED";
+        } catch (com.aierp.platform.web.ExternalServiceFailure failure) {
+            // A successful provider response with an unusable body may still
+            // represent an accepted message, so it remains UNKNOWN. Explicit
+            // client 4xx responses are classified as definitive below.
+            boolean malformedSuccess = failure instanceof GoogleHttpClient.GoogleServiceException
+                    && "GOOGLE_INVALID_RESPONSE".equals(failure.safeCode());
+            row.status = malformedSuccess || failure.category() == com.aierp.platform.web.ExternalServiceFailure.Category.TEMPORARY
+                    ? "UNKNOWN" : "FAILED";
         } catch (RuntimeException failure) {
             row.status = "UNKNOWN";
         }
-        try { finish(row); }
-        catch (RuntimeException persistenceFailure) { return new SendReceipt(request.requestId(), "UNKNOWN", null); }
-        return receipt(row);
+        try {
+            var persisted = finish(row);
+            return persisted == null ? new SendReceipt(request.requestId(), "UNKNOWN", null) : persisted;
+        } catch (RuntimeException persistenceFailure) { return new SendReceipt(request.requestId(), "UNKNOWN", null); }
     }
 
     @org.springframework.transaction.annotation.Transactional
     public SendReceipt receipt(UUID user, UUID requestId) {
-        var row = sends.findById(new MailSendRequestEntity.Id(user, requestId)).orElseThrow(() -> new java.util.NoSuchElementException("SEND_NOT_FOUND"));
+        var key = new MailSendRequestEntity.Id(user, requestId);
+        var row = (transactions == null ? sends.findById(key) : sends.lockById(key))
+                .orElseThrow(() -> new java.util.NoSuchElementException("SEND_NOT_FOUND"));
         if ("SENDING".equals(row.status) && row.updatedAt != null && row.updatedAt.isBefore(Instant.now().minusSeconds(60))) {
             row.status = "UNKNOWN";
             row.updatedAt = Instant.now();
@@ -145,26 +155,39 @@ public class GmailService {
         return receipt(row);
     }
 
-    private MailSendRequestEntity claim(MailSendRequestEntity.Id key, String hash) {
-        TransactionCallback<MailSendRequestEntity> work = tx -> {
-            var existing = sends.findById(key).orElse(null);
-            if (existing != null) return null;
-            var row = new MailSendRequestEntity();
-            row.id = key; row.payloadHash = hash; row.status = "SENDING"; row.createdAt = Instant.now(); row.updatedAt = row.createdAt;
-            sends.saveAndFlush(row);
-            return row;
+    private Claim claim(MailSendRequestEntity.Id key, String hash) {
+        TransactionCallback<Claim> work = tx -> {
+            int inserted = sends.insertClaim(key.userAccountId, key.requestId, hash);
+            var row = (transactions == null ? sends.findById(key) : sends.lockById(key)).orElse(null);
+            if (row == null) return null;
+            return new Claim(row, inserted == 1);
         };
         return transactions == null ? work.doInTransaction(null) : transactions.execute(work);
     }
 
-    private void finish(MailSendRequestEntity row) {
-        Consumer<TransactionStatus> work = tx -> {
-            var current = sends.findById(row.id).orElse(null);
-            if (current == null || !"SENDING".equals(current.status)) return;
+    private SendReceipt finish(MailSendRequestEntity row) {
+        TransactionCallback<SendReceipt> work = tx -> {
+            var current = (transactions == null ? sends.findById(row.id) : sends.lockById(row.id)).orElse(null);
+            if (current == null || !"SENDING".equals(current.status)) return current == null ? null : receipt(current);
+            // This joins the current transaction in the real authorization
+            // service, retaining the grant lock until this receipt commits.
+            // A demotion/disconnect can therefore only produce UNKNOWN.
+            // Only a provider-success candidate needs the grant barrier. A
+            // credential/configuration failure happened before any provider
+            // attempt and must remain the definitive FAILED receipt instead
+            // of being rewritten to UNKNOWN because generation 0 is stale.
+            if (transactions != null && "SENT".equals(row.status)
+                    && !access.isCurrentForCommit(row.id.userAccountId, row.credentialGeneration)) {
+                current.status = "UNKNOWN";
+                current.updatedAt = Instant.now();
+                sends.saveAndFlush(current);
+                return receipt(current);
+            }
             current.status = row.status; current.messageId = row.messageId; current.credentialGeneration = row.credentialGeneration; current.updatedAt = Instant.now();
             sends.saveAndFlush(current);
+            return receipt(current);
         };
-        if (transactions == null) work.accept(null); else transactions.executeWithoutResult(work);
+        return transactions == null ? work.doInTransaction(null) : transactions.execute(work);
     }
 
     private static MessageSummary summary(JsonNode node, String id) {
@@ -179,7 +202,8 @@ public class GmailService {
     }
 
     private static void readPart(JsonNode part, Body body, int depth) {
-        if (depth > 8 || body.parts++ >= MAX_PROVIDER_PARTS) return;
+        if (depth > 8) { body.truncated = true; return; }
+        if (body.parts++ >= MAX_PROVIDER_PARTS) { body.truncated = true; return; }
         String mimeType = part.path("mimeType").asText("").toLowerCase(Locale.ROOT);
         String data = part.path("body").path("data").asText(null);
         if (data != null && !data.isBlank() && (mimeType.equals("text/plain") || mimeType.equals("text/html"))) {
@@ -266,7 +290,7 @@ public class GmailService {
     private static String boundedToken(String value) { return value == null || value.length() > 1000 ? null : value; }
     private static String bounded(String value, int max) { return value == null ? "" : value.substring(0, Math.min(max, value.length())); }
     private static JsonNode parse(String value) { try { return JSON.readTree(value); } catch (Exception failure) { throw new GoogleHttpClient.GoogleServiceException("PROVIDER_INVALID_RESPONSE", failure); } }
-    private static void check(GoogleHttpClient.Response response) { if (response.status() == 401) throw new GoogleAccess.GoogleAccessException(GoogleAccess.Status.REAUTH_REQUIRED); if (response.status() == 403) throw new GoogleAccess.GoogleAccessException(GoogleAccess.Status.PERMISSION_REQUIRED); if (response.status() < 200 || response.status() >= 300) throw new GoogleHttpClient.GoogleServiceException("PROVIDER_UNAVAILABLE"); }
+    private static void check(GoogleHttpClient.Response response) { GoogleHttpClient.requireSuccess(response); }
     private static SendReceipt receipt(MailSendRequestEntity row) { return new SendReceipt(row.id.requestId, row.status, row.messageId); }
 
     private static final class Body {
@@ -275,8 +299,8 @@ public class GmailService {
         private void append(StringBuilder target, String value) { int room = MAX_BODY - target.length(); if (room <= 0) { truncated = true; return; } target.append(value, 0, Math.min(room, value.length())); if (value.length() > room) truncated = true; }
         private String value() { return (plain.length() > 0 ? plain : html).toString(); }
     }
-    private static final class DefinitiveSendFailure extends RuntimeException { }
     private static final class StaleProviderResult extends RuntimeException { }
+    private record Claim(MailSendRequestEntity row, boolean owner) { }
     public record MessagesResponse(List<MessageSummary> messages, String nextPageToken) { }
     public record MessageSummary(String id, String subject, String from, List<String> to, String snippet, String internalDate, boolean unread) { }
     public record MessageDetail(String id, String subject, String from, List<String> to, List<String> cc, String date, String bodyText, boolean truncated) { }

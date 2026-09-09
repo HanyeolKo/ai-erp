@@ -22,8 +22,16 @@ import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.mock.web.*;
+import org.junit.jupiter.api.AfterEach;
 
 class GoogleOAuthFlowContextTest {
+    @AfterEach
+    void isolateSecurityContext() {
+        // OAuth callbacks use the process-local holder; always clear it even when an
+        // assertion fails so another fixture cannot inherit a prior principal.
+        SecurityContextHolder.clearContext();
+    }
+
     @Test
     void resolverBindsOverlappingConnectAttemptsToIndependentSingleUseStates() {
         var registration=ClientRegistration.withRegistrationId("google").clientId("id").clientSecret("secret")
@@ -39,9 +47,8 @@ class GoogleOAuthFlowContextTest {
         )));
         session.setAttribute("google.connect.activeIntent","intentA");
         OAuth2AuthorizationRequest first=resolver.resolve(request);
-        var pending=(Map<String,Map<String,String>>)session.getAttribute("google.connect.pending");
-        pending.put("intentB",new LinkedHashMap<>(Map.of("feature","GMAIL","user",UUID.randomUUID().toString(),"subject","subB","generation","2","created",Long.toString(System.currentTimeMillis()),"email","b@example.test")));
-        session.setAttribute("google.connect.pending",pending); session.setAttribute("google.connect.activeIntent","intentB");
+        putPending(session,"intentB",new LinkedHashMap<>(Map.of("feature","GMAIL","user",UUID.randomUUID().toString(),"subject","subB","generation","2","created",Long.toString(System.currentTimeMillis()),"email","b@example.test")));
+        session.setAttribute("google.connect.activeIntent","intentB");
         OAuth2AuthorizationRequest second=resolver.resolve(request);
 
         assertNotEquals(first.getState(),second.getState());
@@ -144,6 +151,16 @@ class GoogleOAuthFlowContextTest {
     private static void putFlow(HttpSession session,String state,Map<String,String> flow) throws Exception {
         Method method=OidcConfiguration.class.getDeclaredMethod("putFlow",HttpSession.class,String.class,Map.class);
         method.setAccessible(true); method.invoke(null,session,state,flow);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void putPending(HttpSession session,String intent,Map<String,String> value) {
+        synchronized (session) {
+            var current=(Map<String,Map<String,String>>)session.getAttribute("google.connect.pending");
+            var copy=current == null ? new LinkedHashMap<>() : new LinkedHashMap<>(current);
+            copy.put(intent,new LinkedHashMap<>(value));
+            session.setAttribute("google.connect.pending",copy);
+        }
     }
     @SuppressWarnings("unchecked")
     private static Map<String,String> consume(HttpSession session,String state) {

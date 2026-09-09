@@ -1,6 +1,7 @@
 import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, test, vi } from "vitest";
+import { focusManager } from "@tanstack/react-query";
 import App from "./App";
 import { http, json } from "./test/http";
 
@@ -8,6 +9,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
   window.location.hash = "";
   sessionStorage.clear();
+  focusManager.setFocused(undefined);
 });
 
 const mount = (path: string) => {
@@ -44,6 +46,41 @@ test("Google connection refresh hides the previous private account through denia
   await waitFor(() => expect(screen.queryByText("fresh@example.test")).not.toBeInTheDocument());
   await user.click(await screen.findByRole("button", { name: "다시 시도" }));
   expect(await screen.findByText("fresh@example.test")).toBeInTheDocument();
+});
+
+test("Gmail closes a private detail dialog when a later connection check is denied", async () => {
+  const server = http();
+  let denied = false;
+  server.on("GET", "/api/v1/google/connection", () => denied
+    ? json({ code: "GOOGLE_FORBIDDEN" }, 403)
+    : json({ configurationRequired: false, accountEmail: "manager@example.test", drive: { status: "CONNECTED" }, gmail: { status: "CONNECTED" }, calendar: { status: "NOT_CONNECTED" } }));
+  server.on("GET", "/api/v1/google/mail/messages", () => json({ messages: [{ id: "message-1", subject: "Private subject", from: "sender@example.test", to: ["manager@example.test"], snippet: "Private preview", internalDate: "2090-09-10T00:00:00Z", unread: true }], nextPageToken: null }));
+  server.on("GET", "/api/v1/google/mail/messages/message-1", () => json({ id: "message-1", subject: "Private subject", from: "sender@example.test", to: ["manager@example.test"], cc: [], date: "2090-09-10T00:00:00Z", bodyText: "Private body", truncated: false }));
+  const user = mount("/account/mail");
+  await user.click(await screen.findByRole("button", { name: /Private subject/ }));
+  await screen.findByText("Private body");
+  denied = true;
+  await act(async () => { vi.setSystemTime(new Date("2090-09-10T00:01:00Z")); focusManager.setFocused(false); focusManager.setFocused(true); });
+  await waitFor(() => expect(server.calls.filter((call) => call.method === "GET" && call.url === "/api/v1/google/connection").length).toBeGreaterThan(1));
+  await waitFor(() => expect(screen.queryByText("Private body")).not.toBeInTheDocument());
+  expect(screen.queryByRole("dialog", { name: "메일 상세" })).not.toBeInTheDocument();
+});
+
+test("Gmail closes a private compose dialog when a later connection check is denied", async () => {
+  const server = http();
+  let denied = false;
+  server.on("GET", "/api/v1/google/connection", () => denied
+    ? json({ code: "GOOGLE_FORBIDDEN" }, 403)
+    : json({ configurationRequired: false, accountEmail: "manager@example.test", drive: { status: "CONNECTED" }, gmail: { status: "CONNECTED" }, calendar: { status: "NOT_CONNECTED" } }));
+  server.on("GET", "/api/v1/google/mail/messages", () => json({ messages: [], nextPageToken: null }));
+  const user = mount("/account/mail");
+  await user.click(await screen.findByRole("button", { name: "메일 작성" }));
+  await user.type(screen.getByLabelText("제목"), "Private draft");
+  denied = true;
+  await act(async () => { vi.setSystemTime(new Date("2090-09-10T00:01:00Z")); focusManager.setFocused(false); focusManager.setFocused(true); });
+  await waitFor(() => expect(server.calls.filter((call) => call.method === "GET" && call.url === "/api/v1/google/connection").length).toBeGreaterThan(1));
+  await waitFor(() => expect(screen.queryByDisplayValue("Private draft")).not.toBeInTheDocument());
+  expect(screen.queryByRole("dialog", { name: "메일 작성" })).not.toBeInTheDocument();
 });
 
 test("Google connection refuses an external authorization URL", async () => {

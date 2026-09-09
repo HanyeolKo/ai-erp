@@ -200,4 +200,56 @@ class GoogleCalendarDispatchTest {
         assertThat(query).contains("p.nextReconcileAt is not null")
             .doesNotContain("p.nextReconcileAt is null or");
     }
+
+    @Test void temporaryCredentialFailureRemainsRetryableInsteadOfBecomingPermissionDenied() {
+        var calendars = mock(ProjectCalendarRepository.class); var projections = mock(CalendarProjectionRepository.class);
+        var adapter = mock(CalendarAdapter.class); var schedules = mock(ScheduleLookup.class); var google = mock(GoogleAccess.class);
+        var worker = new CalendarDispatchWorker(calendars, projections, adapter, schedules, google);
+        var project = UUID.randomUUID(); var scheduleId = UUID.randomUUID(); var owner = UUID.randomUUID();
+        var calendar = new ProjectCalendarEntity(); calendar.id = UUID.randomUUID(); calendar.projectId = project;
+        calendar.bindingOwner = owner; calendar.externalCalendarId = "primary"; calendar.bindingGeneration = 1;
+        var row = new CalendarProjectionEntity(); row.id = UUID.randomUUID(); row.scheduleId = scheduleId;
+        row.projectCalendarId = calendar.id; row.status = "PENDING";
+        var snapshot = new ScheduleLookup.CalendarSnapshot(scheduleId, project, "Planning", null,
+            Instant.parse("2026-09-07T10:00:00Z"), Instant.parse("2026-09-07T11:00:00Z"), "CONFIRMED", 2);
+        when(adapter.configured()).thenReturn(true);
+        when(projections.claimable(any(), any())).thenReturn(java.util.List.of(row));
+        when(calendars.findById(calendar.id)).thenReturn(java.util.Optional.of(calendar));
+        when(schedules.snapshot(project, scheduleId)).thenReturn(snapshot);
+        when(google.status(owner)).thenReturn(new GoogleAccess.Connection("owner@example.test",
+            Map.of(GoogleAccess.Feature.CALENDAR, GoogleAccess.Status.CONNECTED)));
+        when(google.credential(owner, GoogleAccess.Feature.CALENDAR))
+            .thenThrow(new GoogleAccess.GoogleAccessException("REFRESH_UNAVAILABLE"));
+        when(projections.lockById(row.id)).thenReturn(java.util.Optional.of(row));
+
+        assertThat(worker.dispatchOnce()).isTrue();
+        assertThat(row.status).isEqualTo("PENDING");
+        assertThat(row.retryClassification).isEqualTo("TRANSIENT");
+        verify(adapter, never()).deliver(any(), any(), any(), any(), any());
+    }
+
+    @Test void successfulCancellationAuditPastItsHorizonStopsFurtherReconciliation() {
+        var calendars = mock(ProjectCalendarRepository.class); var projections = mock(CalendarProjectionRepository.class);
+        var adapter = mock(CalendarAdapter.class); var schedules = mock(ScheduleLookup.class); var google = mock(GoogleAccess.class);
+        var worker = new CalendarDispatchWorker(calendars, projections, adapter, schedules, google);
+        var project = UUID.randomUUID(); var scheduleId = UUID.randomUUID(); var owner = UUID.randomUUID();
+        var calendar = new ProjectCalendarEntity(); calendar.id = UUID.randomUUID(); calendar.projectId = project;
+        calendar.bindingOwner = owner; calendar.externalCalendarId = "primary"; calendar.bindingGeneration = 1;
+        var row = new CalendarProjectionEntity(); row.id = UUID.randomUUID(); row.scheduleId = scheduleId;
+        row.projectCalendarId = calendar.id; row.status = "SYNCED"; row.claimToken = UUID.randomUUID();
+        row.reconcileUntil = Instant.now().minusSeconds(1); row.nextReconcileAt = Instant.now().minusSeconds(1);
+        var cancelled = new ScheduleLookup.CalendarSnapshot(scheduleId, project, "Planning", null,
+            Instant.parse("2026-09-07T10:00:00Z"), Instant.parse("2026-09-07T11:00:00Z"), "CANCELLED", 3);
+        var claim = new CalendarDispatchWorker.Claim(row.id, row.claimToken, owner, "primary", 1, 7, cancelled, "stable");
+        when(projections.lockById(row.id)).thenReturn(java.util.Optional.of(row));
+        when(calendars.findById(calendar.id)).thenReturn(java.util.Optional.of(calendar));
+        when(schedules.snapshot(project, scheduleId)).thenReturn(cancelled);
+        when(google.isCurrent(owner, 7)).thenReturn(true);
+
+        worker.complete(claim, new CalendarAdapter.DeliveryResult("stable", "etag"), null);
+
+        assertThat(row.status).isEqualTo("SYNCED");
+        assertThat(row.reconcileUntil).isNull();
+        assertThat(row.nextReconcileAt).isNull();
+    }
 }

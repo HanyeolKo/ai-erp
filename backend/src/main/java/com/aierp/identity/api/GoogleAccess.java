@@ -31,7 +31,7 @@ public interface GoogleAccess {
                 case REAUTH_REQUIRED -> Status.REAUTH_REQUIRED;
                 case PERMISSION_REQUIRED -> Status.PERMISSION_REQUIRED;
                 case CONFIGURATION_REQUIRED -> Status.NOT_CONNECTED;
-                case CONNECTED, TEMPORARY, DEFINITIVE -> null;
+                case TEMPORARY, DEFINITIVE -> null;
             };
         }
         private static com.aierp.platform.web.ExternalServiceFailure.Category category(Status status) { return switch(status){case REAUTH_REQUIRED->com.aierp.platform.web.ExternalServiceFailure.Category.REAUTH_REQUIRED;case PERMISSION_REQUIRED->com.aierp.platform.web.ExternalServiceFailure.Category.PERMISSION_REQUIRED;case NOT_CONNECTED->com.aierp.platform.web.ExternalServiceFailure.Category.CONFIGURATION_REQUIRED;case CONNECTED->com.aierp.platform.web.ExternalServiceFailure.Category.DEFINITIVE;}; }
@@ -40,5 +40,16 @@ public interface GoogleAccess {
     Connection status(UUID userId);
     Credential credential(UUID userId, Feature feature);
     boolean isCurrent(UUID userId, long generation);
+
+    /**
+     * Revalidates a credential while holding the grant row lock in the caller's
+     * transaction. Delivery code calls this from its terminal receipt
+     * transaction, so disconnect or reconnect cannot commit between the check
+     * and the receipt update. Implementations without a transaction manager
+     * fall back to the ordinary generation check for lightweight tests.
+     */
+    default boolean isCurrentForCommit(UUID userId, long generation) {
+        return isCurrent(userId, generation);
+    }
     boolean configured();
 }

@@ -95,6 +95,15 @@ class GoogleWorkspaceCoreTest {
         var requestId = UUID.randomUUID();
         var stored = new AtomicReference<MailSendRequestEntity>();
         when(sends.findById(any())).thenAnswer(invocation -> Optional.ofNullable(stored.get()));
+        when(sends.insertClaim(any(), any(), any())).thenAnswer(invocation -> {
+            if (stored.get() != null) return 0;
+            var row = new MailSendRequestEntity();
+            row.id = new MailSendRequestEntity.Id(user, requestId);
+            row.payloadHash = invocation.getArgument(2);
+            row.status = "SENDING";
+            row.createdAt = java.time.Instant.now(); row.updatedAt = row.createdAt;
+            return stored.compareAndSet(null, row) ? 1 : 0;
+        });
         when(sends.saveAndFlush(any())).thenAnswer(invocation -> { stored.set(invocation.getArgument(0)); return invocation.getArgument(0); });
         when(access.credential(user, GoogleAccess.Feature.GMAIL)).thenReturn(new GoogleAccess.Credential("access", 5));
         when(access.isCurrent(user, 5)).thenReturn(true);
@@ -117,9 +126,15 @@ class GoogleWorkspaceCoreTest {
         var requestId = UUID.randomUUID();
         var rows = new ConcurrentHashMap<MailSendRequestEntity.Id, MailSendRequestEntity>();
         when(sends.findById(any())).thenAnswer(invocation -> Optional.ofNullable(rows.get(invocation.getArgument(0))));
+        when(sends.insertClaim(any(), any(), any())).thenAnswer(invocation -> {
+            var id = new MailSendRequestEntity.Id(invocation.getArgument(0), invocation.getArgument(1));
+            var row = new MailSendRequestEntity(); row.id = id; row.payloadHash = invocation.getArgument(2);
+            row.status = "SENDING"; row.createdAt = java.time.Instant.now(); row.updatedAt = row.createdAt;
+            return rows.putIfAbsent(id, row) == null ? 1 : 0;
+        });
         when(sends.saveAndFlush(any())).thenAnswer(invocation -> {
             var row = (MailSendRequestEntity) invocation.getArgument(0);
-            if (rows.putIfAbsent(row.id, row) != null) throw new org.springframework.dao.DataIntegrityViolationException("duplicate claim");
+            rows.put(row.id, row);
             return row;
         });
         when(access.credential(user, GoogleAccess.Feature.GMAIL)).thenReturn(new GoogleAccess.Credential("access", 6));
