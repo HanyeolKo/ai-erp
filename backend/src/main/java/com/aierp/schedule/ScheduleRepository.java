@@ -16,6 +16,11 @@ public interface ScheduleRepository extends JpaRepository<ScheduleEntity,UUID> {
     long countByProjectId(UUID projectId);
     boolean existsByIdAndProjectId(UUID id, UUID projectId);
     Optional<ScheduleEntity> findByIdAndProjectId(UUID id,UUID projectId);
+    /** Calendar-owned export read: only durable, business-visible revisions in UUID order. */
+    @Query("select s from ScheduleEntity s where s.projectId = :projectId and s.businessRevision > 0 "
+        + "and s.status in (com.aierp.schedule.ScheduleEntity.Status.CONFIRMED, com.aierp.schedule.ScheduleEntity.Status.CANCELLED) "
+        + "and (:cursor is null or s.id > :cursor) order by s.id asc")
+    List<ScheduleEntity> findCalendarExportPage(UUID projectId, UUID cursor, Pageable page);
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select s from ScheduleEntity s where s.id = :id and s.projectId = :projectId")
     Optional<ScheduleEntity> lockByIdAndProjectId(UUID id,UUID projectId);

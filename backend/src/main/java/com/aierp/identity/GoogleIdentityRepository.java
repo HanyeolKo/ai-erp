@@ -8,4 +8,5 @@ public interface GoogleIdentityRepository extends JpaRepository<GoogleIdentityEn
     int lockSubject(String subject);
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<GoogleIdentityEntity> findBySubject(String subject);
+    Optional<GoogleIdentityEntity> findByUserAccountId(UUID userAccountId);
 }

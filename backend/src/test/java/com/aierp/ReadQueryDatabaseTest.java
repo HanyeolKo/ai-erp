@@ -7,6 +7,8 @@ import com.aierp.project.api.ProjectController;
 import com.aierp.group.*;
 import com.aierp.group.api.GroupAccess;
 import com.aierp.identity.api.ApplicationPrincipal;
+import com.aierp.identity.api.IdentityProfiles;
+import com.aierp.identity.UserAccountRepository;
 import com.aierp.dashboard.DashboardController;
 import com.aierp.schedule.api.ScheduleDashboard;
 import com.aierp.calendarintegration.api.CalendarDashboard;
@@ -38,6 +40,8 @@ class ReadQueryDatabaseTest {
     @Autowired ProjectMemberRepository projectMembers;
     @Autowired GroupMemberRepository groupMembers;
     @Autowired ErpGroupRepository groups;
+    @Autowired ProjectCreationRequestRepository creationRequests;
+    @Autowired UserAccountRepository users;
     final UUID project=UUID.randomUUID(), user=UUID.randomUUID();
     final Instant start=Instant.parse("2026-09-07T10:00:00Z");
     @Test void databaseAppliesWindowPageOrderingAndCurrentAckFiltering() {
@@ -82,7 +86,7 @@ class ReadQueryDatabaseTest {
         var groupMember=new GroupMemberEntity();groupMember.groupId=groupId;groupMember.userAccountId=owner;groupMember.role=GroupRole.OWNER;em.persist(groupMember);
         em.flush();
         var auth=new UsernamePasswordAuthenticationToken(new ApplicationPrincipal(owner,"owner@example.test",true),null,List.of());
-        var controller=new ProjectController(projectRepository,projectMembers,new GroupAccess(groupMembers,groups));
+        var controller=new ProjectController(projectRepository,projectMembers,new GroupAccess(groupMembers,groups),creationRequests,new IdentityProfiles(users));
         var created=controller.create(new ProjectController.CreateRequest(groupId,"  Build Team  "),auth);
         em.flush();em.clear();
 

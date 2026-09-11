@@ -26,7 +26,6 @@ public class InvitationService {
         // All invitation creation/acceptance serializes on this existing project row.
         var project=projects.lockById(input.projectId()).orElseThrow(NoSuchElementException::new);
         if(!project.groupId.equals(groupId)) throw new AccessDeniedException("GROUP_PROJECT_MISMATCH");
-        groups.requireMember(groupId,user.userId());
         if(members.findByProjectIdAndUserAccountId(project.id,user.userId()).filter(m->m.role==ProjectRole.MANAGER).isEmpty())
             throw new AccessDeniedException("MANAGER_REQUIRED");
         var email=Checks.email(input.email());var now=Instant.now();

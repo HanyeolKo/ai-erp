@@ -21,6 +21,9 @@ class SupportingApiTest {
     @org.springframework.test.context.bean.override.mockito.MockitoBean com.aierp.calendarintegration.CalendarProjectionRepository projections;
     @org.springframework.test.context.bean.override.mockito.MockitoBean com.aierp.project.api.ProjectAccess access;
     @org.springframework.test.context.bean.override.mockito.MockitoBean com.aierp.schedule.api.ScheduleLookup scheduleLookup;
+    @org.springframework.test.context.bean.override.mockito.MockitoBean GoogleAccess googleAccess;
+    @org.springframework.test.context.bean.override.mockito.MockitoBean IdentityProfiles identityProfiles;
+    @org.springframework.test.context.bean.override.mockito.MockitoBean org.springframework.transaction.PlatformTransactionManager transactionManager;
     @Autowired MockMvc mvc;
     final UsernamePasswordAuthenticationToken auth=new UsernamePasswordAuthenticationToken(new ApplicationPrincipal(UUID.randomUUID(),"a@example.test",true),null,List.of());
     @Test void notificationsAreAnEmptyArrayForNewUser() throws Exception {

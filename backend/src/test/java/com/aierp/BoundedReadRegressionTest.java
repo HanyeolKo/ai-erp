@@ -12,6 +12,7 @@ import org.springframework.data.domain.Sort;
 import java.time.Instant;
 import com.aierp.platform.web.ValidationFailure;
 import com.aierp.project.*;
+import com.aierp.identity.api.IdentityProfiles;
 import com.aierp.calendarintegration.*;
 import com.aierp.schedule.api.ScheduleLookup;
 import static org.assertj.core.api.Assertions.*;
@@ -24,12 +25,13 @@ class BoundedReadRegressionTest {
     final ScheduleAcknowledgementRepository acks=mock(ScheduleAcknowledgementRepository.class);
     final ScheduleChangeRepository changes=mock(ScheduleChangeRepository.class);
     final ProjectAccess access=mock(ProjectAccess.class);
-    final ScheduleService service=new ScheduleService(schedules,participants,acks,changes,access,mock(EventJournal.class));
+    final com.aierp.identity.api.IdentityProfiles profiles=mock(com.aierp.identity.api.IdentityProfiles.class);
+    final ScheduleService service=new ScheduleService(schedules,participants,acks,changes,access,mock(EventJournal.class),profiles);
     @Test void scheduleListPushesItsBoundIntoTheRepository() {
         var repository = mock(ScheduleRepository.class);
         var service = new ScheduleService(repository, mock(ScheduleParticipantRepository.class),
             mock(ScheduleAcknowledgementRepository.class), mock(ScheduleChangeRepository.class),
-            mock(ProjectAccess.class), mock(EventJournal.class));
+            mock(ProjectAccess.class), mock(EventJournal.class), mock(com.aierp.identity.api.IdentityProfiles.class));
         service.list(UUID.randomUUID(), UUID.randomUUID());
         assertThat(mockingDetails(repository).getInvocations()).anySatisfy(invocation ->
             assertThat(Arrays.asList(invocation.getArguments())).anyMatch(argument ->
@@ -51,6 +53,7 @@ class BoundedReadRegressionTest {
         verify(participants).findByScheduleIdIn(List.of(one.id,two.id));verifyNoMoreInteractions(participants);
         verify(acks).findCurrentByScheduleIds(List.of(one.id,two.id));verifyNoMoreInteractions(acks);
         verifyNoInteractions(changes);
+        verifyNoInteractions(profiles);
     }
     @Test void invalidBoundsNeverReachDatabase() {
         assertThatThrownBy(()->service.list(project,user,null,null,0,201)).isInstanceOf(ValidationFailure.class);
@@ -67,6 +70,49 @@ class BoundedReadRegressionTest {
         assertThat(service.detail(project,s.id,user,2).changes()).extracting(c->c.type()).containsExactly("SCHEDULE_CREATED","SCHEDULE_CONFIRMED");
         verify(changes).findByScheduleId(s.id,page);verifyNoMoreInteractions(changes);
     }
+    @Test void detailEnrichesOnlyStoredInternalParticipantsWithOneBoundedProfileRead() {
+        var s=schedule(UUID.randomUUID());
+        var internal=new ScheduleParticipantEntity();internal.scheduleId=s.id;internal.memberUserAccountId=user;
+        var external=new ScheduleParticipantEntity();external.scheduleId=s.id;external.externalEmail="guest@example.test";
+        when(schedules.findByIdAndProjectId(s.id,project)).thenReturn(Optional.of(s));
+        when(participants.findByScheduleId(s.id)).thenReturn(List.of(internal,external));
+        when(profiles.find(List.of(user))).thenReturn(Map.of(user,new com.aierp.identity.api.IdentityProfiles.PublicProfile(user,"Ada","ada@example.test")));
+        var result=service.detail(project,s.id,user);
+        assertThat(result.participants()).hasSize(2);
+        assertThat(result.participants().get(0).displayName()).isEqualTo("Ada");
+        assertThat(result.participants().get(0).email()).isEqualTo("ada@example.test");
+        assertThat(result.participants().get(1).displayName()).isNull();
+        assertThat(result.participants().get(1).email()).isNull();
+        verify(profiles).find(List.of(user));
+    }
+    @Test void detailAuthorizesAndFindsScheduleBeforeAnyProfileRead() {
+        var missing=UUID.randomUUID();
+        when(access.role(project,user)).thenThrow(new org.springframework.security.access.AccessDeniedException("PROJECT_ACCESS_DENIED"));
+        assertThatThrownBy(()->service.detail(project,missing,user)).isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+        verifyNoInteractions(profiles);
+        org.mockito.Mockito.reset(access);
+        when(schedules.findByIdAndProjectId(missing,project)).thenReturn(Optional.empty());
+        assertThatThrownBy(()->service.detail(project,missing,user)).isInstanceOf(NoSuchElementException.class);
+        verifyNoInteractions(profiles);
+    }
+    @Test void detailReadsExactlyTwoHundredStoredIdsOnceAndLeavesMissingProfilesNull() {
+        var s=schedule(UUID.randomUUID());
+        var stored=java.util.stream.IntStream.range(0,200).mapToObj(i -> {
+            var p=new ScheduleParticipantEntity();p.scheduleId=s.id;p.memberUserAccountId=UUID.nameUUIDFromBytes(("participant-"+i).getBytes(java.nio.charset.StandardCharsets.UTF_8));return p;
+        }).toList();
+        var ids=stored.stream().map(p->p.memberUserAccountId).toList();
+        when(schedules.findByIdAndProjectId(s.id,project)).thenReturn(Optional.of(s));
+        when(participants.findByScheduleId(s.id)).thenReturn(stored);
+        when(profiles.find(ids)).thenReturn(Map.of(
+            ids.get(100),new com.aierp.identity.api.IdentityProfiles.PublicProfile(ids.get(100),"Participant 101","p101@example.test"),
+            ids.get(199),new com.aierp.identity.api.IdentityProfiles.PublicProfile(ids.get(199),"Participant 200","p200@example.test")));
+        var result=service.detail(project,s.id,user);
+        assertThat(result.participants()).hasSize(200);
+        assertThat(result.participants().get(100).displayName()).isEqualTo("Participant 101");
+        assertThat(result.participants().get(199).email()).isEqualTo("p200@example.test");
+        assertThat(result.participants().get(0).displayName()).isNull();
+        verify(profiles).find(ids);
+    }
     @Test void dashboardExcludesViewersFromPendingCountAndNeverOffersViewerActions() {
         UUID viewer=UUID.randomUUID();
         var activeCount=pending(user,3);var viewerCount=pending(viewer,9);
@@ -79,7 +125,7 @@ class BoundedReadRegressionTest {
         assertThat(result.actionQueue()).isEmpty();
         verify(schedules,never()).findPendingForUser(any(),any(),any());
         verify(access).eligibleAcknowledgers(project,List.of(user,viewer));
-        verifyNoInteractions(changes,acks);
+        verifyNoInteractions(changes,acks,profiles);
     }
     @Test void dashboardPendingEligibilityIsProcessedInBoundedBatches() {
         var counts=java.util.stream.IntStream.range(0,200).mapToObj(i->pending(UUID.randomUUID(),1)).toList();
@@ -115,7 +161,7 @@ class BoundedReadRegressionTest {
         when(memberships.findByUserAccountId(user,bounds)).thenReturn(List.of(m));
         when(projects.findAllById(List.of(project))).thenReturn(List.of(new ProjectEntity(project,UUID.randomUUID(),"Planning")));
         var auth=new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(new com.aierp.identity.api.ApplicationPrincipal(user,"a@example.test",true),null,List.of());
-        assertThat(new ProjectController(projects,memberships,mock(com.aierp.group.api.GroupAccess.class)).list(auth,null,null)).hasSize(1);
+        assertThat(new ProjectController(projects,memberships,mock(com.aierp.group.api.GroupAccess.class),mock(ProjectCreationRequestRepository.class),mock(IdentityProfiles.class)).list(auth,null,null)).hasSize(1);
         verify(memberships).findByUserAccountId(user,bounds);verifyNoMoreInteractions(memberships);
         verify(projects).findAllById(List.of(project));verifyNoMoreInteractions(projects);
     }

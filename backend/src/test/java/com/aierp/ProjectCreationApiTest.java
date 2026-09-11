@@ -6,9 +6,11 @@ import com.aierp.group.GroupMemberEntity;
 import com.aierp.group.GroupMemberRepository;
 import com.aierp.group.GroupRole;
 import com.aierp.identity.api.ApplicationPrincipal;
+import com.aierp.identity.api.IdentityProfiles;
 import com.aierp.platform.web.ApiExceptionHandler;
 import com.aierp.platform.web.SecurityConfiguration;
 import com.aierp.project.api.ProjectController;
+import com.aierp.project.ProjectCreationRequestRepository;
 import com.aierp.project.ProjectMemberRepository;
 import com.aierp.project.ProjectRepository;
 import java.util.*;
@@ -35,6 +37,8 @@ class ProjectCreationApiTest {
     @Autowired MockMvc mvc;
     @MockitoBean ProjectRepository projects;
     @MockitoBean ProjectMemberRepository members;
+    @MockitoBean ProjectCreationRequestRepository creationRequests;
+    @MockitoBean IdentityProfiles profiles;
     @MockitoBean GroupMemberRepository groupMembers;
     @MockitoBean com.aierp.group.ErpGroupRepository groups;
     final UUID user = UUID.fromString("20000000-0000-0000-0000-000000000002");
@@ -46,6 +50,11 @@ class ProjectCreationApiTest {
     final String contentType = "application/json;charset=UTF-8";
     final String payload = "{\"groupId\":\"%s\",\"name\":\"%s\"}";
     final UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(new ApplicationPrincipal(user,"member@example.test",true),null,List.of());
+
+    @org.junit.jupiter.api.BeforeEach void bootstrapMocks() {
+        when(groups.save(any())).thenAnswer(i -> i.getArgument(0));
+        when(groupMembers.save(any())).thenAnswer(i -> i.getArgument(0));
+    }
 
     @Test void creationOptionsReturnOwnGroupsWithStablePaginationAndReasons() throws Exception {
         when(groupMembers.findByUserAccountId(eq(user), eq(PageRequest.of(0,2,Sort.by("groupId"))))).thenReturn(List.of(
@@ -114,7 +123,7 @@ class ProjectCreationApiTest {
         verifyNoInteractions(projects,members);
     }
 
-    @Test void creationRejectsInvalidNameAndMissingGroupWithFieldErrors() throws Exception {
+    @Test void creationRejectsInvalidNameAndSupportsDirectCreationWithoutGroup() throws Exception {
         allowGroupRole(ownerGroup,GroupRole.OWNER);
 
         mvc.perform(post("/api/v1/projects").with(authentication(auth)).with(csrf().asHeader())
@@ -129,10 +138,11 @@ class ProjectCreationApiTest {
 
         mvc.perform(post("/api/v1/projects").with(authentication(auth)).with(csrf().asHeader())
                 .contentType(contentType).content("{\"name\":\"Project\"}"))
-            .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
-            .andExpect(jsonPath("$.fieldErrors[0].field").value("groupId"));
+            .andExpect(status().isOk()).andExpect(jsonPath("$.name").value("Project"))
+            .andExpect(jsonPath("$.role").value("MANAGER"));
 
-        verifyNoInteractions(projects,members);
+        verify(projects).save(any());
+        verify(members).save(any());
     }
 
     @Test void creationAcceptsTwoHundredCharactersAndTrimsOuterWhitespace() throws Exception {

@@ -32,7 +32,7 @@ public class ScheduleController {
     }
     public record Revision(Long rowVersion) { public Revision(long rowVersion) {this(Long.valueOf(rowVersion));} }
     public record Acknowledge(Long expectedBusinessRevision) {}
-    public record Participant(UUID memberUserId,String externalEmail,boolean acknowledged) {}
+    public record Participant(UUID memberUserId,String externalEmail,boolean acknowledged,String displayName,String email) {}
     public record Change(long businessRevision,String type,UUID changedBy,Instant createdAt) {}
     public record ScheduleResponse(UUID id,UUID projectId,String title,ScheduleEntity.Status status,long rowVersion,long businessRevision,
         Instant startsAt,Instant endsAt,String description,UUID createdBy,List<Participant> participants,List<Change> changes) {}

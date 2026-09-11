@@ -8,7 +8,16 @@ import org.springframework.stereotype.Service;
 @Service
 public class ProjectAccess {
     private final ProjectMemberRepository members;
-    public ProjectAccess(ProjectMemberRepository members) { this.members = members; }
+    private final ProjectRepository projects;
+    public ProjectAccess(ProjectMemberRepository members) { this(members, null); }
+    @org.springframework.beans.factory.annotation.Autowired
+    public ProjectAccess(ProjectMemberRepository members, ProjectRepository projects) { this.members = members; this.projects = projects; }
+
+    /** Serializes project-scoped configuration mutations against the stable project row. */
+    @org.springframework.transaction.annotation.Transactional(propagation = org.springframework.transaction.annotation.Propagation.MANDATORY, readOnly = true)
+    public void lockProject(UUID projectId) {
+        if (projects == null || projects.lockById(projectId).isEmpty()) throw new NoSuchElementException("PROJECT_NOT_FOUND");
+    }
 
     public String role(UUID projectId, UUID userId) {
         return members.findByProjectIdAndUserAccountId(projectId, userId)

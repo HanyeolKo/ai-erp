@@ -13,6 +13,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.aierp.platform.web.SecurityConfiguration;
 import com.aierp.identity.api.ApplicationPrincipal;
 import com.aierp.identity.api.CurrentUserController;
+import com.aierp.identity.UserAccountRepository;
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +30,8 @@ import java.util.UUID;
 @AutoConfigureRestDocs
 @Import(SecurityConfiguration.class)
 class MeApiTest {
+
+    @org.springframework.test.context.bean.override.mockito.MockitoBean UserAccountRepository users;
 
     @Autowired
     private MockMvc mockMvc;
@@ -58,7 +61,9 @@ class MeApiTest {
                                 fieldWithPath("id").description("Stable internal UUID"),
                                 fieldWithPath("authorities").type(org.springframework.restdocs.payload.JsonFieldType.ARRAY)
                                     .attributes(org.springframework.restdocs.snippet.Attributes.key("itemsType").value("STRING"))
-                                    .description("Granted authorities as strings"))
+                                    .description("Granted authorities as strings"),
+                                fieldWithPath("displayName").description("Current account display name"),
+                                fieldWithPath("email").description("Current account email"))
                         .build())));
     }
 

@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MutationCache, QueryClient, type Mutation } from "@tanstack/react-query";
 import { afterEach, expect, test, vi } from "vitest";
@@ -9,6 +9,7 @@ import { accessKey, hasAccessDenial } from "./state";
 import { http, invitation, json, schedule } from "./test/http";
 
 afterEach(() => {
+  cleanup();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
   window.history.replaceState(null, "", "/");
@@ -94,7 +95,8 @@ test("late invitation acceptance cannot restore private data after successful lo
   await waitFor(() => expect(finishAccept).toBeTypeOf("function"));
 
   await user.click(screen.getAllByRole("link", { name: "프로젝트 선택" })[0]);
-  await screen.findByRole("heading", { name: "프로젝트" });
+  await screen.findByRole("heading", { name: "프로젝트 선택" });
+  await user.click(screen.getByText("김관리자"));
   await user.click(screen.getByRole("button", { name: "다른 계정으로 로그인" }));
   await screen.findByRole("link", { name: "Google로 로그인" });
   const expiredRoute = window.location.hash;
@@ -157,7 +159,7 @@ test("a schedule success callback that is waiting for invalidation cannot naviga
   const { user } = mount("/projects/p1/schedules/s1/edit");
   const title = await screen.findByLabelText("제목");
   fireEvent.change(title, { target: { value: "Updated schedule" } });
-  await screen.findByText("u1");
+  await screen.findByText("김관리자");
   server.on("GET", "/api/v1/projects/p1/schedules/s1", () => new Promise(resolve => { finishDetailRefresh = resolve; }));
 
   await user.click(screen.getByRole("button", { name: "일정 저장" }));
@@ -178,12 +180,12 @@ test("a 401 hides protected UI before a stalled error body can resolve", async (
   const stalledBody = new Promise<never>(() => undefined);
   server.on("GET", "/api/v1/notifications", () => ({ status: 401, ok: false, json: () => stalledBody } as unknown as Response));
   const { user } = mount("/projects/p1");
-  await screen.findByRole("heading", { name: "Planning 대시보드" });
+  await screen.findByRole("heading", { name: "프로젝트 개요" });
 
   await user.click(screen.getByRole("link", { name: "알림" }));
   await waitFor(() => expect(screen.getByRole("link", { name: "Google로 로그인" })).toBeInTheDocument());
   expect(screen.queryByRole("navigation", { name: "주 메뉴" })).not.toBeInTheDocument();
-  expect(screen.queryByRole("heading", { name: "Planning 대시보드" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("heading", { name: "프로젝트 개요" })).not.toBeInTheDocument();
 });
 
 test("a stale mutation 401 from an older session cannot expire a clean remount", async () => {
@@ -198,15 +200,16 @@ test("a stale mutation 401 from an older session cannot expire a clean remount",
   window.history.replaceState(null, "", "/#/");
   // Model a successful clean login/remount before the stale request resolves.
   beginSessionBoundary();
-  const second = render(<App />);
-  await screen.findAllByRole("heading", { name: "프로젝트" });
-  await waitFor(() => expect(screen.getByRole("heading", { name: "프로젝트" })).toBeInTheDocument());
+  const second = { ...render(<App />), user: userEvent.setup() };
+  await screen.findAllByRole("heading", { name: "프로젝트 선택" });
+  await waitFor(() => expect(screen.getByRole("heading", { name: "프로젝트 선택" })).toBeInTheDocument());
   first.unmount();
   expect(screen.queryByRole("link", { name: "Google로 로그인" })).not.toBeInTheDocument();
 
   await act(async () => finishOldMutation(json({ code: "STALE_UNAUTHENTICATED" }, 401)));
-  await waitFor(() => expect(screen.getByRole("heading", { name: "프로젝트" })).toBeInTheDocument());
+  await waitFor(() => expect(screen.getByRole("heading", { name: "프로젝트 선택" })).toBeInTheDocument());
   expect(screen.queryByRole("link", { name: "Google로 로그인" })).not.toBeInTheDocument();
+  await second.user.click(screen.getByText("김관리자"));
   expect(screen.getByRole("button", { name: "다른 계정으로 로그인" })).toBeInTheDocument();
   second.unmount();
 });
@@ -260,6 +263,7 @@ test("a stale create failure cannot mark the same group uncertain in a new sessi
     : json({ ...schedule, id: "created" }));
   const first = mount("/");
   const firstRoot = within(first.container);
+  await first.user.click(await firstRoot.findByRole("button", { name: "새 프로젝트" }));
   await first.user.type(await firstRoot.findByLabelText("프로젝트 이름"), "이전 세션 프로젝트");
   await first.user.click(firstRoot.getByRole("button", { name: "프로젝트 만들기" }));
   await waitFor(() => expect(finishOldCreate).toBeTypeOf("function"));
@@ -267,15 +271,19 @@ test("a stale create failure cannot mark the same group uncertain in a new sessi
   expect(oldMutation).toBeDefined();
   expect(oldMutation!.state.status).toBe("pending");
 
+  first.unmount();
   beginSessionBoundary();
   const second = render(<App />);
   const secondRoot = within(second.container);
-  await secondRoot.findByRole("button", { name: "프로젝트 만들기" });
+  const secondUser = userEvent.setup();
+  await secondRoot.findByRole("button", { name: "새 프로젝트" });
+  await secondRoot.findByRole("heading", { name: "프로젝트 선택" });
   await act(async () => finishOldCreate(json({ code: "STALE_CREATE_FAILED" }, 500)));
   await waitFor(() => expect(oldMutation!.state.status).toBe("error"));
-  await waitFor(() => expect(secondRoot.getByRole("button", { name: "프로젝트 만들기" })).toBeEnabled());
+  await secondUser.click(secondRoot.getByRole("button", { name: "새 프로젝트" }));
+  expect(await secondRoot.findByLabelText("프로젝트 이름")).toHaveValue("");
+  expect(secondRoot.getByRole("button", { name: "프로젝트 만들기" })).toBeEnabled();
   expect(secondRoot.queryByText(/생성 결과를 확인하지 못했습니다/)).not.toBeInTheDocument();
   expect(createCalls).toBe(1);
-  first.unmount();
   second.unmount();
 });

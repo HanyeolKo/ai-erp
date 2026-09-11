@@ -38,6 +38,20 @@ public class GroupAccess {
         if (!canCreate(member.role) || !groups.existsById(groupId))
             throw new AccessDeniedException("GROUP_PROJECT_CREATION_DENIED");
     }
+    /** Creates the private group used by a direct project creation. The caller owns the transaction. */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public UUID bootstrapProjectGroup(UUID userId, String name) {
+        var group = new ErpGroupEntity();
+        group.id = UUID.randomUUID();
+        group.name = name;
+        groups.save(group);
+        var member = new GroupMemberEntity();
+        member.groupId = group.id;
+        member.userAccountId = userId;
+        member.role = GroupRole.OWNER;
+        members.save(member);
+        return group.id;
+    }
     private static boolean canCreate(GroupRole role) { return role == GroupRole.OWNER || role == GroupRole.ADMIN; }
     public record CreationOption(UUID id,String name,boolean canCreate,String reason) {}
 }

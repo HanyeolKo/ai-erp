@@ -29,6 +29,8 @@ public class ApiExceptionHandler {
     ResponseEntity<ApiProblem> conflict(Exception e,HttpServletRequest r) { return problem(409,"CONFLICT",r,List.of()); }
     @ExceptionHandler(ValidationFailure.class)
     ResponseEntity<ApiProblem> validation(ValidationFailure e,HttpServletRequest r) { return problem(400,"VALIDATION_FAILED",r,List.of(new ApiProblem.FieldError(e.field,e.getMessage()))); }
+    @ExceptionHandler(ExternalServiceFailure.class)
+    ResponseEntity<ApiProblem> external(ExternalServiceFailure e,HttpServletRequest r) { return problem(502,e.safeCode(),r,List.of()); }
     @ExceptionHandler(org.springframework.web.bind.MethodArgumentNotValidException.class)
     ResponseEntity<ApiProblem> beanValidation(org.springframework.web.bind.MethodArgumentNotValidException e,HttpServletRequest r) {
         return problem(400,"VALIDATION_FAILED",r,e.getBindingResult().getFieldErrors().stream().map(f -> new ApiProblem.FieldError(f.getField(),f.getDefaultMessage())).toList());
