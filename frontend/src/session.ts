@@ -1,3 +1,5 @@
+import { clearGoogleReturnContext } from "./google-return-context";
+
 let generation = 0;
 let terminated = false;
 export const SESSION_EXPIRED_EVENT = "ai-erp:session-expired";
@@ -25,6 +27,7 @@ export function terminateSession(expectedGeneration?: number) {
         return false;
     terminated = true;
     generation += 1;
+    clearGoogleReturnContext();
     if (typeof window !== "undefined") window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT));
     return true;
 }
