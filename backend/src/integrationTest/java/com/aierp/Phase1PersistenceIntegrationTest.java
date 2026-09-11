@@ -225,7 +225,7 @@ class Phase1PersistenceIntegrationTest {
     @Test void sharePermissionsExpiryRotationRevokeAndProfileReadBoundsAreEnforced() {
         var manager=new ApplicationPrincipal(user,"manager@example.test",true);
         var memberId=UUID.randomUUID(); var viewerId=UUID.randomUUID();
-        jdbc.update("INSERT INTO identity.user_account(id,email,display_name,email_verified_at) VALUES (?,?,?,CURRENT_TIMESTAMP)",user,"manager@example.test","Project Manager");
+        jdbc.update("UPDATE identity.user_account SET email=?, display_name=? WHERE id=?", "manager@example.test","Project Manager",user);
         jdbc.update("INSERT INTO project.project_member(project_id,user_account_id,role) VALUES (?,?,'MEMBER'),(?,?,'VIEWER')",project,memberId,project,viewerId);
         var member=new ApplicationPrincipal(memberId,"member@example.test",true); var viewer=new ApplicationPrincipal(viewerId,"viewer@example.test",true); var outsider=new ApplicationPrincipal(UUID.randomUUID(),"outside@example.test",true);
         var code=shareInvitations.rotate(project,manager).code();

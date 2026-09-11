@@ -51,3 +51,7 @@
 `explicitQueuedPendingDuringAuditClaimRemainsPendingOnReleaseAndCompletion`은 release·성공 완료·실패 완료의 큐 보존을 검사한다. 기존 기간 만료 및 credential release 테스트도 확인했다. 테스트는 mock repository 경계를 사용하므로 PostgreSQL 실행 증거를 대신하지 않는다. 이번 변경에서 추가 방어 구조 변경을 요구할 만한 새 소스 결함은 확인하지 않았다.
 
 부모가 최종 focused 실행을 진행 중이다. reviewer는 실행하지 않았으며, 이전 패치의 성공 결과를 마지막 수정의 성공으로 간주하지 않았다. Phase1 fixture 정리·실제 PostgreSQL 실행 및 최종 커밋 CI는 부모 검증에서 확정한다. 이 소스 PASS는 전체 task/release PASS 또는 배포 완료를 뜻하지 않는다.
+
+## Revision 3 fixture 수리 검토
+
+**한정 소스 검토 PASS, 새 SHA CI 대기.** CI `34546087462`의 실제 `com.aierp.Phase1PersistenceIntegrationTest.html`에서 228행의 `user_account_pkey` 중복 실패를 확인했다. 변경은 해당 INSERT 한 줄을 기존 공통 fixture 사용자의 email/display_name UPDATE로 바꾸며 같은 id와 값을 사용한다. 공통 fixture의 검증된 identity 행·email_verified_at과 공유 초대/권한/만료/회전/폐기/profile 단언을 유지하고, production 소스나 다른 동작을 변경하지 않는다. completion contract Revision 3와 일치한다. reviewer는 추가 테스트를 실행하지 않았으며 실패 CI를 새 후보의 성공 증거로 사용하지 않는다.

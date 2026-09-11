@@ -25,3 +25,9 @@
 구현자는 실제 Spark/high 실행으로 Calendar audit 식별을 claim·release·완료에 유지하고, 진행 중 사용자가 새로 요청한 PENDING 재시도를 보존했다. 정상 동기화의 일시 실패 재시도는 유지한다. 기존 CI 테스트는 durable PENDING 후 실제 worker의 합성 제공자 실패를 검증하며, 전용 Testcontainers DB의 이전 projection을 fixture에서 정리해 전역 worker 선택을 격리했다.
 
 최종 Calendar 집중 테스트와 통합 테스트 컴파일은 성공했다(`tmp/pr11-calendar-final-20260911.log`). fixture 정리 한 줄은 이 실행 뒤 반영되어 최종 PR CI에서 실제 실행한다. 독립 최종 R2 소스 검토 PASS, 확인된 차단 결함 0개다. 실제 PostgreSQL·전체 CI 및 배포는 아직 대기한다.
+
+## CI 후속 보완
+
+후보 `9cf04135`의 CI `34546087462`에서 하네스·Linux 배포 계약·Caddy·백엔드 단위 검사는 통과했다. PostgreSQL 통합 34개 중 Calendar 격리 검사는 통과했지만, 공유 초대 테스트가 공통 fixture에서 이미 만든 사용자 행을 다시 INSERT하여 1개가 실패했다. 원본 HTML 증거는 `tmp/pr11-ci-final-artifacts-20260911/verification-artifacts/reports/tests/integrationTest/classes/com.aierp.Phase1PersistenceIntegrationTest.html`이다.
+
+revision 3은 그 중복 INSERT 한 줄을 기존 사용자 행 UPDATE로 변경한다. Spark/high가 실행했으며 기존 이름·권한·만료·회전·폐기 단언은 모두 유지했다. 독립 한정 소스 검토 PASS이고 새 SHA 전체 CI가 필요하다. 운영 Google 설정 미확인으로 배포 준비는 별도 대기 중이다.
