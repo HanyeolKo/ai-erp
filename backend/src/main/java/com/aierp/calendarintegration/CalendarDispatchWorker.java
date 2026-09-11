@@ -154,22 +154,25 @@ public class CalendarDispatchWorker {
         var snapshot = schedules.snapshot(calendar.projectId, row.scheduleId);
         var scheduledCancellationAudit = "SYNCED".equals(row.status) && snapshot.cancelled()
             && row.reconcileUntil != null && row.nextReconcileAt != null && !row.nextReconcileAt.isAfter(now);
-        // A lease expiry means the previous provider request may still complete remotely. Preserve
-        // that uncertainty before replacing its token, regardless of today's desired state; a later
-        // cancellation must inherit the audit window instead of losing the stale remote possibility.
-        if (!scheduledCancellationAudit && row.claimToken != null && row.leaseUntil != null && row.leaseUntil.isBefore(now))
-            extendUncertainty(row, now, snapshot.cancelled());
+        if (row.claimToken != null && row.leaseUntil != null && row.leaseUntil.isBefore(now)) {
+            row.claimToken = null;
+            row.leaseUntil = null;
+            if (!scheduledCancellationAudit) extendUncertainty(row, now, snapshot.cancelled());
+        }
         if (snapshot.businessRevision() <= 0 || "DRAFT".equals(snapshot.status())) {
             row.status = "FAILED"; row.retryClassification = "NOT_EXPORTABLE"; row.claimToken = null; row.leaseUntil = null; row.updatedAt = Instant.now(); projections.save(row); return null;
         }
         // Persist the possibility of a provider write before credentials/HTTP are acquired. A
         // confirmed timeout can therefore be carried into a later cancellation audit. A scheduled
         // cancellation audit is a read/delete reconciliation and retains its original horizon.
-        if (!scheduledCancellationAudit) ensureUncertainty(row, now, snapshot.cancelled());
+        if (!scheduledCancellationAudit) {
+            ensureUncertainty(row, now, snapshot.cancelled());
+        }
         row.claimToken = UUID.randomUUID(); row.leaseUntil = now.plus(LEASE); row.lastAttemptAt = now;
-        row.businessRevision = snapshot.businessRevision(); row.status = "PENDING"; row.updatedAt = Instant.now(); projections.saveAndFlush(row);
+        row.businessRevision = snapshot.businessRevision(); row.status = scheduledCancellationAudit ? "SYNCED" : "PENDING";
+        row.updatedAt = Instant.now(); projections.saveAndFlush(row);
         return new Claim(row.id, row.claimToken, owner, calendar.externalCalendarId, calendar.bindingGeneration,
-            0, snapshot, row.externalEventId);
+            0, snapshot, row.externalEventId, scheduledCancellationAudit);
     }
 
     Claim attachCredentialGeneration(Claim claim, long generation) {
@@ -183,13 +186,29 @@ public class CalendarDispatchWorker {
         var calendar = row == null ? null : calendars.findById(row.projectCalendarId).orElse(null);
         if (row == null || !claim.claimToken().equals(row.claimToken) || calendar == null
             || !claim.owner().equals(calendar.bindingOwner) || claim.bindingGeneration() != calendar.bindingGeneration) return null;
-        return new Claim(claim.projectionId(), claim.claimToken(), claim.owner(), claim.calendarId(), claim.bindingGeneration(), generation, claim.schedule(), claim.externalEventId());
+        return new Claim(claim.projectionId(), claim.claimToken(), claim.owner(), claim.calendarId(), claim.bindingGeneration(),
+            generation, claim.schedule(), claim.externalEventId(), claim.audit());
     }
 
     void release(Claim claim, String classification) {
         Runnable operation = () -> {
             var row = projections.lockById(claim.projectionId()).orElse(null);
-            if (row != null && claim.claimToken().equals(row.claimToken)) { row.claimToken = null; row.leaseUntil = null; row.retryClassification = classification; row.updatedAt = Instant.now(); projections.save(row); }
+            if (row != null && claim.claimToken().equals(row.claimToken)) {
+                var now = Instant.now();
+                row.claimToken = null; row.leaseUntil = null; row.updatedAt = now;
+                if (claim.audit()) {
+                    if ("PENDING".equals(row.status)) {
+                        // preserve explicit normal queue; keep state as-is.
+                    } else {
+                        row.status = "SYNCED";
+                        preserveAuditFailureWindow(row, now);
+                        row.retryClassification = classification;
+                    }
+                } else {
+                    row.retryClassification = classification;
+                }
+                projections.save(row);
+            }
         };
         if (transactions != null) transactions.executeWithoutResult(status -> operation.run()); else operation.run();
     }
@@ -211,9 +230,27 @@ public class CalendarDispatchWorker {
         var credentialCurrent = generationCurrent && google.isCurrent(claim.owner(), claim.credentialGeneration());
         var desiredCurrent = current != null && current.businessRevision() == claim.schedule().businessRevision()
             && current.cancelled() == claim.schedule().cancelled();
+        if (claim.audit() && "PENDING".equals(row.status)) {
+            row.claimToken = null;
+            row.leaseUntil = null;
+            row.updatedAt = Instant.now();
+            projections.save(row);
+            return;
+        }
         if (!generationCurrent || !credentialCurrent || !desiredCurrent) {
             var now = Instant.now();
-            row.claimToken = null; row.leaseUntil = null; row.status = "PENDING";
+            row.claimToken = null; row.leaseUntil = null;
+            if (claim.audit()) {
+                if (current != null && !current.cancelled()) {
+                    row.status = "PENDING";
+                    clearAuditState(row, now, current);
+                } else {
+                    row.status = "SYNCED";
+                    preserveAuditFailureWindow(row, now);
+                }
+            } else {
+                row.status = "PENDING";
+            }
             if (current != null && current.cancelled() && !claim.schedule().cancelled()) {
                 ensureUncertainty(row, now, true); row.retryClassification = "CANCEL_RECONCILE";
             }
@@ -227,14 +264,42 @@ public class CalendarDispatchWorker {
                 if (now.isBefore(row.reconcileUntil)) row.nextReconcileAt = now.plusSeconds(30);
                 else { row.reconcileUntil = null; row.nextReconcileAt = null; }
             } else row.nextReconcileAt = null;
-        } else if (failure instanceof CalendarAdapter.ReauthorizationRequired) { row.status = "REAUTH_REQUIRED"; row.retryClassification = "REAUTH_REQUIRED";
-        } else if (failure instanceof CalendarAdapter.PermissionRequired) { row.status = "FAILED"; row.retryClassification = "PERMISSION_REQUIRED";
-        } else if (failure instanceof CalendarAdapter.ConfigurationRequired) { row.status = "PENDING"; row.retryClassification = "CONFIGURATION_REQUIRED";
-        } else if (failure instanceof CalendarAdapter.PermanentFailure) { row.status = "FAILED"; row.retryClassification = "PERMANENT";
-        } else { row.status = "PENDING"; row.retryClassification = "TRANSIENT";
-            if (claim.schedule().cancelled()) ensureUncertainty(row, Instant.now(), true);
+        } else if (failure instanceof CalendarAdapter.ReauthorizationRequired) {
+            row.status = claim.audit() ? "SYNCED" : "REAUTH_REQUIRED"; row.retryClassification = "REAUTH_REQUIRED";
+            if (claim.audit()) preserveAuditFailureWindow(row, Instant.now());
+        } else if (failure instanceof CalendarAdapter.PermissionRequired) {
+            row.status = claim.audit() ? "SYNCED" : "FAILED"; row.retryClassification = "PERMISSION_REQUIRED";
+            if (claim.audit()) preserveAuditFailureWindow(row, Instant.now());
+        } else if (failure instanceof CalendarAdapter.ConfigurationRequired) {
+            row.status = claim.audit() ? "SYNCED" : "PENDING"; row.retryClassification = "CONFIGURATION_REQUIRED";
+            if (claim.audit()) preserveAuditFailureWindow(row, Instant.now());
+        } else if (failure instanceof CalendarAdapter.PermanentFailure) {
+            row.status = claim.audit() ? "SYNCED" : "FAILED"; row.retryClassification = "PERMANENT";
+            if (claim.audit()) preserveAuditFailureWindow(row, Instant.now());
+        } else {
+            row.status = claim.audit() ? "SYNCED" : "PENDING"; row.retryClassification = "TRANSIENT";
+            if (claim.audit()) preserveAuditFailureWindow(row, Instant.now());
         }
         projections.saveAndFlush(row);
+    }
+
+    private static void clearAuditState(CalendarProjectionEntity row, Instant now, ScheduleLookup.CalendarSnapshot snapshot) {
+        if (!snapshot.cancelled()) {
+            row.reconcileUntil = null;
+            row.nextReconcileAt = null;
+            return;
+        }
+        if (row.reconcileUntil != null && !row.reconcileUntil.isAfter(now)) {
+            row.reconcileUntil = null;
+            row.nextReconcileAt = null;
+        } else if (row.nextReconcileAt != null && !row.nextReconcileAt.isAfter(now)) {
+            row.nextReconcileAt = now.plusSeconds(30);
+        }
+    }
+
+    private static void preserveAuditFailureWindow(CalendarProjectionEntity row, Instant now) {
+        if (row.reconcileUntil != null && now.isBefore(row.reconcileUntil)) row.nextReconcileAt = now.plusSeconds(30);
+        else { row.reconcileUntil = null; row.nextReconcileAt = null; }
     }
 
     private static void ensureUncertainty(CalendarProjectionEntity row, Instant now, boolean auditDue) {
@@ -264,5 +329,10 @@ public class CalendarDispatchWorker {
     }
 
     record Claim(UUID projectionId, UUID claimToken, UUID owner, String calendarId, long bindingGeneration,
-                 long credentialGeneration, ScheduleLookup.CalendarSnapshot schedule, String externalEventId) { }
+                 long credentialGeneration, ScheduleLookup.CalendarSnapshot schedule, String externalEventId, boolean audit) {
+        Claim(UUID projectionId, UUID claimToken, UUID owner, String calendarId, long bindingGeneration,
+              long credentialGeneration, ScheduleLookup.CalendarSnapshot schedule, String externalEventId) {
+            this(projectionId, claimToken, owner, calendarId, bindingGeneration, credentialGeneration, schedule, externalEventId, false);
+        }
+    }
 }

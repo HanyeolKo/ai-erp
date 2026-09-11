@@ -12,7 +12,7 @@ public interface CalendarProjectionRepository extends JpaRepository<CalendarProj
     Optional<CalendarProjectionEntity> lockById(UUID id);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("select p from CalendarProjectionEntity p where (p.status = 'PENDING' or (p.reconcileUntil is not null and p.reconcileUntil > :now and p.nextReconcileAt is not null and p.nextReconcileAt <= :now)) and (p.leaseUntil is null or p.leaseUntil < :now) order by p.updatedAt asc")
+    @Query("select p from CalendarProjectionEntity p where (p.status = 'PENDING' or (p.status = 'SYNCED' and p.reconcileUntil is not null and p.reconcileUntil > :now and p.nextReconcileAt is not null and p.nextReconcileAt <= :now)) and (p.leaseUntil is null or p.leaseUntil < :now) order by p.updatedAt asc")
     List<CalendarProjectionEntity> claimable(Instant now, org.springframework.data.domain.Pageable page);
 
     @org.springframework.data.jpa.repository.Modifying

@@ -198,6 +198,7 @@ class GoogleCalendarDispatchTest {
             org.springframework.data.domain.Pageable.class)
             .getAnnotation(org.springframework.data.jpa.repository.Query.class).value();
         assertThat(query).contains("p.nextReconcileAt is not null")
+            .contains("p.status = 'SYNCED'")
             .doesNotContain("p.nextReconcileAt is null or");
     }
 
@@ -228,6 +229,102 @@ class GoogleCalendarDispatchTest {
         verify(adapter, never()).deliver(any(), any(), any(), any(), any());
     }
 
+    @Test void explicitQueuedPendingDuringAuditClaimRemainsPendingOnReleaseAndCompletion() {
+        var calendars = mock(ProjectCalendarRepository.class); var projections = mock(CalendarProjectionRepository.class);
+        var adapter = mock(CalendarAdapter.class); var schedules = mock(ScheduleLookup.class); var google = mock(GoogleAccess.class);
+        var worker = new CalendarDispatchWorker(calendars, projections, adapter, schedules, google);
+        var project = UUID.randomUUID(); var scheduleId = UUID.randomUUID(); var owner = UUID.randomUUID();
+        var calendar = new ProjectCalendarEntity(); calendar.id = UUID.randomUUID(); calendar.projectId = project;
+        calendar.bindingOwner = owner; calendar.externalCalendarId = "primary"; calendar.bindingGeneration = 1;
+        var existingToken = UUID.randomUUID();
+        var row = new CalendarProjectionEntity(); row.id = UUID.randomUUID(); row.scheduleId = scheduleId;
+        row.projectCalendarId = calendar.id; row.status = "PENDING"; row.claimToken = existingToken;
+        row.reconcileUntil = Instant.now().plusSeconds(1200); row.nextReconcileAt = Instant.now().minusSeconds(1);
+        row.externalEventId = "existing-event";
+        when(calendars.findById(calendar.id)).thenReturn(java.util.Optional.of(calendar));
+        when(schedules.snapshot(project, scheduleId)).thenReturn(new ScheduleLookup.CalendarSnapshot(
+            scheduleId, project, "Planning", null, Instant.parse("2026-09-07T10:00:00Z"), Instant.parse("2026-09-07T11:00:00Z"), "CONFIRMED", 2));
+        when(google.status(owner)).thenReturn(new GoogleAccess.Connection("owner@example.test",
+            Map.of(GoogleAccess.Feature.CALENDAR, GoogleAccess.Status.CONNECTED)));
+        var claim = new CalendarDispatchWorker.Claim(row.id, existingToken, owner, "primary", 1, 9,
+            new ScheduleLookup.CalendarSnapshot(scheduleId, project, "Planning", null,
+                Instant.parse("2026-09-07T10:00:00Z"), Instant.parse("2026-09-07T11:00:00Z"), "CANCELLED", 1),
+            "existing", true);
+        when(google.isCurrent(owner, 9)).thenReturn(true);
+        when(projections.lockById(row.id)).thenReturn(java.util.Optional.of(row));
+
+        worker.release(claim, "TRANSIENT");
+        assertThat(row.status).isEqualTo("PENDING");
+        assertThat(row.claimToken).isNull();
+
+        row.claimToken = existingToken;
+        worker.complete(claim, new CalendarAdapter.DeliveryResult("stable", "etag"), null);
+        assertThat(row.status).isEqualTo("PENDING");
+        assertThat(row.externalEventId).isEqualTo("existing-event");
+
+        row.claimToken = existingToken;
+        worker.complete(claim, null, new CalendarAdapter.TransientFailure());
+        assertThat(row.status).isEqualTo("PENDING");
+        assertThat(row.externalEventId).isEqualTo("existing-event");
+        assertThat(row.reconcileUntil).isNotNull();
+        assertThat(row.nextReconcileAt).isNotNull();
+    }
+
+    @Test void providerTransientFailureOnCancellationAuditCrossesHorizon() {
+        var calendars = mock(ProjectCalendarRepository.class); var projections = mock(CalendarProjectionRepository.class);
+        var adapter = mock(CalendarAdapter.class); var schedules = mock(ScheduleLookup.class); var google = mock(GoogleAccess.class);
+        var worker = new CalendarDispatchWorker(calendars, projections, adapter, schedules, google);
+        var project = UUID.randomUUID(); var scheduleId = UUID.randomUUID(); var owner = UUID.randomUUID();
+        var calendar = new ProjectCalendarEntity(); calendar.id = UUID.randomUUID(); calendar.projectId = project;
+        calendar.bindingOwner = owner; calendar.externalCalendarId = "primary"; calendar.bindingGeneration = 1;
+        var row = new CalendarProjectionEntity(); row.id = UUID.randomUUID(); row.scheduleId = scheduleId;
+        row.projectCalendarId = calendar.id; row.status = "SYNCED"; row.reconcileUntil = Instant.now().minusSeconds(10);
+        row.nextReconcileAt = Instant.now().minusSeconds(5); row.claimToken = UUID.randomUUID(); row.leaseUntil = Instant.now().minusSeconds(1);
+        var cancelled = new ScheduleLookup.CalendarSnapshot(scheduleId, project, "Planning", null,
+            Instant.parse("2026-09-07T10:00:00Z"), Instant.parse("2026-09-07T11:00:00Z"), "CANCELLED", 3);
+        when(projections.claimable(any(), any())).thenReturn(java.util.List.of(row));
+        when(calendars.findById(calendar.id)).thenReturn(java.util.Optional.of(calendar));
+        when(schedules.snapshot(project, scheduleId)).thenReturn(cancelled);
+        when(google.status(owner)).thenReturn(new GoogleAccess.Connection("owner@example.test",
+            Map.of(GoogleAccess.Feature.CALENDAR, GoogleAccess.Status.CONNECTED)));
+        when(projections.lockById(row.id)).thenReturn(java.util.Optional.of(row));
+        when(google.isCurrent(owner, 0)).thenReturn(true);
+
+        var claim = worker.claim();
+        assertThat(claim).isNotNull(); assertThat(claim.audit()).isTrue();
+        worker.complete(claim, null, new CalendarAdapter.TransientFailure());
+
+        assertThat(row.status).isEqualTo("SYNCED");
+        assertThat(row.reconcileUntil).isNull();
+        assertThat(row.nextReconcileAt).isNull();
+    }
+
+    @Test void credentialReleaseOnCancellationAuditCrossesHorizonKeepsIdentity() {
+        var calendars = mock(ProjectCalendarRepository.class); var projections = mock(CalendarProjectionRepository.class);
+        var adapter = mock(CalendarAdapter.class); var schedules = mock(ScheduleLookup.class); var google = mock(GoogleAccess.class);
+        var worker = new CalendarDispatchWorker(calendars, projections, adapter, schedules, google);
+        var project = UUID.randomUUID(); var scheduleId = UUID.randomUUID(); var owner = UUID.randomUUID();
+        var calendar = new ProjectCalendarEntity(); calendar.id = UUID.randomUUID(); calendar.projectId = project;
+        calendar.bindingOwner = owner; calendar.externalCalendarId = "primary"; calendar.bindingGeneration = 1;
+        var row = new CalendarProjectionEntity(); row.id = UUID.randomUUID(); row.scheduleId = scheduleId;
+        row.projectCalendarId = calendar.id; row.status = "SYNCED"; row.claimToken = UUID.randomUUID();
+        row.reconcileUntil = Instant.now().minusSeconds(10); row.nextReconcileAt = Instant.now().minusSeconds(5);
+        var cancelled = new ScheduleLookup.CalendarSnapshot(scheduleId, project, "Planning", null,
+            Instant.parse("2026-09-07T10:00:00Z"), Instant.parse("2026-09-07T11:00:00Z"), "CANCELLED", 3);
+        var claim = new CalendarDispatchWorker.Claim(row.id, row.claimToken, owner, "primary", 1, 9, cancelled, "existing", true);
+        when(projections.lockById(row.id)).thenReturn(java.util.Optional.of(row));
+        when(calendars.findById(row.projectCalendarId)).thenReturn(java.util.Optional.of(calendar));
+        when(google.status(owner)).thenReturn(new GoogleAccess.Connection("owner@example.test",
+            Map.of(GoogleAccess.Feature.CALENDAR, GoogleAccess.Status.CONNECTED)));
+
+        worker.release(claim, "TRANSIENT");
+
+        assertThat(row.status).isEqualTo("SYNCED");
+        assertThat(row.retryClassification).isEqualTo("TRANSIENT");
+        assertThat(row.reconcileUntil).isNull();
+        assertThat(row.nextReconcileAt).isNull();
+    }
+
     @Test void successfulCancellationAuditPastItsHorizonStopsFurtherReconciliation() {
         var calendars = mock(ProjectCalendarRepository.class); var projections = mock(CalendarProjectionRepository.class);
         var adapter = mock(CalendarAdapter.class); var schedules = mock(ScheduleLookup.class); var google = mock(GoogleAccess.class);
@@ -249,6 +346,33 @@ class GoogleCalendarDispatchTest {
         worker.complete(claim, new CalendarAdapter.DeliveryResult("stable", "etag"), null);
 
         assertThat(row.status).isEqualTo("SYNCED");
+        assertThat(row.reconcileUntil).isNull();
+        assertThat(row.nextReconcileAt).isNull();
+    }
+
+    @Test void newRevisionWinsOverStaleCancellationAuditClaim() {
+        var calendars = mock(ProjectCalendarRepository.class); var projections = mock(CalendarProjectionRepository.class);
+        var adapter = mock(CalendarAdapter.class); var schedules = mock(ScheduleLookup.class); var google = mock(GoogleAccess.class);
+        var worker = new CalendarDispatchWorker(calendars, projections, adapter, schedules, google);
+        var project = UUID.randomUUID(); var scheduleId = UUID.randomUUID(); var owner = UUID.randomUUID();
+        var calendar = new ProjectCalendarEntity(); calendar.id = UUID.randomUUID(); calendar.projectId = project;
+        calendar.bindingOwner = owner; calendar.externalCalendarId = "primary"; calendar.bindingGeneration = 1;
+        var row = new CalendarProjectionEntity(); row.id = UUID.randomUUID(); row.scheduleId = scheduleId;
+        row.projectCalendarId = calendar.id; row.status = "SYNCED"; row.reconcileUntil = Instant.now().plusSeconds(3600);
+        row.nextReconcileAt = Instant.now().minusSeconds(5); row.claimToken = UUID.randomUUID();
+        var cancelledAudit = new ScheduleLookup.CalendarSnapshot(scheduleId, project, "Planning", null,
+            Instant.parse("2026-09-07T10:00:00Z"), Instant.parse("2026-09-07T11:00:00Z"), "CANCELLED", 1);
+        var newerRevision = new ScheduleLookup.CalendarSnapshot(scheduleId, project, "Planning", null,
+            Instant.parse("2026-09-07T10:00:00Z"), Instant.parse("2026-09-07T11:00:00Z"), "CONFIRMED", 2);
+        when(calendars.findById(calendar.id)).thenReturn(java.util.Optional.of(calendar));
+        when(projections.lockById(row.id)).thenReturn(java.util.Optional.of(row));
+        when(schedules.snapshot(project, scheduleId)).thenReturn(newerRevision);
+        when(google.isCurrent(owner, 9)).thenReturn(true);
+        var claim = new CalendarDispatchWorker.Claim(row.id, row.claimToken, owner, "primary", 1, 9, cancelledAudit, "old", true);
+
+        worker.complete(claim, null, new CalendarAdapter.TransientFailure());
+
+        assertThat(row.status).isEqualTo("PENDING");
         assertThat(row.reconcileUntil).isNull();
         assertThat(row.nextReconcileAt).isNull();
     }

@@ -2,6 +2,8 @@ package com.aierp;
 
 import com.aierp.dashboard.DashboardController;
 import com.aierp.identity.api.ApplicationPrincipal;
+import com.aierp.identity.api.GoogleAccess;
+import com.aierp.identity.api.GoogleAuthorizationService;
 import com.aierp.identity.api.IdentityProvisioning;
 import com.aierp.identity.UserAccountRepository;
 import com.aierp.project.*;
@@ -42,6 +44,7 @@ class Phase1PersistenceIntegrationTest {
         r.add("spring.datasource.url",postgres::getJdbcUrl);r.add("spring.datasource.username",postgres::getUsername);r.add("spring.datasource.password",postgres::getPassword);
         r.add("spring.data.redis.url",()->"redis://"+redis.getHost()+":"+redis.getMappedPort(6379));
         r.add("spring.flyway.locations",()->"classpath:db/migration,classpath:db/integration-migration");
+        r.add("google.workspace.calendar.dispatch-delay-ms", () -> "86400000");
     }
     @Autowired JdbcTemplate jdbc;
     @Autowired DataSource dataSource;
@@ -52,17 +55,21 @@ class Phase1PersistenceIntegrationTest {
     @Autowired UserAccountRepository userAccounts;
     @Autowired CalendarService calendars;
     @Autowired com.aierp.project.api.ProjectController projects;
+    @Autowired CalendarDispatchWorker calendarDispatchWorker;
     @Autowired ProjectShareInvitationService shareInvitations;
     @Autowired ProjectRepository projectRepository;
     @Autowired ProjectMemberRepository projectMembers;
     @Autowired DashboardController dashboard;
     @MockitoBean CalendarAdapter adapter;
+    @MockitoBean GoogleAuthorizationService access;
     @MockitoSpyBean ProjectMemberRepository projectMemberPersistence;
     @MockitoSpyBean ProjectCreationRequestRepository creationRequestPersistence;
     @MockitoSpyBean ProjectRepository projectPersistence;
     UUID project,user,group;
     @BeforeEach void fixture() {
+        jdbc.update("DELETE FROM calendar_integration.calendar_projection");
         project=UUID.randomUUID();user=UUID.randomUUID();group=UUID.randomUUID();
+        jdbc.update("INSERT INTO identity.user_account(id,email,display_name,email_verified_at) VALUES (?,?,?,CURRENT_TIMESTAMP)",user,user + "@example.test","Phase1 User");
         jdbc.update("INSERT INTO \"group\".erp_group(id,name) VALUES (?,?)",group,"Group");
         jdbc.update("INSERT INTO \"group\".group_member(group_id,user_account_id,role) VALUES (?,?,?)",group,user,"OWNER");
         jdbc.update("INSERT INTO project.project(id,group_id,name) VALUES (?,?,?)",project,group,"Project");
@@ -78,8 +85,27 @@ class Phase1PersistenceIntegrationTest {
         assertThat(acknowledged.participants().stream().filter(p->user.equals(p.memberUserId())).findFirst().orElseThrow().acknowledged()).isTrue();
         var changed=schedules.update(project,draft.id(),new Write("Changed",confirmed.startsAt(),confirmed.endsAt(),confirmed.rowVersion(),"Notes",List.of(user),List.of("external@example.test")),user);
         assertThat(changed.businessRevision()).isEqualTo(2);assertThat(changed.participants().stream().anyMatch(Participant::acknowledged)).isFalse();
-        when(adapter.configured()).thenReturn(true);when(adapter.deliver(any())).thenThrow(new RuntimeException("external failure"));
-        assertThat(calendars.retry(project,draft.id(),user).status()).isEqualTo("FAILED");
+        when(access.configured()).thenReturn(true);
+        when(access.status(user)).thenReturn(new GoogleAccess.Connection("manager@"
+            + user + ".example.test", Map.of(GoogleAccess.Feature.CALENDAR, GoogleAccess.Status.CONNECTED)));
+        var credential=new GoogleAccess.Credential("dispatch-token",7);
+        when(access.credential(user,GoogleAccess.Feature.CALENDAR)).thenReturn(credential);
+        when(access.isCurrent(user,credential.generation())).thenReturn(true);
+        when(adapter.configured()).thenReturn(true);
+        when(adapter.writableCalendar(user,"primary-phase1")).thenReturn(new CalendarAdapter.CalendarInfo("primary-phase1","Primary Phase 1"));
+        calendars.bind(project,user,"primary-phase1");
+        clearInvocations(adapter);
+
+        when(adapter.deliver(any(UUID.class), any(), any(), any(), any(java.util.function.BooleanSupplier.class))).thenThrow(new RuntimeException("external failure"));
+        assertThat(calendars.retry(project,draft.id(),user).status()).isEqualTo("PENDING");
+        assertThat(calendars.projection(project,draft.id(),user).status()).isEqualTo("PENDING");
+        verify(adapter, never()).deliver(any(CalendarProjectionEntity.class));
+        verify(adapter, never()).deliver(any(UUID.class), any(), any(), any(), any(java.util.function.BooleanSupplier.class));
+
+        assertThat(calendarDispatchWorker.dispatchOnce()).isTrue();
+        assertThat(calendars.projection(project,draft.id(),user).status()).isEqualTo("PENDING");
+        assertThat(calendars.projection(project,draft.id(),user).retryClassification()).isEqualTo("TRANSIENT");
+        verify(adapter).deliver(any(UUID.class), any(), any(), any(), any(java.util.function.BooleanSupplier.class));
         assertThat(schedules.detail(project,draft.id(),user).businessRevision()).isEqualTo(2);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM audit.audit_log WHERE aggregate_id=?",Integer.class,draft.id())).isGreaterThanOrEqualTo(3);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM platform.event_publication WHERE aggregate_id=? AND published_at IS NOT NULL",Integer.class,draft.id())).isGreaterThanOrEqualTo(3);
