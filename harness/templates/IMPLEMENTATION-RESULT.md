@@ -27,6 +27,10 @@ For bounded low/standard implementation work, record the minimal result in `TASK
   1. Contract criterion → evidence path / result
   2. Contract criterion → evidence path / result
   3. Contract criterion → evidence path / result
+- Visual UI evidence when applicable:
+  - Accepted pattern contract and screen-to-rule mapping:
+  - Preserved behavior, data-encoding layout, DOM/keyboard, accessibility, and responsive evidence:
+  - Applicable before/after visual, responsive, keyboard, and same-action functional checks (or justified N/A); CSS-only scope is not behavior-safety proof:
 - Regression evidence:
   - Failure-before-fix and pass-after-fix evidence, when a regression check was warranted:
   - If not run, conditional rationale and alternative evidence:

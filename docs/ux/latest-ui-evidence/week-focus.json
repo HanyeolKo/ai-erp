@@ -1,0 +1,168 @@
+{
+  "active": "10:00–11:00 9월 운영 일정 확정",
+  "event": {
+    "bottom": 494.328125,
+    "height": 68.3125,
+    "left": 760.28125,
+    "right": 888.703125,
+    "top": 426.015625,
+    "width": 128.421875,
+    "x": 760.28125,
+    "y": 426.015625
+  },
+  "hours": [
+    {
+      "inline": "top: 0%;",
+      "text": "00:00",
+      "top": "0px"
+    },
+    {
+      "inline": "top: 25%;",
+      "text": "06:00",
+      "top": "65px"
+    },
+    {
+      "inline": "top: 50%;",
+      "text": "12:00",
+      "top": "130px"
+    },
+    {
+      "inline": "top: 75%;",
+      "text": "18:00",
+      "top": "195px"
+    },
+    {
+      "inline": "top: 0%;",
+      "text": "00:00",
+      "top": "0px"
+    },
+    {
+      "inline": "top: 25%;",
+      "text": "06:00",
+      "top": "65px"
+    },
+    {
+      "inline": "top: 50%;",
+      "text": "12:00",
+      "top": "130px"
+    },
+    {
+      "inline": "top: 75%;",
+      "text": "18:00",
+      "top": "195px"
+    },
+    {
+      "inline": "top: 0%;",
+      "text": "00:00",
+      "top": "0px"
+    },
+    {
+      "inline": "top: 25%;",
+      "text": "06:00",
+      "top": "65px"
+    },
+    {
+      "inline": "top: 50%;",
+      "text": "12:00",
+      "top": "130px"
+    },
+    {
+      "inline": "top: 75%;",
+      "text": "18:00",
+      "top": "195px"
+    },
+    {
+      "inline": "top: 0%;",
+      "text": "00:00",
+      "top": "0px"
+    },
+    {
+      "inline": "top: 25%;",
+      "text": "06:00",
+      "top": "65px"
+    },
+    {
+      "inline": "top: 50%;",
+      "text": "12:00",
+      "top": "130px"
+    },
+    {
+      "inline": "top: 75%;",
+      "text": "18:00",
+      "top": "195px"
+    },
+    {
+      "inline": "top: 0%;",
+      "text": "00:00",
+      "top": "0px"
+    },
+    {
+      "inline": "top: 25%;",
+      "text": "06:00",
+      "top": "65px"
+    },
+    {
+      "inline": "top: 50%;",
+      "text": "12:00",
+      "top": "130px"
+    },
+    {
+      "inline": "top: 75%;",
+      "text": "18:00",
+      "top": "195px"
+    },
+    {
+      "inline": "top: 0%;",
+      "text": "00:00",
+      "top": "0px"
+    },
+    {
+      "inline": "top: 25%;",
+      "text": "06:00",
+      "top": "65px"
+    },
+    {
+      "inline": "top: 50%;",
+      "text": "12:00",
+      "top": "130px"
+    },
+    {
+      "inline": "top: 75%;",
+      "text": "18:00",
+      "top": "195px"
+    },
+    {
+      "inline": "top: 0%;",
+      "text": "00:00",
+      "top": "0px"
+    },
+    {
+      "inline": "top: 25%;",
+      "text": "06:00",
+      "top": "65px"
+    },
+    {
+      "inline": "top: 50%;",
+      "text": "12:00",
+      "top": "130px"
+    },
+    {
+      "inline": "top: 75%;",
+      "text": "18:00",
+      "top": "195px"
+    }
+  ],
+  "link": {
+    "bottom": 469.015625,
+    "height": 39,
+    "left": 767.28125,
+    "right": 884.703125,
+    "top": 430.015625,
+    "width": 117.421875,
+    "x": 767.28125,
+    "y": 430.015625
+  },
+  "offset": "2px",
+  "outline": "rgb(180, 83, 9) solid 3px",
+  "overflow": "hidden"
+}

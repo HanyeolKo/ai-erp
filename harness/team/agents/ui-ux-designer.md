@@ -24,6 +24,6 @@ Produce local plan under `docs/ux/` using `harness/templates/SCREEN-PLAN.md` wit
 
 - Every screen planning request must route through this role.
 - Include workflow, permissions, states, accessibility, and checks not run.
-- Return plan and evidence to reviewer through router handoff.
+- For visual tasks, return the functional plan and evidence to `ui-visual-designer` first; use the reviewer handoff directly only for non-visual plans.
 - Never claim implementation approval or run browser assertions not executed.
 - Write task-scoped design documentation only; implementation starts only after review pass.

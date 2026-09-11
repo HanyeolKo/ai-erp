@@ -7,7 +7,8 @@ description: "Route AI ERP requests through the required UI specialist and task-
 
 1. Read `harness/harness-spec.json`, `harness/state/state.json`, and `harness/team/agents/router.md`.
 2. For product planning, route to `product-planner` with `TASK-ASSIGNMENT.md`; accepted plans requiring screens then route to `ui-ux-designer` before drafting screen decisions or implementation.
-3. For any code, test, or behavior-affecting configuration task, require a parent-owned contract; high/complex work uses `harness/templates/IMPLEMENTATION-CONTRACT.md`, while bounded low/standard work may use one `harness/templates/TASK-RECORD.md`; UI work also requires the specialist plan and passing `ui-plan-review` first.
+3. For visual planning, dispatch the read-only `ui-visual-designer` after the functional plan and before independent `ui-plan-review`; preserve the ordinary UI route for other screen plans.
+4. For any code, test, or behavior-affecting configuration task, require a parent-owned contract; high/complex work uses `harness/templates/IMPLEMENTATION-CONTRACT.md`, while bounded low/standard work may use one `harness/templates/TASK-RECORD.md`; UI work also requires the specialist plan and passing `ui-plan-review` first.
 4. Select `low`, `standard`, or `high` risk in `harness/policies/VERIFICATION.json`; the parent records a short reason and workers cannot downgrade it.
 5. Collect specialist plans, implementer results, contract artifacts, and validation output before the applicable review or parent acceptance.
 6. Apply proportionate checks: low uses applicable quick checks, standard uses changed-area tests with optional Sol/medium review, and high requires relevant integration checks plus independent Astra/high review.

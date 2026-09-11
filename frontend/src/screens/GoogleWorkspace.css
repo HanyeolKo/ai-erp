@@ -1,33 +1,19 @@
-.google-page {
-  display: grid;
-  gap: 1.25rem;
-  max-width: 72rem;
-}
-
-.google-page .lead {
-  max-width: 60rem;
-}
-
+.google-page { display: grid; gap: 24px; max-width: 1152px; min-width: 0; }
+.google-page .lead { max-width: 960px; }
 .google-account-summary,
 .google-service-card,
 .calendar-binding-card,
 .calendar-picker,
 .mail-send-status {
-  border: 1px solid var(--border-strong, #52647f);
-  border-radius: 0.75rem;
-  padding: 1.25rem;
-  background: var(--surface, #fff);
+  min-width: 0;
+  padding: 24px;
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-surface);
+  background: var(--surface);
 }
-
 .google-account-summary,
 .google-service-card,
-.calendar-binding-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1.25rem;
-}
-
+.calendar-binding-card { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
 .google-account-summary span,
 .google-service-card p,
 .calendar-binding-card span,
@@ -35,205 +21,75 @@
 .drive-file-list span,
 .project-file-list span,
 .mail-row span,
-.mail-row small {
-  color: var(--muted, #52647f);
-}
-
-.google-service-list {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1rem;
-}
-
-.google-service-card {
-  align-items: flex-start;
-  min-height: 10rem;
-  flex-direction: column;
-}
-
-.google-service-card h2 {
-  margin: 0.25rem 0;
-}
-
-.google-status {
-  font-weight: 700;
-}
-
-.google-status[data-status="CONNECTED"] {
-  color: #16704a;
-}
-
+.mail-row small { color: var(--text-secondary); overflow-wrap: anywhere; }
+.google-service-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.google-service-card { align-items: flex-start; min-height: 160px; flex-direction: column; }
+.google-service-card h2 { margin: 4px 0; }
+.google-status { font-weight: 700; }
+.google-status[data-status="CONNECTED"] { color: var(--success); }
 .google-status[data-status="PERMISSION_REQUIRED"],
-.google-status[data-status="REAUTH_REQUIRED"] {
-  color: #9a5b00;
-}
-
+.google-status[data-status="REAUTH_REQUIRED"] { color: var(--focus); }
 .google-connect-next,
 .google-blocked,
-.google-note {
-  padding: 1rem;
-  background: #f4f7fb;
-  border-radius: 0.5rem;
-}
-
+.google-note { min-width: 0; padding: 16px; border-radius: var(--radius-control); background: var(--surface-subtle); overflow-wrap: anywhere; }
 .google-connect-next,
-.google-blocked {
-  display: grid;
-  gap: 0.75rem;
-}
-
-.google-note {
-  color: var(--muted, #52647f);
-}
-
-.google-page .button-danger {
-  justify-self: start;
-}
-
+.google-blocked { display: grid; gap: 12px; border: 1px solid var(--divider); }
+.google-note { color: var(--text-secondary); }
+.google-page .button-danger { justify-self: start; }
 .mail-toolbar,
-.drive-search {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: end;
-  gap: 0.75rem;
-}
-
-.mail-toolbar {
-  justify-content: space-between;
-}
-
+.drive-search { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; }
+.mail-toolbar { justify-content: space-between; }
 .mail-toolbar form,
-.drive-search {
-  display: flex;
-  align-items: end;
-  gap: 0.5rem;
-}
-
+.drive-search { display: flex; align-items: flex-end; gap: 8px; }
 .mail-toolbar label,
 .drive-search label,
 .mail-compose label,
-.calendar-picker label {
-  display: grid;
-  gap: 0.35rem;
-  font-weight: 700;
-}
-
-.segmented {
-  display: flex;
-  gap: 0.25rem;
-}
-
-.segmented button[aria-selected="true"] {
-  background: var(--primary, #1e5aa8);
-  color: white;
-}
-
+.calendar-picker label { display: grid; gap: 4px; margin: 0; font-weight: 700; }
+.segmented { display: flex; gap: 4px; }
+.segmented button[aria-selected="true"] { border-color: var(--accent); background: var(--accent); color: var(--surface); }
 .mail-list,
 .drive-file-list,
-.project-file-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: grid;
-  gap: 0.75rem;
-}
-
+.project-file-list { display: grid; gap: 12px; list-style: none; padding: 0; margin: 0; }
 .mail-row,
 .project-file-list li,
-.drive-file-list li {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem;
-  border: 1px solid var(--border-strong, #52647f);
-  border-radius: 0.65rem;
-  background: var(--surface, #fff);
-}
-
-.mail-row.is-unread strong {
-  color: var(--primary, #1e5aa8);
-}
-
+.drive-file-list li { display: flex; align-items: center; justify-content: space-between; min-width: 0; gap: 16px; padding: 16px; border: 1px solid var(--divider); border-radius: var(--radius-surface); background: var(--surface); }
+.mail-row.is-unread strong { color: var(--accent); }
 .mail-row button,
-.drive-file-list button {
-  border: 0;
-  background: transparent;
-  padding: 0;
-  display: grid;
-  gap: 0.3rem;
-  text-align: left;
-  cursor: pointer;
-}
-
+.drive-file-list button { display: grid; min-width: 0; gap: 4px; padding: 0; border: 0; background: transparent; color: var(--text); text-align: left; cursor: pointer; }
+.mail-row button:hover,
+.drive-file-list button:hover { background: var(--accent-soft); color: var(--text); }
 .drive-file-list a,
-.project-file-list li > div:first-child {
-  display: grid;
-  gap: 0.3rem;
-}
-
-.project-file-list li {
-  align-items: start;
-}
-
-.selection-summary {
-  display: grid;
-  gap: 0.5rem;
-  padding: 1rem;
-  border: 2px solid var(--primary, #1e5aa8);
-  border-radius: 0.65rem;
-}
-
+.project-file-list li > div:first-child { display: grid; min-width: 0; gap: 4px; }
+.project-file-list li { align-items: flex-start; }
+.selection-summary { display: grid; gap: 8px; padding: 16px; border: 2px solid var(--accent); border-radius: var(--radius-surface); background: var(--accent-soft); overflow-wrap: anywhere; }
 .mail-compose,
 .mail-review,
 .mail-detail,
-.calendar-picker {
-  display: grid;
-  gap: 1rem;
-}
-
-.mail-compose textarea {
-  resize: vertical;
-}
-
+.calendar-picker { display: grid; gap: 16px; }
+.mail-compose textarea { resize: vertical; }
 .mail-review pre,
-.mail-detail pre {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  max-height: 60vh;
-  overflow: auto;
-  padding: 1rem;
-  background: #f4f7fb;
-  border-radius: 0.5rem;
-}
+.mail-detail pre { max-height: 60vh; margin: 0; padding: 16px; border-radius: var(--radius-control); background: var(--surface-subtle); white-space: pre-wrap; overflow: auto; overflow-wrap: anywhere; }
+.calendar-picker select { max-width: 448px; }
 
-.calendar-picker select {
-  max-width: 28rem;
-}
-
-@media (max-width: 760px) {
-  .google-service-list {
-    grid-template-columns: 1fr;
-  }
-
+@media (max-width: 767px) {
+  .google-page { gap: 20px; }
+  .google-account-summary,
+  .google-service-card,
+  .calendar-binding-card,
+  .calendar-picker,
+  .mail-send-status { padding: 16px; }
+  .google-service-list { grid-template-columns: 1fr; }
   .mail-toolbar,
   .mail-toolbar form,
   .drive-search,
   .mail-row,
   .project-file-list li,
   .google-account-summary,
-  .calendar-binding-card {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
+  .calendar-binding-card { align-items: stretch; flex-direction: column; }
   .mail-toolbar form,
-  .drive-search {
-    display: grid;
-  }
-
+  .drive-search { display: grid; }
   .mail-row time,
-  .project-file-list .action-row {
-    align-self: start;
-  }
+  .project-file-list .action-row { align-self: flex-start; }
+  .mail-toolbar .segmented { width: 100%; }
+  .mail-toolbar .segmented button { flex: 1; }
 }

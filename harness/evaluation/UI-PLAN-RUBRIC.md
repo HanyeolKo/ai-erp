@@ -1,17 +1,19 @@
 # Screen-plan review rubric
 
-Runner: `router`. Verdict owner: `reviewer`. Executor: `ui-ux-designer`.
+Runner: `router`. Verdict owner: `reviewer`. Executor: `ui-ux-designer`, or `ui-visual-designer` for visual evidence.
 Use `harness/templates/UI-REVIEW.md`; inspect actual local evidence rather than checking headings alone.
 
 | Criterion | Required evidence |
 | --- | --- |
 | Specialist routing | Actual handoff to `ui-ux-designer` and its resulting local plan; no invented invocation evidence |
+| Visual specialist routing | For visual work, actual `ui-visual-designer` handoff after the functional plan; pattern-contract-only review may justify screen mapping `N/A` |
 | User and task | Named users, goals, entry points, assumptions, and in-scope/out-of-scope decisions |
 | Workflow | Primary path, navigation, required steps, permissions, and recovery paths |
 | Screen contract | Content hierarchy, controls, data, selection/filter/sort behavior, and responsive behavior where relevant |
 | State coverage | Initial, loading, empty, partial, error, success, disabled, and permission states, or explicit justified exclusions |
 | Accessibility | Keyboard flow, focus, semantic names, contrast, feedback, and assistive-technology considerations |
 | Design rationale | Existing product conventions and selected vendor guidance tied to concrete decisions |
+| Shared visual contract | Pattern stage: proposed pattern ID/version, source paths, coherence, preserved functional/data-encoding invariants, and screen mapping `N/A` until parent acceptance. Screen stage: accepted pattern ID/version with parent acceptance, shared rule IDs mapped to each screen, explicit exceptions, and applicable visual, responsive, keyboard, and same-action evidence |
 | Validation | Observable acceptance criteria, planned checks, open decisions, and checks not yet run |
 | Ownership | Canonical local path, source references, and archive disposition for the substantial document |
 

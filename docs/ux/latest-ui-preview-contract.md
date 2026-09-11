@@ -1,0 +1,18 @@
+# Offline preview fixture assignment / contract
+
+- Task: latest-ui-preview; revision preview-r1; owner /root; implementer Luna/high; standard risk, nonproduction synthetic loopback-only support for accepted visual UI work. Parent owns acceptance. This does not add UI behavior or change product files.
+- Base worktree: D:/onedrive/Documents/ChatGPT/AI ERP/tmp/ui-workspace-refactor at058f782.
+- Exact owned file: tmp/latest-ui-preview-server.mjs only; result docs/ux/latest-ui-preview-result.md. May read old root scripts/ui-preview-server.mjs and current frontend API types/tests to derive fixtures. May copy that old reviewed loopback fixture into owned tmp path and extend current endpoints.
+- Objective: serve current project creation/share and Google Workspace synthetic success/partial/error states for visual inspection. Bind127.0.0.1 only on port8081 (parent will later switch existing8080 service); configurable port. No network requests, credentials, disk persistence, real Google/Gmail sends, or product code. Every response fictional; annotate file header and result clearly.
+- Reuse old /api/v1/configuration, /me, projects/p1, schedules s1/s2, members, notifications paths. Add current /google/connection, /google/drive/files, /google/mail/messages/:id, /google/mail/send, /google/mail/sends/:id, /google/calendars, projects/p1/files and projects/p1/calendar plus projects/creation-options and share invitation needed by dialogs. Read current client types/testfixtures for exact shapes; in-memory create/attach/remove/bind/unbind/send transitions with fakeSENT/UNKNOWN support. Return local stub consent URL but do not visit external services.
+- Preserve base s1/s2 content for before-after baseline controlcomparison. Scenarios populated, empty, viewer, login, unconfigured, error, google-partial, unknown; defaultpopulated. Expose scenario via environmentonly. No user content; fixture email domainexample.com.
+- Verification: node --check, read-onlyHTTP contract checks with expected shape/status, in-memory mutation/reset smoke (local only). Record command/cwd/exit and endpointcoverage. Do not self-verdict, spawn, push, merge or deploy. Otherworker owns3CSS/harness; don't touch.
+- External mode offline-contract-only; real Google accounts/OAuth/liveintegration N/A. Exact UI/browser claims rely on parent browser checks, not fixturealone. Testdoubles never certify live readiness.
+- Context: this contract, current client.ts + relevant Google/ProjectStart tests, old fixture; freshbounded fork none, output<=1500 tokens; token/cacheusage null. No escalation.
+- Parent ready-to-dispatch: ready. User's fullUIrefactor authorizes this reversible verification fixture. Return result before parent swaps process. Do not start lingering process unless give PID; preferably only syntax+shortHTTPsmoke.
+
+Parent scope amendment preview-r2: promote the completed synthetic fixture to scripts/ui-preview-server.mjs for reproducible PR visual verification, keeping the same loopback-only/noexternal semantics. Implementer owns this exact additional file; tmp copy may remain ignored. Update result runnablepath and node --check scripts/ui-preview-server.mjs. No other product/test/config edits. Parent acceptance of smoke evidence preview-r1: accepted as offline support, not live integration.
+
+
+Parent amendment preview-r3: add optional UI_PREVIEW_DISPLAY_NAME and UI_PREVIEW_EMAIL environment overrides solely to synthetic me/googleConnection fields in scripts/ui-preview-server.mjs. Defaults unchanged. This permits reviewer-requested long-account-label reflow checks. No network or new endpoints. node --check and focused getter smoke only; result documents variables. No product edits.
+

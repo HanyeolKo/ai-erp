@@ -1,0 +1,101 @@
+[
+  {
+    "fg": "text",
+    "bg": "surface",
+    "foreground": "#17243b",
+    "background": "#ffffff",
+    "ratio": 15.53,
+    "min": 4.5,
+    "pass": true
+  },
+  {
+    "fg": "text-secondary",
+    "bg": "page",
+    "foreground": "#526079",
+    "background": "#f3f5f8",
+    "ratio": 5.81,
+    "min": 4.5,
+    "pass": true
+  },
+  {
+    "fg": "accent",
+    "bg": "surface",
+    "foreground": "#2458a6",
+    "background": "#ffffff",
+    "ratio": 6.95,
+    "min": 4.5,
+    "pass": true
+  },
+  {
+    "fg": "surface",
+    "bg": "accent",
+    "foreground": "#ffffff",
+    "background": "#2458a6",
+    "ratio": 6.95,
+    "min": 4.5,
+    "pass": true
+  },
+  {
+    "fg": "surface",
+    "bg": "navy",
+    "foreground": "#ffffff",
+    "background": "#172b46",
+    "ratio": 14.28,
+    "min": 4.5,
+    "pass": true
+  },
+  {
+    "fg": "danger",
+    "bg": "danger-soft",
+    "foreground": "#a82d26",
+    "background": "#fff1f0",
+    "ratio": 6.22,
+    "min": 4.5,
+    "pass": true
+  },
+  {
+    "fg": "success",
+    "bg": "surface",
+    "foreground": "#216244",
+    "background": "#ffffff",
+    "ratio": 7.25,
+    "min": 4.5,
+    "pass": true
+  },
+  {
+    "fg": "focus",
+    "bg": "surface",
+    "foreground": "#b45309",
+    "background": "#ffffff",
+    "ratio": 5.02,
+    "min": 3,
+    "pass": true
+  },
+  {
+    "fg": "focus",
+    "bg": "page",
+    "foreground": "#b45309",
+    "background": "#f3f5f8",
+    "ratio": 4.6,
+    "min": 3,
+    "pass": true
+  },
+  {
+    "fg": "control-border",
+    "bg": "surface",
+    "foreground": "#7b899d",
+    "background": "#ffffff",
+    "ratio": 3.55,
+    "min": 3,
+    "pass": true
+  },
+  {
+    "fg": "control-border",
+    "bg": "page",
+    "foreground": "#7b899d",
+    "background": "#f3f5f8",
+    "ratio": 3.25,
+    "min": 3,
+    "pass": true
+  }
+]

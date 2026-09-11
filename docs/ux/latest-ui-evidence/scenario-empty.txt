@@ -1,0 +1,16 @@
+- main:
+  - button "본문으로 건너뛰기"
+  - link "AI ERP":
+    - /url: "#/"
+    - generic: AI
+    - generic: AI ERP
+  - generic "김관리자 ⌄"
+  - paragraph: 워크스페이스
+  - heading "프로젝트 선택" [level=1]
+  - paragraph: 작업할 프로젝트를 선택하거나 새 프로젝트를 만들어 시작하세요.
+  - button "새 프로젝트"
+  - button "초대로 참여"
+  - generic: ＋
+  - heading "아직 프로젝트가 없습니다" [level=2]
+  - paragraph: 새 프로젝트를 만들거나 초대 코드로 참여해 보세요.
+  - button "목록 새로고침"

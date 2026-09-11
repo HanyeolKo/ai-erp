@@ -1,0 +1,15 @@
+command: pnpm --dir frontend test
+cwd: D:\onedrive\Documents\ChatGPT\AI ERP\tmp\ui-workspace-refactor
+mode: require_escalated (the sandbox attempt is recorded in latest-css-test.txt)
+exit: 0
+stdout+stderr:
+
+> @ai-erp/frontend@0.0.1 test D:\onedrive\Documents\ChatGPT\AI ERP\tmp\ui-workspace-refactor\frontend
+> vitest run
+
+RUN v4.1.0 D:/onedrive/Documents/ChatGPT/AI ERP/tmp/ui-workspace-refactor/frontend
+Not implemented: navigation to another Document
+TimeoutOverflowWarning from the existing test runtime timer was emitted.
+Test Files 15 passed (15)
+Tests 232 passed (232)
+Duration 33.58s

@@ -1,0 +1,34 @@
+- main:
+  - button "본문으로 건너뛰기"
+  - link "AI ERP":
+    - /url: "#/"
+    - generic: AI
+    - generic: AI ERP
+  - generic "김관리자 ⌄"
+  - paragraph: 개인 Google
+  - heading "Google 서비스" [level=1]
+  - link "내 계정으로 돌아가기":
+    - /url: "#/account"
+  - paragraph: 이 연결은 내 계정에만 적용됩니다. 메일과 Drive 목록은 다른 프로젝트 구성원에게 보이지 않습니다.
+  - region "연결된 Google 계정":
+    - generic: 연결 계정
+    - strong: manager@example.com
+    - button "연결 상태 새로고침"
+  - article:
+    - paragraph: Google 서비스
+    - heading "Drive 파일 찾기" [level=2]
+    - paragraph: 연결됨
+    - link "열기":
+      - /url: "#/account/drive"
+  - article:
+    - paragraph: Google 서비스
+    - heading "Gmail 읽기 및 보내기" [level=2]
+    - paragraph: 권한 추가 필요
+    - button "권한 다시 연결"
+  - article:
+    - paragraph: Google 서비스
+    - heading "ERP 일정 동기화" [level=2]
+    - paragraph: 다시 인증 필요
+    - button "권한 다시 연결"
+  - paragraph: Google 서비스 연결을 해제하면 AI ERP에 저장된 서비스 연결 정보와 개인 목록 캐시를 지웁니다. Google 로그인과 원본 파일·메일·캘린더는 유지됩니다.
+  - button "Google 서비스 연결 해제"

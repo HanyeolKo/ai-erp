@@ -37,6 +37,10 @@ Complete this contract before any implementation worker starts.
 - UI prerequisite:
   - Screen plan required: yes / no
   - Specialist plan path and independent `ui-plan-review` evidence:
+- Visual UI prerequisite when applicable:
+  - `VISUAL-DESIGN-CONTRACT.md` and `VISUAL-CHANGE-PLAN.md` paths, accepted pattern ID/version, and independent review evidence:
+  - Functional invariants and data-encoding presentation checks to preserve:
+- For visual UI implementation, require applicable before/after visual, responsive, keyboard, and same-action functional checks; justify any N/A explicitly. CSS-only intent does not guarantee behavior safety.
 - Unresolved decisions or assumptions: none permitted; return to parent for revision.
 - Missing or unknown required external setup: stop before dependent edits or execution, return `BLOCKER-REPORT`, and do not retry unchanged external blockers.
 - Checks not run:

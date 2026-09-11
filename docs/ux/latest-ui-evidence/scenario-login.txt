@@ -1,0 +1,9 @@
+- main:
+  - link "AI ERP":
+    - /url: "#/"
+    - generic: AI
+    - generic: AI ERP
+  - heading "다시 로그인해 주세요" [level=1]
+  - status: 로그인이 필요합니다.
+  - link "Google로 로그인":
+    - /url: /oauth2/authorization/google

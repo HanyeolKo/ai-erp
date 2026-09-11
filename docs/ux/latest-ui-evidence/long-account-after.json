@@ -1,0 +1,41 @@
+{
+  "closed": {
+    "scroll": 320,
+    "summary": {
+      "bottom": 72,
+      "height": 72,
+      "left": 120.796875,
+      "right": 304,
+      "top": 0,
+      "width": 183.203125,
+      "x": 120.796875,
+      "y": 0
+    },
+    "width": 320
+  },
+  "open": {
+    "email": {
+      "bottom": 149.59375,
+      "height": 56.59375,
+      "left": 33,
+      "right": 295,
+      "top": 93,
+      "width": 262,
+      "x": 33,
+      "y": 93
+    },
+    "open": true,
+    "panel": {
+      "bottom": 365.78125,
+      "height": 281.78125,
+      "left": 24,
+      "right": 304,
+      "top": 84,
+      "width": 280,
+      "x": 24,
+      "y": 84
+    },
+    "scroll": 320,
+    "width": 320
+  }
+}

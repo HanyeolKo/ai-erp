@@ -1,0 +1,268 @@
+[
+  {
+    "size": "desktop",
+    "name": "projects",
+    "equal": true,
+    "overflow": 0,
+    "mainOverflow": 0
+  },
+  {
+    "size": "desktop",
+    "name": "dashboard",
+    "equal": true,
+    "overflow": -15,
+    "mainOverflow": 0
+  },
+  {
+    "size": "desktop",
+    "name": "schedules",
+    "equal": true,
+    "overflow": -15,
+    "mainOverflow": 0
+  },
+  {
+    "size": "desktop",
+    "name": "create",
+    "equal": true,
+    "overflow": -15,
+    "mainOverflow": 0
+  },
+  {
+    "size": "desktop",
+    "name": "detail",
+    "equal": true,
+    "overflow": -15,
+    "mainOverflow": 0
+  },
+  {
+    "size": "desktop",
+    "name": "account",
+    "equal": true,
+    "overflow": 0,
+    "mainOverflow": 0
+  },
+  {
+    "size": "desktop",
+    "name": "google",
+    "equal": true,
+    "overflow": 0,
+    "mainOverflow": 0
+  },
+  {
+    "size": "desktop",
+    "name": "drive",
+    "equal": true,
+    "overflow": 0,
+    "mainOverflow": 0
+  },
+  {
+    "size": "desktop",
+    "name": "mail",
+    "equal": true,
+    "overflow": 0,
+    "mainOverflow": 0
+  },
+  {
+    "size": "desktop",
+    "name": "files",
+    "equal": true,
+    "overflow": 0,
+    "mainOverflow": 0
+  },
+  {
+    "size": "desktop",
+    "name": "project-calendar",
+    "equal": true,
+    "overflow": 0,
+    "mainOverflow": 0
+  },
+  {
+    "size": "desktop",
+    "name": "members",
+    "equal": false,
+    "overflow": 0,
+    "mainOverflow": 0
+  },
+  {
+    "size": "desktop",
+    "name": "notifications",
+    "equal": true,
+    "overflow": 0,
+    "mainOverflow": 0
+  },
+  {
+    "size": "desktop",
+    "name": "edit",
+    "equal": true,
+    "overflow": -15,
+    "mainOverflow": 0
+  },
+  {
+    "size": "desktop",
+    "name": "invite-create",
+    "equal": true,
+    "overflow": 0,
+    "mainOverflow": 0
+  },
+  {
+    "size": "desktop",
+    "name": "invite",
+    "equal": true,
+    "overflow": 0,
+    "mainOverflow": 0
+  },
+  {
+    "size": "desktop",
+    "name": "calendar",
+    "equal": true,
+    "overflow": 0,
+    "mainOverflow": 0
+  },
+  {
+    "size": "desktop",
+    "name": "unknown",
+    "equal": true,
+    "overflow": 0,
+    "mainOverflow": 0
+  },
+  {
+    "size": "desktop",
+    "name": "missing",
+    "equal": true,
+    "overflow": 0,
+    "mainOverflow": 0
+  },
+  {
+    "size": "mobile",
+    "name": "projects",
+    "equal": true,
+    "overflow": 0,
+    "mainOverflow": 0
+  },
+  {
+    "size": "mobile",
+    "name": "dashboard",
+    "equal": true,
+    "overflow": -15,
+    "mainOverflow": 0
+  },
+  {
+    "size": "mobile",
+    "name": "schedules",
+    "equal": true,
+    "overflow": -15,
+    "mainOverflow": 0
+  },
+  {
+    "size": "mobile",
+    "name": "create",
+    "equal": true,
+    "overflow": -15,
+    "mainOverflow": 0
+  },
+  {
+    "size": "mobile",
+    "name": "detail",
+    "equal": true,
+    "overflow": -15,
+    "mainOverflow": 0
+  },
+  {
+    "size": "mobile",
+    "name": "account",
+    "equal": true,
+    "overflow": 0,
+    "mainOverflow": 0
+  },
+  {
+    "size": "mobile",
+    "name": "google",
+    "equal": true,
+    "overflow": 0,
+    "mainOverflow": 0
+  },
+  {
+    "size": "mobile",
+    "name": "drive",
+    "equal": true,
+    "overflow": 0,
+    "mainOverflow": 0
+  },
+  {
+    "size": "mobile",
+    "name": "mail",
+    "equal": true,
+    "overflow": 0,
+    "mainOverflow": 0
+  },
+  {
+    "size": "mobile",
+    "name": "files",
+    "equal": true,
+    "overflow": -15,
+    "mainOverflow": 0
+  },
+  {
+    "size": "mobile",
+    "name": "project-calendar",
+    "equal": true,
+    "overflow": -15,
+    "mainOverflow": 0
+  },
+  {
+    "size": "mobile",
+    "name": "members",
+    "equal": false,
+    "overflow": -15,
+    "mainOverflow": 0
+  },
+  {
+    "size": "mobile",
+    "name": "notifications",
+    "equal": true,
+    "overflow": 0,
+    "mainOverflow": 0
+  },
+  {
+    "size": "mobile",
+    "name": "edit",
+    "equal": true,
+    "overflow": -15,
+    "mainOverflow": 0
+  },
+  {
+    "size": "mobile",
+    "name": "invite-create",
+    "equal": true,
+    "overflow": -15,
+    "mainOverflow": 0
+  },
+  {
+    "size": "mobile",
+    "name": "invite",
+    "equal": true,
+    "overflow": 0,
+    "mainOverflow": 0
+  },
+  {
+    "size": "mobile",
+    "name": "calendar",
+    "equal": true,
+    "overflow": 0,
+    "mainOverflow": 0
+  },
+  {
+    "size": "mobile",
+    "name": "unknown",
+    "equal": true,
+    "overflow": 0,
+    "mainOverflow": 0
+  },
+  {
+    "size": "mobile",
+    "name": "missing",
+    "equal": true,
+    "overflow": 0,
+    "mainOverflow": 0
+  }
+]

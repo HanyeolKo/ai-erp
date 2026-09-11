@@ -1,0 +1,2481 @@
+[
+  {
+    "name": "projects",
+    "route": "/",
+    "controls": [
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "본문으로 건너뛰기",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": "#/",
+        "tag": "A",
+        "text": "AIAI ERP",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account",
+        "tag": "A",
+        "text": "계정 설정",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/google",
+        "tag": "A",
+        "text": "Google 서비스",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/drive",
+        "tag": "A",
+        "text": "내 Drive",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/mail",
+        "tag": "A",
+        "text": "Gmail",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "다른 계정으로 로그인",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "새 프로젝트",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "×",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "INPUT",
+        "text": "프로젝트 이름",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "취소",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "프로젝트 만들기",
+        "type": "submit"
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "초대로 참여",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "×",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "INPUT",
+        "text": "초대 링크 또는 코드",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "취소",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "초대 확인",
+        "type": "submit"
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1",
+        "tag": "A",
+        "text": "서울 스프린트 운영관리자열기 →",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "목록 새로고침",
+        "type": "button"
+      }
+    ],
+    "layout": {
+      "scroll": 390,
+      "width": 390
+    }
+  },
+  {
+    "name": "dashboard",
+    "route": "/projects/p1",
+    "controls": [
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "본문으로 건너뛰기",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": "#/",
+        "tag": "A",
+        "text": "AIAI ERP",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/notifications",
+        "tag": "A",
+        "text": "알림",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account",
+        "tag": "A",
+        "text": "계정 설정",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/google",
+        "tag": "A",
+        "text": "Google 서비스",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/drive",
+        "tag": "A",
+        "text": "내 Drive",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/mail",
+        "tag": "A",
+        "text": "Gmail",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "다른 계정으로 로그인",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "메뉴",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1",
+        "tag": "A",
+        "text": "개요",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/schedules",
+        "tag": "A",
+        "text": "일정",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/members",
+        "tag": "A",
+        "text": "구성원",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/files",
+        "tag": "A",
+        "text": "파일",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/calendar",
+        "tag": "A",
+        "text": "Calendar 설정",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/",
+        "tag": "A",
+        "text": "프로젝트 선택",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/schedules/new",
+        "tag": "A",
+        "text": "일정 만들기",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/invitations/new",
+        "tag": "A",
+        "text": "구성원 초대",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/schedules",
+        "tag": "A",
+        "text": "전체 일정 보기",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/schedules/s1",
+        "tag": "A",
+        "text": "9월 운영 일정 확정",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/schedules/s2",
+        "tag": "A",
+        "text": "9월 고객 동기화 점검",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/schedules/s1",
+        "tag": "A",
+        "text": "9월 운영 일정 확정",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/schedules/s2",
+        "tag": "A",
+        "text": "9월 고객 동기화 점검",
+        "type": null
+      }
+    ],
+    "layout": {
+      "scroll": 375,
+      "width": 390
+    }
+  },
+  {
+    "name": "schedules",
+    "route": "/projects/p1/schedules",
+    "controls": [
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "본문으로 건너뛰기",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": "#/",
+        "tag": "A",
+        "text": "AIAI ERP",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/notifications",
+        "tag": "A",
+        "text": "알림",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account",
+        "tag": "A",
+        "text": "계정 설정",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/google",
+        "tag": "A",
+        "text": "Google 서비스",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/drive",
+        "tag": "A",
+        "text": "내 Drive",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/mail",
+        "tag": "A",
+        "text": "Gmail",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "다른 계정으로 로그인",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "메뉴",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1",
+        "tag": "A",
+        "text": "개요",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/schedules",
+        "tag": "A",
+        "text": "일정",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/members",
+        "tag": "A",
+        "text": "구성원",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/files",
+        "tag": "A",
+        "text": "파일",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/calendar",
+        "tag": "A",
+        "text": "Calendar 설정",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/",
+        "tag": "A",
+        "text": "프로젝트 선택",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/schedules/new",
+        "tag": "A",
+        "text": "일정 만들기",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "월간 보기",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "주간 보기",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "이전 기간",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "INPUT",
+        "text": "기준 날짜",
+        "type": "date"
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "다음 기간",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "INPUT",
+        "text": "검색",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "INPUT",
+        "text": "표시 시간대",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "INPUT",
+        "text": "날짜 이후",
+        "type": "date"
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "INPUT",
+        "text": "날짜 이전",
+        "type": "date"
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "SELECT",
+        "text": "상태전체 상태초안확정취소",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "SELECT",
+        "text": "확인 상태전체 확인 상태확인 대기확인 완료확인 대상 아님",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "SELECT",
+        "text": "Calendar 상태전체 Calendar 상태연결 확인 필요동기화 실패동기화 중동기화 완료연결되지 않음",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "INPUT",
+        "text": "내가 만든 일정",
+        "type": "checkbox"
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/schedules/s1",
+        "tag": "A",
+        "text": "9월 운영 일정 확정",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/schedules/s2",
+        "tag": "A",
+        "text": "9월 고객 동기화 점검",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/schedules/s1",
+        "tag": "A",
+        "text": "9월 운영 일정 확정",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/schedules/s2",
+        "tag": "A",
+        "text": "9월 고객 동기화 점검",
+        "type": null
+      },
+      {
+        "disabled": true,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "이전 일정 페이지",
+        "type": "button"
+      },
+      {
+        "disabled": true,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "다음 일정 페이지",
+        "type": "button"
+      }
+    ],
+    "layout": {
+      "scroll": 375,
+      "width": 390
+    }
+  },
+  {
+    "name": "create",
+    "route": "/projects/p1/schedules/new",
+    "controls": [
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "본문으로 건너뛰기",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": "#/",
+        "tag": "A",
+        "text": "AIAI ERP",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/notifications",
+        "tag": "A",
+        "text": "알림",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account",
+        "tag": "A",
+        "text": "계정 설정",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/google",
+        "tag": "A",
+        "text": "Google 서비스",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/drive",
+        "tag": "A",
+        "text": "내 Drive",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/mail",
+        "tag": "A",
+        "text": "Gmail",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "다른 계정으로 로그인",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "메뉴",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1",
+        "tag": "A",
+        "text": "개요",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/schedules",
+        "tag": "A",
+        "text": "일정",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/members",
+        "tag": "A",
+        "text": "구성원",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/files",
+        "tag": "A",
+        "text": "파일",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/calendar",
+        "tag": "A",
+        "text": "Calendar 설정",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/",
+        "tag": "A",
+        "text": "프로젝트 선택",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "INPUT",
+        "text": "제목",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "TEXTAREA",
+        "text": "설명",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "INPUT",
+        "text": "시간대",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "INPUT",
+        "text": "시작",
+        "type": "datetime-local"
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "INPUT",
+        "text": "종료",
+        "type": "datetime-local"
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "INPUT",
+        "text": "이름 없는 구성원",
+        "type": "checkbox"
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "INPUT",
+        "text": "이름 없는 구성원",
+        "type": "checkbox"
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "INPUT",
+        "text": "이름 없는 구성원",
+        "type": "checkbox"
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "INPUT",
+        "text": "외부 참석자 이메일",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/schedules",
+        "tag": "A",
+        "text": "취소",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "일정 저장",
+        "type": "submit"
+      },
+      {
+        "disabled": true,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "이전 참석자 목록",
+        "type": null
+      },
+      {
+        "disabled": true,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "다음 참석자 목록",
+        "type": null
+      }
+    ],
+    "layout": {
+      "scroll": 375,
+      "width": 390
+    }
+  },
+  {
+    "name": "detail",
+    "route": "/projects/p1/schedules/s1",
+    "controls": [
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "본문으로 건너뛰기",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": "#/",
+        "tag": "A",
+        "text": "AIAI ERP",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/notifications",
+        "tag": "A",
+        "text": "알림",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account",
+        "tag": "A",
+        "text": "계정 설정",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/google",
+        "tag": "A",
+        "text": "Google 서비스",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/drive",
+        "tag": "A",
+        "text": "내 Drive",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/mail",
+        "tag": "A",
+        "text": "Gmail",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "다른 계정으로 로그인",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "메뉴",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1",
+        "tag": "A",
+        "text": "개요",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/schedules",
+        "tag": "A",
+        "text": "일정",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/members",
+        "tag": "A",
+        "text": "구성원",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/files",
+        "tag": "A",
+        "text": "파일",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/calendar",
+        "tag": "A",
+        "text": "Calendar 설정",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/",
+        "tag": "A",
+        "text": "프로젝트 선택",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/schedules",
+        "tag": "A",
+        "text": "일정 목록",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/schedules/s1/edit",
+        "tag": "A",
+        "text": "일정 수정",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "일정 취소",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "변경 확인",
+        "type": null
+      }
+    ],
+    "layout": {
+      "scroll": 375,
+      "width": 390
+    }
+  },
+  {
+    "name": "account",
+    "route": "/account",
+    "controls": [
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "본문으로 건너뛰기",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": "#/",
+        "tag": "A",
+        "text": "AIAI ERP",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account",
+        "tag": "A",
+        "text": "계정 설정",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/google",
+        "tag": "A",
+        "text": "Google 서비스",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/drive",
+        "tag": "A",
+        "text": "내 Drive",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/mail",
+        "tag": "A",
+        "text": "Gmail",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "다른 계정으로 로그인",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": "#/account/google",
+        "tag": "A",
+        "text": "Google 서비스 연결",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/drive",
+        "tag": "A",
+        "text": "내 Drive",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/mail",
+        "tag": "A",
+        "text": "Gmail",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/calendar",
+        "tag": "A",
+        "text": "Calendar 연결 설정",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "다른 계정으로 로그인",
+        "type": "button"
+      }
+    ],
+    "layout": {
+      "scroll": 390,
+      "width": 390
+    }
+  },
+  {
+    "name": "google",
+    "route": "/account/google",
+    "controls": [
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "본문으로 건너뛰기",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": "#/",
+        "tag": "A",
+        "text": "AIAI ERP",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account",
+        "tag": "A",
+        "text": "계정 설정",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/google",
+        "tag": "A",
+        "text": "Google 서비스",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/drive",
+        "tag": "A",
+        "text": "내 Drive",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/mail",
+        "tag": "A",
+        "text": "Gmail",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "다른 계정으로 로그인",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": "#/account",
+        "tag": "A",
+        "text": "내 계정으로 돌아가기",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "다시 시도",
+        "type": null
+      }
+    ],
+    "layout": {
+      "scroll": 390,
+      "width": 390
+    }
+  },
+  {
+    "name": "drive",
+    "route": "/account/drive",
+    "controls": [
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "본문으로 건너뛰기",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": "#/",
+        "tag": "A",
+        "text": "AIAI ERP",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account",
+        "tag": "A",
+        "text": "계정 설정",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/google",
+        "tag": "A",
+        "text": "Google 서비스",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/drive",
+        "tag": "A",
+        "text": "내 Drive",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/mail",
+        "tag": "A",
+        "text": "Gmail",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "다른 계정으로 로그인",
+        "type": "button"
+      }
+    ],
+    "layout": {
+      "scroll": 390,
+      "width": 390
+    }
+  },
+  {
+    "name": "mail",
+    "route": "/account/mail",
+    "controls": [
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "본문으로 건너뛰기",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": "#/",
+        "tag": "A",
+        "text": "AIAI ERP",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account",
+        "tag": "A",
+        "text": "계정 설정",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/google",
+        "tag": "A",
+        "text": "Google 서비스",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/drive",
+        "tag": "A",
+        "text": "내 Drive",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/mail",
+        "tag": "A",
+        "text": "Gmail",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "다른 계정으로 로그인",
+        "type": "button"
+      },
+      {
+        "disabled": true,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "메일 작성",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": "#/account/google",
+        "tag": "A",
+        "text": "Google 연결 설정",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "×",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "×",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "INPUT",
+        "text": "To",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "INPUT",
+        "text": "Cc",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "INPUT",
+        "text": "Bcc",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "INPUT",
+        "text": "제목",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "TEXTAREA",
+        "text": "본문",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "보내기 확인",
+        "type": "submit"
+      }
+    ],
+    "layout": {
+      "scroll": 390,
+      "width": 390
+    }
+  },
+  {
+    "name": "files",
+    "route": "/projects/p1/files",
+    "controls": [
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "본문으로 건너뛰기",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": "#/",
+        "tag": "A",
+        "text": "AIAI ERP",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/notifications",
+        "tag": "A",
+        "text": "알림",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account",
+        "tag": "A",
+        "text": "계정 설정",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/google",
+        "tag": "A",
+        "text": "Google 서비스",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/drive",
+        "tag": "A",
+        "text": "내 Drive",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/mail",
+        "tag": "A",
+        "text": "Gmail",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "다른 계정으로 로그인",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "메뉴",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1",
+        "tag": "A",
+        "text": "개요",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/schedules",
+        "tag": "A",
+        "text": "일정",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/members",
+        "tag": "A",
+        "text": "구성원",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/files",
+        "tag": "A",
+        "text": "파일",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/calendar",
+        "tag": "A",
+        "text": "Calendar 설정",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/",
+        "tag": "A",
+        "text": "프로젝트 선택",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "다시 시도",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "다시 시도",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "×",
+        "type": "button"
+      }
+    ],
+    "layout": {
+      "scroll": 375,
+      "width": 390
+    }
+  },
+  {
+    "name": "project-calendar",
+    "route": "/projects/p1/calendar",
+    "controls": [
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "본문으로 건너뛰기",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": "#/",
+        "tag": "A",
+        "text": "AIAI ERP",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/notifications",
+        "tag": "A",
+        "text": "알림",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account",
+        "tag": "A",
+        "text": "계정 설정",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/google",
+        "tag": "A",
+        "text": "Google 서비스",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/drive",
+        "tag": "A",
+        "text": "내 Drive",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/mail",
+        "tag": "A",
+        "text": "Gmail",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "다른 계정으로 로그인",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "메뉴",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1",
+        "tag": "A",
+        "text": "개요",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/schedules",
+        "tag": "A",
+        "text": "일정",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/members",
+        "tag": "A",
+        "text": "구성원",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/files",
+        "tag": "A",
+        "text": "파일",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/calendar",
+        "tag": "A",
+        "text": "Calendar 설정",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/",
+        "tag": "A",
+        "text": "프로젝트 선택",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "다시 시도",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "×",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "취소",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "연결 해제",
+        "type": "button"
+      }
+    ],
+    "layout": {
+      "scroll": 375,
+      "width": 390
+    }
+  },
+  {
+    "name": "members",
+    "route": "/projects/p1/members",
+    "controls": [
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "본문으로 건너뛰기",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": "#/",
+        "tag": "A",
+        "text": "AIAI ERP",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/notifications",
+        "tag": "A",
+        "text": "알림",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account",
+        "tag": "A",
+        "text": "계정 설정",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/google",
+        "tag": "A",
+        "text": "Google 서비스",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/drive",
+        "tag": "A",
+        "text": "내 Drive",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/mail",
+        "tag": "A",
+        "text": "Gmail",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "다른 계정으로 로그인",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "메뉴",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1",
+        "tag": "A",
+        "text": "개요",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/schedules",
+        "tag": "A",
+        "text": "일정",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/members",
+        "tag": "A",
+        "text": "구성원",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/files",
+        "tag": "A",
+        "text": "파일",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/calendar",
+        "tag": "A",
+        "text": "Calendar 설정",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/",
+        "tag": "A",
+        "text": "프로젝트 선택",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "구성원 초대",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "SELECT",
+        "text": "구성원 역할",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "SELECT",
+        "text": "구성원 역할",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "SELECT",
+        "text": "구성원 역할",
+        "type": null
+      },
+      {
+        "disabled": true,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "이전",
+        "type": null
+      },
+      {
+        "disabled": true,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "다음",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "×",
+        "type": "button"
+      },
+      {
+        "disabled": true,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "초대 만들기",
+        "type": "button"
+      }
+    ],
+    "layout": {
+      "scroll": 375,
+      "width": 390
+    }
+  },
+  {
+    "name": "notifications",
+    "route": "/notifications",
+    "controls": [
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "본문으로 건너뛰기",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": "#/",
+        "tag": "A",
+        "text": "AIAI ERP",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account",
+        "tag": "A",
+        "text": "계정 설정",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/google",
+        "tag": "A",
+        "text": "Google 서비스",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/drive",
+        "tag": "A",
+        "text": "내 Drive",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/mail",
+        "tag": "A",
+        "text": "Gmail",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "다른 계정으로 로그인",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/schedules/s1",
+        "tag": "A",
+        "text": "관련 일정 보기",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "읽음 처리",
+        "type": "button"
+      },
+      {
+        "disabled": true,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "이전",
+        "type": null
+      },
+      {
+        "disabled": true,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "다음",
+        "type": null
+      }
+    ],
+    "layout": {
+      "scroll": 390,
+      "width": 390
+    }
+  },
+  {
+    "name": "edit",
+    "route": "/projects/p1/schedules/s1/edit",
+    "controls": [
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "본문으로 건너뛰기",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": "#/",
+        "tag": "A",
+        "text": "AIAI ERP",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/notifications",
+        "tag": "A",
+        "text": "알림",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account",
+        "tag": "A",
+        "text": "계정 설정",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/google",
+        "tag": "A",
+        "text": "Google 서비스",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/drive",
+        "tag": "A",
+        "text": "내 Drive",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/mail",
+        "tag": "A",
+        "text": "Gmail",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "다른 계정으로 로그인",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "메뉴",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1",
+        "tag": "A",
+        "text": "개요",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/schedules",
+        "tag": "A",
+        "text": "일정",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/members",
+        "tag": "A",
+        "text": "구성원",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/files",
+        "tag": "A",
+        "text": "파일",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/calendar",
+        "tag": "A",
+        "text": "Calendar 설정",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/",
+        "tag": "A",
+        "text": "프로젝트 선택",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "INPUT",
+        "text": "제목",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "TEXTAREA",
+        "text": "설명주간 예측 리뷰 및 위험 대응회의",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "INPUT",
+        "text": "시간대",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "INPUT",
+        "text": "시작",
+        "type": "datetime-local"
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "INPUT",
+        "text": "종료",
+        "type": "datetime-local"
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "INPUT",
+        "text": "이름 없는 구성원",
+        "type": "checkbox"
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "INPUT",
+        "text": "이름 없는 구성원",
+        "type": "checkbox"
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "INPUT",
+        "text": "이름 없는 구성원",
+        "type": "checkbox"
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "INPUT",
+        "text": "외부 참석자 이메일",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/schedules/s1",
+        "tag": "A",
+        "text": "취소",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "일정 저장",
+        "type": "submit"
+      },
+      {
+        "disabled": true,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "이전 참석자 목록",
+        "type": null
+      },
+      {
+        "disabled": true,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "다음 참석자 목록",
+        "type": null
+      }
+    ],
+    "layout": {
+      "scroll": 375,
+      "width": 390
+    }
+  },
+  {
+    "name": "invite-create",
+    "route": "/projects/p1/invitations/new",
+    "controls": [
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "본문으로 건너뛰기",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": "#/",
+        "tag": "A",
+        "text": "AIAI ERP",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/notifications",
+        "tag": "A",
+        "text": "알림",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account",
+        "tag": "A",
+        "text": "계정 설정",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/google",
+        "tag": "A",
+        "text": "Google 서비스",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/drive",
+        "tag": "A",
+        "text": "내 Drive",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/mail",
+        "tag": "A",
+        "text": "Gmail",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "다른 계정으로 로그인",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "메뉴",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1",
+        "tag": "A",
+        "text": "개요",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/schedules",
+        "tag": "A",
+        "text": "일정",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/members",
+        "tag": "A",
+        "text": "구성원",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/files",
+        "tag": "A",
+        "text": "파일",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/projects/p1/calendar",
+        "tag": "A",
+        "text": "Calendar 설정",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/",
+        "tag": "A",
+        "text": "프로젝트 선택",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "구성원 초대",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "SELECT",
+        "text": "구성원 역할",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "SELECT",
+        "text": "구성원 역할",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "SELECT",
+        "text": "구성원 역할",
+        "type": null
+      },
+      {
+        "disabled": true,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "이전",
+        "type": null
+      },
+      {
+        "disabled": true,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "다음",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "×",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "다시 시도",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "초대 상태 다시 확인",
+        "type": "button"
+      },
+      {
+        "disabled": true,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "초대 만들기",
+        "type": "button"
+      }
+    ],
+    "layout": {
+      "scroll": 375,
+      "width": 390
+    }
+  },
+  {
+    "name": "invite",
+    "route": "/invitations/t1",
+    "controls": [
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "본문으로 건너뛰기",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": "#/",
+        "tag": "A",
+        "text": "AIAI ERP",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account",
+        "tag": "A",
+        "text": "계정 설정",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/google",
+        "tag": "A",
+        "text": "Google 서비스",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/drive",
+        "tag": "A",
+        "text": "내 Drive",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/mail",
+        "tag": "A",
+        "text": "Gmail",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "다른 계정으로 로그인",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "초대 수락",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "초대 거절",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/",
+        "tag": "A",
+        "text": "프로젝트 선택",
+        "type": null
+      }
+    ],
+    "layout": {
+      "scroll": 390,
+      "width": 390
+    }
+  },
+  {
+    "name": "calendar",
+    "route": "/calendar",
+    "controls": [
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "본문으로 건너뛰기",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": "#/",
+        "tag": "A",
+        "text": "AIAI ERP",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account",
+        "tag": "A",
+        "text": "계정 설정",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/google",
+        "tag": "A",
+        "text": "Google 서비스",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/drive",
+        "tag": "A",
+        "text": "내 Drive",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/mail",
+        "tag": "A",
+        "text": "Gmail",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "다른 계정으로 로그인",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "연결 상태 새로고침",
+        "type": "button"
+      }
+    ],
+    "layout": {
+      "scroll": 390,
+      "width": 390
+    }
+  },
+  {
+    "name": "unknown",
+    "route": "/unknown",
+    "controls": [
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "본문으로 건너뛰기",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": "#/",
+        "tag": "A",
+        "text": "AIAI ERP",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account",
+        "tag": "A",
+        "text": "계정 설정",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/google",
+        "tag": "A",
+        "text": "Google 서비스",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/drive",
+        "tag": "A",
+        "text": "내 Drive",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/mail",
+        "tag": "A",
+        "text": "Gmail",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "다른 계정으로 로그인",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": "#/",
+        "tag": "A",
+        "text": "프로젝트 선택",
+        "type": null
+      }
+    ],
+    "layout": {
+      "scroll": 390,
+      "width": 390
+    }
+  },
+  {
+    "name": "missing",
+    "route": "/projects/missing",
+    "controls": [
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "본문으로 건너뛰기",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": "#/",
+        "tag": "A",
+        "text": "AIAI ERP",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account",
+        "tag": "A",
+        "text": "계정 설정",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/google",
+        "tag": "A",
+        "text": "Google 서비스",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/drive",
+        "tag": "A",
+        "text": "내 Drive",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": "#/account/mail",
+        "tag": "A",
+        "text": "Gmail",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "다른 계정으로 로그인",
+        "type": "button"
+      },
+      {
+        "disabled": false,
+        "href": "#/",
+        "tag": "A",
+        "text": "프로젝트 선택",
+        "type": null
+      },
+      {
+        "disabled": false,
+        "href": null,
+        "tag": "BUTTON",
+        "text": "접근 상태 다시 확인",
+        "type": "button"
+      }
+    ],
+    "layout": {
+      "scroll": 390,
+      "width": 390
+    }
+  }
+]

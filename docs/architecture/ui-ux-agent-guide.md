@@ -10,6 +10,7 @@
 | --- | --- | --- | --- |
 | `router` | `ai-erp-router` | `gpt-5.6-sol`/`medium`, `deep` tier | 요청 분류, 범위를 정한 작업 지시(`bounded assignment`) 작성, 근거 수집. read-only |
 | `ui-ux-designer` | `ai-erp-ui-ux-designer` | `gpt-5.6-sol`/`medium`, `deep` tier | 화면·흐름·상태·접근성 계획. 구현 코드와 테스트는 수정하지 않음 |
+| `ui-visual-designer` | `ai-erp-ui-visual-designer` | `gpt-5.6-sol`/`medium`, `deep` tier | 기능 계획 뒤 공유 시각 패턴과 화면 매핑을 제안. read-only이며 어떤 파일도 쓰지 않음 |
 | `reviewer` | `ai-erp-reviewer` | 저장 기본값 `gpt-6-astra`/`high`; 정상 계획 검토는 명시적 Sol/medium 가능 | 위험 등급에 따른 계획·계약·실행 근거의 독립 검토와 `pass/fail` 판정. read-only |
 | `implementer` | `ai-erp-implementer` | `fast`; 기본 `gpt-5.6-luna`/`high` | 상위 에이전트 계약에 따른 코드·테스트·동작 설정 실행과 검증. workspace-write |
 | `product-planner` | `ai-erp-product-planner` | `gpt-5.6-sol`/`medium`, `deep` tier | 제품 증분과 API·데이터·권한 요구사항 계획. 화면·코드·릴리스 판정 없음 |
@@ -25,6 +26,7 @@
 | 요청 유형 | 산출물 순서 | 완료 조건 |
 | --- | --- | --- |
 | 화면 계획만 요청 | `router -> ui-ux-designer -> reviewer` | `ui-plan-review` 통과. 구현자 호출과 코드 변경 없음 |
+| 시각 계획 | `router -> ui-ux-designer -> ui-visual-designer -> reviewer` | 기능 불변조건, 수용된 공유 패턴, 화면별 규칙 매핑을 확인한 `ui-plan-review` |
 | 제품 계획만 요청 | `router -> product-planner -> reviewer` | `increment-plan-review` 통과와 상위 승인. 릴리스 없음 |
 | UI 구현 | `router -> ui-ux-designer -> reviewer -> implementer` | 계획 리뷰 통과, 상위 에이전트 계약 확정, 적용 가능한 구현 검토와 상위 최종 승인 |
 | 비 UI 구현 | `router -> implementer` | 상위 에이전트 계약 확정, 위험 등급에 따른 검사·검토 또는 부모 수락 |
@@ -32,6 +34,10 @@
 상위 에이전트는 고위험·복합 작업의 `TASK-ASSIGNMENT.md`에 범위와 revision을 확정해 dispatch하고, bounded low/standard 작업은 `TASK-RECORD.md`에 최소 assignment·acknowledgement·result를 담을 수 있다. 수신자는 승인된 범위만 실행한 뒤 결과와 검사 근거를 반환하고, 상위 에이전트는 위험 등급에 따라 부모 수락 또는 필요한 독립 검토를 적용한다. 필요한 검토가 통과하고 상위 에이전트가 acceptance를 기록해야 해당 게이트가 완료되며, 실패하면 `changes-requested`로 반환한다. 디자이너에서 구현자로 바로 넘기는 우회와 구현자에서 라우터·리뷰어로 되돌리는 DAG 연결은 사용하지 않는다. 화면 구현은 계획과 `ui-plan-review`가 먼저 있어야 한다. 백엔드, 스크립트, 루트 빌드·설정, 테스트와 동작을 바꾸는 설정도 같은 상위 에이전트 계약 및 경량 구현자 경로에 포함한다.
 
 제품 계획은 `product-planner`가 `INCREMENT-PLAN.md`로 작성하고 정상 `increment-plan-review`는 read-only Sol/medium, 고위험 계획은 Astra/high로 검토한다. 화면 계획과 상태·상호작용은 `ui-ux-designer`가 `SCREEN-PLAN.md`로 작성하고 정상 `ui-plan-review`는 Sol/medium, 고위험 화면 계획은 Astra/high로 검토한다. 고위험·복합 구현은 `IMPLEMENTATION-CONTRACT.md`의 승인된 범위에서 수행하고 bounded low/standard 구현은 `TASK-RECORD.md`를 사용할 수 있다. 릴리스 준비는 `RELEASE-CONTRACT.md`와 `release-manager`가 맡고 고위험 릴리스 검토는 Astra/high를 사용한다. 배포 실행은 상위 승인 뒤에만 가능하며 same-SHA CI, 관찰, 롤백과 복구 상태를 별도로 기록한다.
+
+`ai-erp-ui-visual-design`은 `ui-ux-designer`가 선택한 세 가지 고정 UX 스킬의 관련 근거를 전달받아 사용한다. 먼저 기존 토큰·컴포넌트·문서를 `observed`, `candidate`, `accepted`로 구분한다. 수용된 ID/version이 없거나 서로 충돌하면 화면별 스타일을 임의로 정하지 않고 하나의 공유 `VISUAL-DESIGN-CONTRACT.md`를 리뷰와 상위 승인에 보낸다. `VISUAL-CHANGE-PLAN.md`는 모든 화면을 규칙 ID에 연결한다.
+
+허용 범위는 간격, 정렬, 배치, 크기, 타이포그래피, 색상 토큰, 테두리, 표면, 밀도와 반응형 표현이다. 액션·라우트·API·상태·권한·검증·데이터와 컬럼·콘텐츠·DOM/키보드 의미·접근 가능한 이름·표시 조건을 보존하며, 액션을 메뉴로 숨기거나 클릭 단계를 추가하지 않는다. 캘린더의 `top`, `minHeight`, `left`, `width`처럼 데이터 의미를 인코딩하는 레이아웃 값은 기능적 표현으로 취급한다. 실제 네이티브 역할 발견과 브라우저 검증은 정적 설정 검증과 구분해 기록한다.
 
 외부 API/OAuth 연동은 계정·tenant·프로젝트, 계약 버전, enablement·permission·callback, 키 이름(비밀값 제외), 외부 소유자와 현재 readiness check를 assignment에 적는다. 필수 설정이 `missing` 또는 `unknown`이면 의존하는 편집·실행을 중단하고 `BLOCKER-REPORT`를 반환한다. 선택지는 외부 소유자가 설정 제공, 검증된 기존 연동 사용, 명시적 오프라인 대안 승인이다. goal-mode 지속 실행은 차단을 우회하지 않으며, 재개에는 새 근거와 최신 plan/contract/review 및 상위 assignment 확인이 필요하다.
 

@@ -1,0 +1,58 @@
+{
+  "days": [
+    {
+      "height": "260px",
+      "position": "relative",
+      "style": null
+    },
+    {
+      "height": "260px",
+      "position": "relative",
+      "style": null
+    },
+    {
+      "height": "260px",
+      "position": "relative",
+      "style": null
+    },
+    {
+      "height": "260px",
+      "position": "relative",
+      "style": null
+    },
+    {
+      "height": "260px",
+      "position": "relative",
+      "style": null
+    },
+    {
+      "height": "260px",
+      "position": "relative",
+      "style": null
+    },
+    {
+      "height": "260px",
+      "position": "relative",
+      "style": null
+    }
+  ],
+  "events": [
+    {
+      "height": "64.7812px",
+      "minHeight": "4.16667%",
+      "position": "absolute",
+      "style": "top: 41.6667%; min-height: 4.16667%; left: 0%; width: 100%;",
+      "text": "10:00–11:00 9월 운영 일정 확정확정",
+      "top": "108.328px"
+    },
+    {
+      "height": "64.7812px",
+      "minHeight": "4.16667%",
+      "position": "absolute",
+      "style": "top: 41.6667%; min-height: 4.16667%; left: 0%; width: 100%;",
+      "text": "10:00–11:00 9월 고객 동기화 점검초안",
+      "top": "108.328px"
+    }
+  ],
+  "rootFont": "16px"
+}

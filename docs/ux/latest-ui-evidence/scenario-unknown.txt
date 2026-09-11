@@ -1,0 +1,33 @@
+- main:
+  - button "본문으로 건너뛰기"
+  - link "AI ERP":
+    - /url: "#/"
+    - generic: AI
+    - generic: AI ERP
+  - generic "김관리자 ⌄"
+  - paragraph: 개인 Google
+  - heading "Gmail" [level=1]
+  - paragraph: 메일을 읽고 검토한 뒤 직접 보낼 수 있습니다. 목록을 열어도 읽음 상태는 바뀌지 않습니다.
+  - button "메일 작성"
+  - tablist "메일함":
+    - tab "받은편지함" [selected]
+    - tab "보낸편지함"
+  - text: 메일 검색
+  - textbox "메일 검색"
+  - button "검색"
+  - button "검색 지우기"
+  - list "받은편지함":
+    - button "9월 운영 일정 안내 partner@example.com 이번 주 운영 일정을 확인해 주세요.":
+      - strong: 9월 운영 일정 안내
+      - generic: partner@example.com
+      - generic: 이번 주 운영 일정을 확인해 주세요.
+    - time: 2026. 9. 9. 오후 5:00:00
+    - button "프로젝트 브리핑 manager@example.com 프로젝트 진행 현황을 공유합니다.":
+      - strong: 프로젝트 브리핑
+      - generic: manager@example.com
+      - generic: 프로젝트 진행 현황을 공유합니다.
+    - time: 2026. 9. 8. 오후 5:00:00
+  - navigation "메일 페이지 이동":
+    - button "이전" [disabled]
+    - generic: 받은편지함
+    - button "다음" [disabled]

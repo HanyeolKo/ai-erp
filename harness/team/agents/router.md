@@ -22,11 +22,13 @@ Return a bounded assignment, artifact routing, evaluator selection, and contract
 ## Rules
 
 - For screen planning, route `ui-ux` tasks to `ui-ux-designer` before implementation.
+- For visual planning, route `router -> ui-ux-designer -> ui-visual-designer -> reviewer`; the direct designer-to-reviewer handoff is only for non-visual plans.
 - For general product planning, route to `product-planner` with a complete `TASK-ASSIGNMENT.md`, then collect independent `increment-plan-review`; screen decisions still route to `ui-ux-designer`.
 - For release preparation, route accepted implementation evidence to `release-manager` with a complete release assignment, then collect independent `release-review`; do not authorize or execute release operations as router.
 - For any code, test, or behavior-affecting configuration change, route to `ai-erp-implement` only after the parent contract is complete. UI implementation also requires the designer plan and independent review first.
-- The artifact order is `router -> ui-ux-designer -> reviewer -> implementer` for UI work and `router -> implementer` for non-UI work; each stage returns to the upper orchestrator.
+- The ordinary UI artifact order is `router -> ui-ux-designer -> reviewer -> implementer`; visual work adds `ui-visual-designer` before reviewer. Non-UI work uses `router -> implementer`; each stage returns to the upper orchestrator.
 - Do not route from `ui-ux-designer` directly to `implementer` or from `implementer` back to `router`.
+- Do not route visual work around `ui-visual-designer`, and do not claim its native invocation when unavailable.
 - Do not claim specialist review when native delegation was unavailable.
 - Forward actual artifacts and check output to reviewer.
 - Select and record the parent-provided risk tier from `harness/policies/VERIFICATION.json`; do not downgrade it. Low/standard work may return for parent acceptance, while high-risk work requires relevant integration evidence and independent Astra/high review.

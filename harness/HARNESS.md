@@ -6,6 +6,8 @@ Read in order: `harness-spec.json`, `state/state.json`, the entry skill, the rel
 
 All product planning requests pass through `product-planner`; accepted plans requiring screens then pass through `ui-ux-designer` before any design output or UI code decisions.
 
+Visual planning continues through the read-only `ui-visual-designer` after the functional `ui-ux-designer` plan, then reaches `reviewer` for independent `ui-plan-review`. The visual specialist proposes shared patterns and presentation changes only.
+
 All code, test, and behavior-affecting configuration requests must pass through `implementer` with an explicit parent-owned contract. High/complex work uses `IMPLEMENTATION-CONTRACT.md`; bounded low/standard work may use the compact `TASK-RECORD.md` as its assignment/contract/result record. Verification tier and checks follow `policies/VERIFICATION.json`.
 Allowed implementation domains are frontend, backend, scripts, infra, .github, and root build/config files plus tests and behavior-affecting configuration.
 Implementation that touches screens still requires the specialist plan, a passing `ui-plan-review`, and contract evidence.
@@ -17,9 +19,10 @@ Implementation that touches screens still requires the specialist plan, a passin
 - Product-planner owns bounded product increments and cross-layer requirements; reviewer independently evaluates plans with `increment-plan-review`.
 - Release-manager prepares authorized release/recovery evidence; reviewer independently evaluates it with `release-review`. Readiness is distinct from deployment completion.
 - Designer writes planning/docs only for UI work.
+- Visual designer writes no production files and returns bounded proposals to the parent.
 - Implementer executes the approved contract and verification commands.
 - Reviewer is the independent verdict owner when the selected policy gate requires review; parent acceptance owns low/standard completion, while high-risk completion requires reviewer pass.
-- UI artifact order is `router -> ui-ux-designer -> reviewer -> implementer`; product planning is `router -> product-planner -> reviewer`, then accepted screen work may enter the UI route. Release preparation uses accepted implementation evidence -> `release-manager` -> `release-review`. Non-UI artifact order is `router -> implementer`, followed by the applicable policy gate. No designer shortcut or reverse implementation edge exists.
+- Ordinary UI artifact order is `router -> ui-ux-designer -> reviewer -> implementer`; visual artifact order is `router -> ui-ux-designer -> ui-visual-designer -> reviewer -> implementer`. Product planning is `router -> product-planner -> reviewer`, then accepted screen work may enter the UI route. Release preparation uses accepted implementation evidence -> `release-manager` -> `release-review`. Non-UI artifact order is `router -> implementer`, followed by the applicable policy gate. No designer shortcut or reverse implementation edge exists.
 
 ## Scope and evidence
 

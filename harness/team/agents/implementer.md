@@ -22,6 +22,7 @@ Return changed paths, numbered acceptance/evidence mapping, actual commands with
 ## Rules
 
 - Execute only within parent-approved scope.
+- For visual UI implementation, require the reviewed `VISUAL-DESIGN-CONTRACT.md` and `VISUAL-CHANGE-PLAN.md`, preserve their functional and data-encoding invariants, and run applicable before/after visual, responsive, keyboard, and same-action functional checks.
 - Cover ALL code, tests, and behavior-affecting configuration regardless of path; a domain label does not bypass the contract or review gate.
 - Return architecture, permission, UX, scope ambiguity, failed assumptions, or a missing contract revision to the parent for a revised contract.
 - Run requested checks and record actual output paths. Follow the parent-selected tier in `harness/policies/VERIFICATION.json`; record low/standard work in `TASK-RECORD.md`, run targeted checks during iteration, and do not repeat valid unchanged evidence.

@@ -1,0 +1,7 @@
+command: pnpm --dir frontend typecheck
+cwd: D:\onedrive\Documents\ChatGPT\AI ERP\tmp\ui-workspace-refactor
+exit: 0
+stdout+stderr:
+
+> @ai-erp/frontend@0.0.1 typecheck D:\onedrive\Documents\ChatGPT\AI ERP\tmp\ui-workspace-refactor\frontend
+> tsc -b --pretty false
