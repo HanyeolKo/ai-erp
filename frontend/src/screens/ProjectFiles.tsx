@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, type DriveFile } from "../api/client";
+import { saveGoogleReturnContext } from "../google-return-context";
 import { captureSession, isSessionContextActive } from "../session";
-import { capabilities, keys, useProject } from "../state";
+import { capabilities, keys, useMe, useProject } from "../state";
 import { Dialog, Link, Notice, ProjectMissing, QueryState, Shell } from "../ui";
 import "./GoogleWorkspace.css";
 
@@ -21,7 +22,8 @@ function isGoogleDriveUrl(value: string) {
 
 export function ProjectFiles({ id }: { id: string }) {
   const project = useProject(id);
-  const connection = useQuery({ queryKey: keys.googleConnection, queryFn: api.googleConnection });
+  const me = useMe();
+  const connection = useQuery({ queryKey: keys.googleConnection, queryFn: api.googleConnection, refetchOnMount: "always" });
   const connectionReady = connection.isSuccess && !connection.isFetching;
   const visibleConnection = connectionReady ? connection.data : undefined;
   const qc = useQueryClient();
@@ -31,13 +33,13 @@ export function ProjectFiles({ id }: { id: string }) {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
   const files = useQuery({ queryKey: [...keys.projectFiles(id), page], queryFn: () => api.projectFiles(id, String(page)), enabled: !!project.data });
-  const drive = useQuery({ queryKey: [...keys.driveFiles, search], queryFn: () => api.driveFiles(search), enabled: pickerOpen && connection.isSuccess && !connection.isFetching && connection.data.drive.status === "CONNECTED" });
+  const drive = useQuery({ queryKey: [...keys.driveFiles, search], queryFn: () => api.driveFiles(search), enabled: pickerOpen && connection.isSuccess && !connection.isFetching && !connection.data.configurationRequired && connection.data.drive.status === "CONNECTED" });
   useEffect(() => {
-    if (connectionReady && visibleConnection?.drive.status !== "CONNECTED") {
+    if (connectionReady && (visibleConnection?.configurationRequired || visibleConnection?.drive.status !== "CONNECTED")) {
       setPickerOpen(false);
       setSelected(undefined);
     }
-  }, [connectionReady, visibleConnection?.drive.status]);
+  }, [connectionReady, visibleConnection?.configurationRequired, visibleConnection?.drive.status]);
   const attach = useMutation({
     mutationFn: (fileId: string) => api.attachProjectFile(id, fileId),
     onMutate: captureSession,
@@ -50,13 +52,18 @@ export function ProjectFiles({ id }: { id: string }) {
   });
   if (!project.isSuccess) return <Shell><QueryState query={project} /></Shell>;
   if (!project.data) return <Shell><ProjectMissing onRetry={() => project.refetch()} isFetching={project.isFetching} /></Shell>;
-  const canAttach = capabilities(project.data, "", undefined).create && project.data.role !== "VIEWER" && visibleConnection?.drive.status === "CONNECTED";
+  const canAttach = capabilities(project.data, "", undefined).create && project.data.role !== "VIEWER" && visibleConnection?.configurationRequired !== true && visibleConnection?.drive.status === "CONNECTED";
+  const openGoogleSettings = () => {
+    if (me.data?.id) saveGoogleReturnContext(me.data.id, `/projects/${id}/files`);
+  };
+  const googleSettingsHref = `#/account/google?returnTo=${encodeURIComponent(`/projects/${id}/files`)}`;
   return <Shell project={project.data}>
     <div className="google-page project-files-page">
       <header className="page-heading"><div><p className="eyebrow">{project.data.name}</p><h1>프로젝트 파일</h1><p className="lead">선택한 Drive 파일의 이름과 링크만 프로젝트 참조로 보관합니다.</p></div>{canAttach && <button type="button" className="button button-primary" onClick={() => setPickerOpen(true)}>Drive 파일 첨부</button>}</header>
       <p className="google-note">파일 이름과 링크가 이 프로젝트의 구성원에게 표시됩니다. Google Drive의 파일 접근 권한은 변경되지 않습니다.</p>
       <QueryState query={connection} loadingMessage="Google 연결 상태를 확인하는 중…" />
-      {visibleConnection && visibleConnection.drive.status !== "CONNECTED" && <div className="google-blocked"><p>Drive 권한을 연결하면 프로젝트에 파일 참조를 추가할 수 있습니다.</p><Link className="button button-secondary" to="/account/google">Google 연결 설정</Link></div>}
+      {visibleConnection && visibleConnection.configurationRequired && <div className="google-blocked"><strong>현재 Google 연결을 시작할 수 없습니다.</strong><p>서비스 설정이 완료되지 않아 Drive 권한 연결을 시작할 수 없습니다. 관리자에게 Google Workspace 설정을 요청해 주세요.</p><a className="button button-secondary" href={googleSettingsHref} onClick={openGoogleSettings}>Google 연결 설정</a></div>}
+      {visibleConnection && !visibleConnection.configurationRequired && visibleConnection.drive.status !== "CONNECTED" && <div className="google-blocked"><p>Drive 권한을 연결하면 프로젝트에 파일 참조를 추가할 수 있습니다.</p><a className="button button-secondary" href={googleSettingsHref} onClick={openGoogleSettings}>Google 연결 설정</a></div>}
       <QueryState query={files} loadingMessage="프로젝트 파일을 불러오는 중…" />
       {files.isSuccess && (files.data.files.length ? <ul className="project-file-list">{files.data.files.map((file) => <li key={file.id}><div><strong>{file.name || "이름 없는 파일"}</strong><span>{file.mimeType}</span><span>첨부자 {file.attachedBy} · {dateLabel(file.attachedAt)}</span></div><div className="action-row">{isGoogleDriveUrl(file.url) && <a href={file.url} target="_blank" rel="noreferrer">Google Drive에서 열기</a>}{file.canRemove && <button type="button" disabled={remove.isPending} onClick={() => { if (window.confirm("프로젝트 참조만 제거하며 Drive 원본은 삭제하지 않습니다.")) remove.mutate(file.id); }}>첨부 제거</button>}</div></li>)}</ul> : <div className="empty-state"><h2>첨부된 프로젝트 파일이 없습니다</h2><p>필요한 파일을 선택해 프로젝트 참조로 추가하세요.</p></div>)}
       {files.isSuccess && <nav className="pagination" aria-label="프로젝트 파일 페이지 이동"><button type="button" disabled={page === 0 || files.isFetching} onClick={() => setPage(page - 1)}>이전</button><span>{page + 1} 페이지 · 최대 25개</span><button type="button" disabled={!files.data.hasNext || files.isFetching} onClick={() => setPage(page + 1)}>다음</button></nav>}
@@ -64,7 +71,7 @@ export function ProjectFiles({ id }: { id: string }) {
     </div>
     <Dialog open={pickerOpen} title={`${project.data.name}에 Drive 파일 첨부`} onClose={() => { setPickerOpen(false); setSelected(undefined); }} labelledBy="drive-picker-title">
       <p>파일 한 개를 선택하고 이름과 종류를 확인한 뒤 첨부하세요.</p><p className="google-note">Google Drive의 파일 접근 권한은 변경되지 않습니다.</p>
-      {visibleConnection?.drive.status === "CONNECTED" ? <><form className="drive-search" onSubmit={(event) => { event.preventDefault(); setSearch(searchDraft.trim()); }}><label>파일 이름 검색<input value={searchDraft} onChange={(event) => setSearchDraft(event.target.value)} /></label><button type="submit">검색</button><button type="button" onClick={() => { setSearchDraft(""); setSearch(""); }}>검색 지우기</button></form><QueryState query={drive} loadingMessage="Drive 파일을 불러오는 중…" />{drive.isSuccess && !drive.isFetching && (drive.data.files.length ? <ul className="drive-file-list">{drive.data.files.map((file) => <li key={file.id} className={selected?.id === file.id ? "is-selected" : ""}><button type="button" onClick={() => setSelected(file)}><strong>{file.name || "이름 없는 파일"}</strong><span>{file.mimeType}</span><time dateTime={file.modifiedTime}>{dateLabel(file.modifiedTime)}</time></button></li>)}</ul> : <p>{search ? "검색 결과가 없습니다." : "Drive 파일이 없습니다."}</p>)}{selected && <div className="selection-summary"><strong>선택한 파일</strong><span>{selected.name || "이름 없는 파일"} · {selected.mimeType}</span><button className="button button-primary" type="button" disabled={attach.isPending} onClick={() => attach.mutate(selected.id)}>{attach.isPending ? "첨부하는 중…" : "첨부"}</button></div>}</> : <p>Drive 권한을 먼저 연결해 주세요.</p>}
+      {visibleConnection?.configurationRequired ? <p>서비스 설정이 완료된 뒤 Drive 권한을 연결할 수 있습니다.</p> : visibleConnection?.drive.status === "CONNECTED" ? <><form className="drive-search" onSubmit={(event) => { event.preventDefault(); setSearch(searchDraft.trim()); }}><label>파일 이름 검색<input value={searchDraft} onChange={(event) => setSearchDraft(event.target.value)} /></label><button type="submit">검색</button><button type="button" onClick={() => { setSearchDraft(""); setSearch(""); }}>검색 지우기</button></form><QueryState query={drive} loadingMessage="Drive 파일을 불러오는 중…" />{drive.isSuccess && !drive.isFetching && (drive.data.files.length ? <ul className="drive-file-list">{drive.data.files.map((file) => <li key={file.id} className={selected?.id === file.id ? "is-selected" : ""}><button type="button" onClick={() => setSelected(file)}><strong>{file.name || "이름 없는 파일"}</strong><span>{file.mimeType}</span><time dateTime={file.modifiedTime}>{dateLabel(file.modifiedTime)}</time></button></li>)}</ul> : <p>{search ? "검색 결과가 없습니다." : "Drive 파일이 없습니다."}</p>)}{selected && <div className="selection-summary"><strong>선택한 파일</strong><span>{selected.name || "이름 없는 파일"} · {selected.mimeType}</span><button className="button button-primary" type="button" disabled={attach.isPending} onClick={() => attach.mutate(selected.id)}>{attach.isPending ? "첨부하는 중…" : "첨부"}</button></div>}</> : <p>Drive 권한을 먼저 연결해 주세요.</p>}
     </Dialog>
   </Shell>;
 }

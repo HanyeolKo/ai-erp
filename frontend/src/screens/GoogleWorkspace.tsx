@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   api,
@@ -8,8 +8,9 @@ import {
   type MailMessage,
   type MailSendReceipt,
 } from "../api/client";
-import { captureSession, isSessionContextActive } from "../session";
-import { keys } from "../state";
+import { captureSession, isSessionContextActive, SESSION_EXPIRED_EVENT } from "../session";
+import { clearGoogleReturnContext, consumeGoogleReturnContext, getGoogleReturnContext, isGoogleProjectFilesPath, saveGoogleReturnContext, type GoogleReturnContext } from "../google-return-context";
+import { keys, useMe } from "../state";
 import { Dialog, Link, Notice, QueryState, Shell } from "../ui";
 import "./GoogleWorkspace.css";
 
@@ -83,9 +84,69 @@ function ConnectionCard({
   );
 }
 
-export function GoogleWorkspace() {
+const knownOutcomes = new Set(["connected", "cancelled", "denied", "failed", "permission_required"]);
+
+export function GoogleWorkspace({ queryString }: { queryString?: string }) {
   const qc = useQueryClient();
-  const connection = useQuery({ queryKey: keys.googleConnection, queryFn: api.googleConnection });
+  const me = useMe();
+  const connection = useQuery({ queryKey: keys.googleConnection, queryFn: api.googleConnection, refetchOnMount: "always" });
+  const identity = me.data?.id;
+  const query = queryString ?? window.location.hash.split("?")[1] ?? "";
+  const routeQuery = new URLSearchParams(query);
+  const rawOutcome = routeQuery.get("outcome")?.toLowerCase();
+  const knownOutcome = rawOutcome && knownOutcomes.has(rawOutcome) ? rawOutcome : undefined;
+  const requestedReturnTo = routeQuery.get("returnTo");
+  const explicitReturnTo = isGoogleProjectFilesPath(requestedReturnTo) ? requestedReturnTo : undefined;
+  const routeMode = knownOutcome ? `outcome:${knownOutcome}` : explicitReturnTo ? `entry:${explicitReturnTo}` : rawOutcome ? `unknown:${rawOutcome}` : "direct";
+  const [returnContext, setReturnContext] = useState<GoogleReturnContext>();
+  const handledRoute = useRef<string | undefined>(undefined);
+  const previousIdentity = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (!me.isSuccess || !identity) return;
+    const routeKey = `${identity}:${routeMode}`;
+    if (previousIdentity.current && previousIdentity.current !== identity) {
+      clearGoogleReturnContext();
+      setReturnContext(undefined);
+      previousIdentity.current = identity;
+      handledRoute.current = routeKey;
+      return;
+    }
+    previousIdentity.current = identity;
+    if (handledRoute.current === routeKey) return;
+    handledRoute.current = routeKey;
+    if (knownOutcome) {
+      setReturnContext(consumeGoogleReturnContext(identity));
+    } else if (explicitReturnTo) {
+      saveGoogleReturnContext(identity, explicitReturnTo);
+      setReturnContext(getGoogleReturnContext(identity));
+    } else {
+      clearGoogleReturnContext();
+      setReturnContext(undefined);
+    }
+  }, [explicitReturnTo, identity, knownOutcome, me.isSuccess, routeMode]);
+  useEffect(() => {
+    if (!returnContext) return;
+    if (!identity || returnContext.userId !== identity) {
+      setReturnContext(undefined);
+      return;
+    }
+    const remaining = 10 * 60 * 1000 - (Date.now() - returnContext.createdAt);
+    if (remaining <= 0) {
+      clearGoogleReturnContext();
+      setReturnContext(undefined);
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      clearGoogleReturnContext();
+      setReturnContext(undefined);
+    }, remaining);
+    return () => window.clearTimeout(timer);
+  }, [identity, returnContext]);
+  useEffect(() => {
+    const clearOnSessionEnd = () => setReturnContext(undefined);
+    window.addEventListener(SESSION_EXPIRED_EVENT, clearOnSessionEnd);
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, clearOnSessionEnd);
+  }, []);
   const [authorizationUrl, setAuthorizationUrl] = useState<string>();
   const [authorizationError, setAuthorizationError] = useState("");
   const safeAuthorizationUrl = (value: string) => {
@@ -95,6 +156,15 @@ export function GoogleWorkspace() {
     } catch {
       return "";
     }
+  };
+  const preserveReturnContextForConsent = () => {
+    if (!returnContext || !identity || returnContext.userId !== identity) {
+      clearGoogleReturnContext();
+      setReturnContext(undefined);
+      return;
+    }
+    if (!saveGoogleReturnContext(returnContext.userId, returnContext.returnTo, returnContext.createdAt))
+      setReturnContext(undefined);
   };
   const connect = useMutation({
     mutationFn: (feature: "DRIVE" | "GMAIL" | "CALENDAR") => api.connectGoogle(feature),
@@ -127,15 +197,23 @@ export function GoogleWorkspace() {
     },
   });
   const data = connection.isSuccess && !connection.isFetching ? connection.data as GoogleConnection : undefined;
-  const outcome = new URLSearchParams(window.location.hash.split("?")[1] || "").get("outcome");
-  const outcomeLabels: Record<string, string> = { CONNECTED: "Google 서비스 연결이 완료되었습니다.", connected: "Google 서비스 연결이 완료되었습니다.", CANCELLED: "Google 권한 연결을 취소했습니다.", cancelled: "Google 권한 연결을 취소했습니다.", denied: "Google 권한 연결을 취소했습니다.", FAILED: "Google 서비스 연결을 완료하지 못했습니다.", failed: "Google 서비스 연결을 완료하지 못했습니다.", PERMISSION_REQUIRED: "필요한 Google 권한이 승인되지 않았습니다." };
+  const outcomeLabels: Record<string, string> = {
+    connected: "인증 화면에서 돌아왔습니다. 아래 연결 상태를 확인하세요.",
+    cancelled: "Google 권한 연결을 취소했습니다. 아래 연결 상태를 확인하세요.",
+    denied: "Google 권한이 승인되지 않았습니다. 아래 연결 상태를 확인하세요.",
+    failed: "Google 서비스 연결을 완료하지 못했습니다. 아래 연결 상태를 확인하세요.",
+    permission_required: "필요한 Google 권한이 승인되지 않았습니다. 아래 연결 상태를 확인하세요.",
+  };
   return (
     <Shell>
       <div className="google-page narrow-page">
         <p className="eyebrow">개인 Google</p>
         <h1>Google 서비스</h1>
+        <Link className="button button-secondary" to={returnContext?.returnTo ?? "/account"}>
+          {returnContext ? "프로젝트 파일로 돌아가기" : "내 계정으로 돌아가기"}
+        </Link>
         <p className="lead">이 연결은 내 계정에만 적용됩니다. 메일과 Drive 목록은 다른 프로젝트 구성원에게 보이지 않습니다.</p>
-        {outcome && outcomeLabels[outcome] && <p className="google-connect-next" role="status">{outcomeLabels[outcome]}</p>}
+        {knownOutcome && <p className="google-connect-next" role="status">{outcomeLabels[knownOutcome]}</p>}
         <QueryState query={connection} loadingMessage="Google 연결 상태를 확인하는 중…" />
         {data && !data.configurationRequired && (
           <>
@@ -152,7 +230,7 @@ export function GoogleWorkspace() {
             {authorizationUrl && (
               <div className="google-connect-next" role="status">
                 <p>Google 동의 화면을 열어 필요한 권한을 확인하세요.</p>
-                <a className="button button-primary" href={authorizationUrl}>Google 동의 화면 열기</a>
+                 <a className="button button-primary" href={authorizationUrl} onClick={preserveReturnContextForConsent}>Google 동의 화면 열기</a>
               </div>
             )}
             <p className="google-note">Google 서비스 연결을 해제하면 AI ERP에 저장된 서비스 연결 정보와 개인 목록 캐시를 지웁니다. Google 로그인과 원본 파일·메일·캘린더는 유지됩니다.</p>
@@ -161,7 +239,15 @@ export function GoogleWorkspace() {
             </button>
           </>
         )}
-        {data?.configurationRequired && <p className="google-note">Google Workspace가 아직 구성되지 않았습니다.</p>}
+        {data?.configurationRequired && (
+          <section className="google-blocked" aria-label="Google 연결 서비스 설정 필요">
+            <strong>현재 Google 연결을 시작할 수 없습니다.</strong>
+            <p>서비스 설정이 완료된 뒤에 개인 Google 권한 연결을 시작할 수 있습니다. 관리자에게 Google Workspace 설정을 요청해 주세요.</p>
+            <button type="button" className="button button-secondary" disabled={connection.isFetching} onClick={() => connection.refetch()}>
+              연결 상태 다시 확인
+            </button>
+          </section>
+        )}
         {connect.isError && <Notice error={connect.error} />}
         {authorizationError && <p className="field-error" role="alert">{authorizationError}</p>}
         {disconnect.isError && <Notice error={disconnect.error} />}

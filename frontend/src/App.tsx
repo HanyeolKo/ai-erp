@@ -34,6 +34,7 @@ function Routes() {
   const [path, setPath] = useState(
     () => window.location.hash.replace(/^#/, "") || "/",
   );
+  const [pathname, queryString = ""] = path.split("?", 2);
   const previousPath = useRef(path);
   useEffect(() => {
     const change = () => setPath(window.location.hash.replace(/^#/, "") || "/");
@@ -66,7 +67,7 @@ function Routes() {
       <JoinPreview key={join[1].toUpperCase()} code={join[1].toUpperCase()} />
     );
   if (path === "/account") return <Account />;
-  if (path === "/account/google") return <GoogleWorkspace />;
+  if (pathname === "/account/google") return <GoogleWorkspace key={path} queryString={queryString} />;
   if (path === "/account/drive") return <Drive />;
   if (path === "/account/mail") return <Gmail />;
   if (path === "/notifications") return <Notifications />;
