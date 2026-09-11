@@ -1,0 +1,9 @@
+{
+  "page_id": "3d4a8ad6-aa4a-8109-92be-ebf92b418f87",
+  "url": "https://app.notion.com/p/3d4a8ad6aa4a810992beebf92b418f87",
+  "source": "docs/architecture/orchestration-model-policy.md",
+  "source_sha256": "a4c349fd7c840ded888b6502d847b75b3c16ead572272bb84d7226c6b158f127",
+  "sync_date": "2026-09-07",
+  "status": "pending implementation and independent review",
+  "verification": "Fetched archive includes latest Luna/high -> Terra/medium -> Sol/medium ladder, Sol-ceiling self-review, matching hash, and no replacement characters."
+}

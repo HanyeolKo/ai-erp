@@ -1,0 +1,5 @@
+Command: python -B scripts/verify-harness.py
+Exit: 0
+Output:
+Harness verification passed: schema, permissions, DAG, Codex parity, UI routing, and pinned skill bytes.
+Astra owns orchestration/final review; Sol owns lower planning/design; Luna owns implementation/release; executor escalation is Luna -> Terra -> Sol and never Astra.

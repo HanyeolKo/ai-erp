@@ -1,0 +1,158 @@
+{
+  "schema_version": "1.0",
+  "change_id": "lifecycle-management",
+  "mode": "improve",
+  "interview_receipt": {
+    "status": "complete",
+    "decisions": {
+      "purpose": {
+        "value": "Manage iterative product planning and design, frontend/backend implementation, verification, authorized deployment/recovery, and feedback through bounded parent-owned increments.",
+        "source": "request"
+      },
+      "deliverable_type": {
+        "value": "Sequential lifecycle contracts and verification with separate product-planner and release-manager agents, preserving existing specialist/implementer/reviewer boundaries. Includes explicit parent-to-role assignment, acknowledgement, return, independent review and acceptance protocol. Includes user-requested external dependency preflight, first-blocker stop and resolution/resume guidance that goal-mode persistence cannot override. User-priority explicit model orchestration and token-context budgets supersede inherited models and Spark-primary defaults.",
+        "source": "request"
+      },
+      "task_evaluator": {
+        "value": "task-review",
+        "source": "approved-decision"
+      },
+      "operation_mode": {
+        "value": "attended bounded tasks",
+        "source": "approved-decision"
+      },
+      "cost_sensitivity": {
+        "value": "Prioritize task token efficiency: Astra top-level orchestration/final review; Sol/medium lower planning/routing/design; Luna/high execution with Spark alternative; judge-owned Luna -> Terra -> Sol escalation for evidenced capability failures; Sol ceiling triggers orchestrator assignment self-review, never Astra execution.",
+        "source": "request"
+      },
+      "report_language": {
+        "value": "ko",
+        "source": "approved-decision"
+      },
+      "terminology": {
+        "value": "localized",
+        "source": "approved-decision"
+      },
+      "runtime_targets": {
+        "value": [
+          "codex"
+        ],
+        "source": "approved-decision"
+      },
+      "approval_gates": {
+        "value": [
+          "destructive-change",
+          "external-write"
+        ],
+        "source": "approved-decision"
+      },
+      "reporting": {
+        "enabled": {
+          "value": true,
+          "source": "approved-decision"
+        },
+        "reader_destination": {
+          "value": "notion",
+          "source": "approved-decision"
+        },
+        "reader_target": {
+          "value": "345de20d-f69b-4fe8-b79b-a204c819a7f8",
+          "source": "approved-decision"
+        }
+      }
+    },
+    "profile": {
+      "current": "core",
+      "recommended": "core",
+      "selected": "core",
+      "reason_codes": [
+        "bounded-task-work"
+      ],
+      "confirmation_source": "request",
+      "override_reason": null
+    }
+  },
+  "deltas": [
+    {
+      "classification": "modify-proposed",
+      "paths": [
+        "harness/harness-spec.json",
+        "harness/HARNESS.md",
+        "harness/ENVIRONMENT.md",
+        "harness/team/TEAM-ARCHITECTURE.md",
+        "harness/team/agents/router.md",
+        "harness/team/agents/reviewer.md",
+        "harness/team/agents/implementer.md",
+        "harness/skills/ai-erp/SKILL.md",
+        "harness/skills/ai-erp-eval/SKILL.md",
+        "harness/skills/ai-erp-implement/SKILL.md",
+        "harness/skills/ai-erp-verify/SKILL.md",
+        "harness/loops/EXECUTION-LOOP.md",
+        "harness/loops/EVAL-LOOP.md",
+        "harness/recovery/CHECKPOINT.md",
+        "harness/recovery/RECOVERY-PLAYBOOK.md",
+        "harness/templates/IMPLEMENTATION-CONTRACT.md",
+        "harness/templates/IMPLEMENTATION-RESULT.md",
+        "harness/evaluation/TASK-REVIEW-RUBRIC.md",
+        "harness/state/state.json",
+        "harness/ledger/DECISIONS.md",
+        "harness/ledger/journal.jsonl",
+        "harness/ledger/JOURNAL-FORMAT.md",
+        "AGENTS.md",
+        ".agents/skills/ai-erp/SKILL.md",
+        ".agents/skills/ai-erp-eval/SKILL.md",
+        ".agents/skills/ai-erp-implement/SKILL.md",
+        ".agents/skills/ai-erp-verify/SKILL.md",
+        "scripts/verify-harness.py",
+        "scripts/test_verify_harness.py",
+        "docs/architecture/ui-ux-agent-guide.md",
+        "README.md",
+        ".codex/config.toml",
+        "harness/team/agents/ui-ux-designer.md",
+        "harness/skills/ai-erp-ui-ux/SKILL.md",
+        ".agents/skills/ai-erp-ui-ux/SKILL.md",
+        ".codex/agents/ai-erp-router.toml",
+        ".codex/agents/ai-erp-ui-ux-designer.toml",
+        ".codex/agents/ai-erp-reviewer.toml",
+        ".codex/agents/ai-erp-implementer.toml"
+      ],
+      "reason": "Apply user-approved lifecycle responsibilities, add distinct planning and release roles, and strengthen verifier checks while preserving UI prerequisites and approval boundaries."
+    },
+    {
+      "classification": "add",
+      "paths": [
+        "harness/templates/INCREMENT-PLAN.md",
+        "harness/templates/INCREMENT-REVIEW.md",
+        "harness/evaluation/INCREMENT-PLAN-RUBRIC.md",
+        "harness/templates/RELEASE-CONTRACT.md",
+        "harness/templates/RELEASE-RESULT.md",
+        "harness/templates/RELEASE-REVIEW.md",
+        "harness/templates/INCREMENT-RECORD.md",
+        "harness/evaluation/RELEASE-REVIEW-RUBRIC.md",
+        "harness/workflows/INCREMENT-LIFECYCLE.md",
+        "harness/workflows/VERIFICATION-MATRIX.md",
+        "harness/workflows/RELEASE-FLOW.md",
+        "docs/reports/harness-lifecycle-improvements-2026-09-07.md",
+        "harness/team/agents/product-planner.md",
+        "harness/team/agents/release-manager.md",
+        ".codex/agents/ai-erp-product-planner.toml",
+        ".codex/agents/ai-erp-release-manager.toml",
+        "harness/skills/ai-erp-plan/SKILL.md",
+        ".agents/skills/ai-erp-plan/SKILL.md",
+        "harness/skills/ai-erp-release/SKILL.md",
+        ".agents/skills/ai-erp-release/SKILL.md",
+        "harness/templates/TASK-ASSIGNMENT.md",
+        "harness/workflows/DELEGATION-PROTOCOL.md",
+        "harness/workflows/EXTERNAL-DEPENDENCIES.md",
+        "harness/templates/BLOCKER-REPORT.md",
+        "harness/policies/MODEL-ORCHESTRATION.md",
+        "harness/templates/MODEL-USAGE-RECORD.md",
+        "docs/architecture/orchestration-model-policy.md",
+        "harness/templates/MODEL-ESCALATION.md"
+      ],
+      "reason": "Add iterative planning/release contracts, workflow links, task review rubrics and reader report."
+    }
+  ],
+  "conflicts": [],
+  "approval_required": []
+}

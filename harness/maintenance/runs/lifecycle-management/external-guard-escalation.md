@@ -1,0 +1,19 @@
+# Model escalation record
+
+- Task and contract revision: lifecycle-management-stage-3 external operative rule correction, revision 4; source stage-3 contracts plus this bounded amendment.
+- Role: implementer; parent /root retains scope and final acceptance.
+- Failed attempt and expected/actual evidence: stage3 initial Luna guard accepted negation (stage-3-review-1.json); bounded Luna correction still accepts Ignore this rule prefix (final-review-1.json, independent exec chunk86e55e). Expected any changed operative stop/no-retry sentence to fail, actual unchanged keyword inside negated instruction passed.
+- Failure classification: evidenced contract-comprehension/implementation gap; repeated blacklist implementation despite requested exact operative-rule protection. Not an external setup or quota failure.
+- External prerequisite readiness: none; local verifier/test scope only, no external service dependency.
+- Previous model/effort and attempts: gpt-5.6-luna/high initial affected guard and same-model correction; two affected-scope attempts used. Model policy amendments elsewhere are distinct user-changed requirements, not extra external-guard attempts.
+- Selected next model/effort and parent justification: gpt-5.6-terra/medium, next authorized rung, for only the unresolved semantic guard.
+- Exact affected scope: scripts/verify-harness.py and scripts/test_verify_harness.py; return external-guard-terra-result.md/checks.json here. No other source edits, no delegates, no app/API/deploy/config/default model changes. You are not alone; preserve other edits and frozen passed criteria.
+- Context manifest: this record; final-review-1.json; current verifier external/model operative helpers; focused tests for stop/no-retry; external workflow canonical stop/no-retry text; relevant implementer role. Input budget about 12000 tokens; read targeted portions, not full project/history. fork_turns none; return <=250 words plus evidence.
+- Required correction: enforce unchanged operative stop/no-retry rule using the strengthened existing helper or exact normalized sentence/paragraph boundary approach. Reject Ignore/Disregard/Do not enforce prefixed operative negations and arbitrary instruction prefixes/suffixes that reverse the rule. Do not merely append one blacklist word. Preserve valid paragraphs where independent complete rule sentences share a paragraph.
+- Validation: add focused meaningful mutations for Ignore this rule and Disregard the requirement on external stop/no-retry; validate baseline intended guard passes and mutations fail. Run project verifier, full regression suite, UX smoke, factory validation/preflight, git diff --check. Capture real command arrays/cwd/exit/stdout/stderr, current counts; do not reconstruct historical red.
+- Parent decision/authorization: /root explicitly authorizes only this next-rung correction under latest user-approved Luna -> Terra -> Sol policy.
+- Remaining attempts and stop condition: one, this third total affected-scope attempt. If unresolved return blocker and preserved evidence; no automatic Sol or Astra executor. Parent then reassesses assignment and scope rather than reset IDs/counts.
+- Separate independent reviewer: /root/config_review Astra/high; no worker verdict or parent self-approval.
+- Status: assigned, recipient must acknowledge task/scope before editing and return ready-for-review or blocked.
+
+Parent clarification during the same bounded attempt: the earlier helper-or-boundary choice was too open. Require the exact approved rule to start at a genuine sentence/paragraph boundary; an independent complete preceding sentence is valid, while arbitrary attached prefixes such as Treat as optional: or For reference only: are not. Keep explicit adjacent negation checks for suffixes. Add a representative arbitrary-prefix regression. This is a parent assignment clarification, not a fresh attempt or model-capability judgment.

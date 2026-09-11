@@ -1,0 +1,57 @@
+Recorder: /root/verifier_audit (explorer); parent archival copy.
+Date: 2026-09-07
+Working directory: D:/onedrive/Documents/ChatGPT/AI ERP
+Scope: targeted function probes; NOT full verify_project mutation testing.
+Method: Path.read_text in-memory overlay; no source files changed.
+Exit code: 0
+
+Exact PowerShell command:
+@'
+import copy, importlib.util, json
+from pathlib import Path
+from unittest.mock import patch
+root = Path.cwd()
+loader = importlib.util.spec_from_file_location('audit_verifier', root / 'scripts/verify-harness.py')
+v = importlib.util.module_from_spec(loader)
+loader.loader.exec_module(v)
+spec = json.loads((root / 'harness/harness-spec.json').read_text(encoding='utf-8'))
+original_read = Path.read_text
+
+def overlay_read(files):
+    def read(path, *args, **kwargs):
+        return files.get(path.resolve(), original_read(path, *args, **kwargs))
+    return read
+
+changed = copy.deepcopy(spec)
+edge = next(e for e in changed['orchestration']['handoffs'] if e['from'] == 'reviewer' and e['to'] == 'implementer')
+edge['when'] = 'Any UI implementation request, even when the plan is pending and no parent contract exists.'
+print('ui_gate_targeted_checks:', v.verify_routing(root, changed))
+
+config_path = root / '.codex/agents/ai-erp-implementer.toml'
+with patch.object(Path, 'read_text', overlay_read({config_path.resolve(): original_read(config_path, encoding='utf-8').replace('gpt-5.3-codex-spark', 'gpt-5.6-luna')})):
+    print('luna_default_targeted_checks:', v.verify_model_and_paths(root, spec))
+
+changed = copy.deepcopy(spec)
+next(a for a in changed['agents'] if a['id'] == 'reviewer')['access'] = 'workspace-write'
+role_path = root / 'harness/team/agents/reviewer.md'
+config_path = root / '.codex/agents/ai-erp-reviewer.toml'
+files = {
+    (root / 'harness/harness-spec.json').resolve(): json.dumps(changed),
+    role_path.resolve(): original_read(role_path, encoding='utf-8').replace('access: read-only', 'access: workspace-write'),
+    config_path.resolve(): original_read(config_path, encoding='utf-8').replace('sandbox_mode = "read-only"', 'sandbox_mode = "workspace-write"'),
+}
+with patch.object(Path, 'read_text', overlay_read(files)):
+    factory = v.ProjectValidator(root, root / 'harness/harness-spec.json')
+    factory.load()
+    factory.load_provider_contracts()
+    factory.validate_shape()
+    factory.validate_common_files()
+    factory.validate_codex()
+    print('reviewer_write_targeted_checks:', factory.errors + v.verify_roles(root, changed) + v.verify_model_and_paths(root, changed))
+'@ | python -B -
+
+stdout:
+ui_gate_targeted_checks: []
+luna_default_targeted_checks: []
+reviewer_write_targeted_checks: []
+

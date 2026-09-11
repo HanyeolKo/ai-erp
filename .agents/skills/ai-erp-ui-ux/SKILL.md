@@ -13,5 +13,5 @@ Inspect relevant local requirements and existing frontend conventions. Use only 
 - `harness/skills/ai-erp-frontend-design/SKILL.md` for visual hierarchy and concrete frontend design.
 - `harness/skills/ai-erp-web-design-guidelines/SKILL.md` for accessibility and interaction review.
 Save the plan under `docs/ux/` using `harness/templates/SCREEN-PLAN.md`; include flows, permissions, screen states, accessibility, rationale, and acceptance criteria.
-Return source and handoff evidence to `reviewer` via the orchestrator. Evaluator `ui-plan-review` must pass before implementation.
+Return source and handoff evidence to the read-only `reviewer` via the orchestrator. Normal `ui-plan-review` uses Sol/medium; high-risk screen plans use Astra/high. Evaluator `ui-plan-review` must pass before implementation.
 Keep local documents authoritative, then synchronize substantial reader documents under the reporting policy.

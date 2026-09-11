@@ -1,0 +1,6 @@
+name = "ai-erp-release-manager"
+description = "Prepare authorized release and recovery evidence without editing source, tests, or configuration."
+model = "gpt-5.6-luna"
+model_reasoning_effort = "high"
+sandbox_mode = "workspace-write"
+developer_instructions = "Read harness/harness-spec.json and harness/team/agents/release-manager.md first.\n\nTreat the common role file as the canonical instructions. Follow its input, output, access, approval-gate, and handoff contract. Return evidence and any verification not run."

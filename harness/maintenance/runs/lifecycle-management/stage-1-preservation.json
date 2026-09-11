@@ -1,0 +1,27 @@
+{
+  "task": "stage-1",
+  "changed_baseline_files": [
+    ".agents/skills/ai-erp-eval/SKILL.md",
+    ".agents/skills/ai-erp/SKILL.md",
+    "AGENTS.md",
+    "harness/HARNESS.md",
+    "harness/evaluation/TASK-REVIEW-RUBRIC.md",
+    "harness/harness-spec.json",
+    "harness/loops/EVAL-LOOP.md",
+    "harness/loops/EXECUTION-LOOP.md",
+    "harness/skills/ai-erp-eval/SKILL.md",
+    "harness/skills/ai-erp/SKILL.md",
+    "harness/team/TEAM-ARCHITECTURE.md",
+    "harness/team/agents/implementer.md",
+    "harness/team/agents/reviewer.md",
+    "harness/team/agents/router.md",
+    "harness/templates/IMPLEMENTATION-CONTRACT.md",
+    "scripts/test_verify_harness.py",
+    "scripts/verify-harness.py"
+  ],
+  "outside_overall_delta": [],
+  "original_docs_reports_preserved": true,
+  "root_guidance_outside_block_preserved": true,
+  "state_preserved": true,
+  "journal_preserved": true
+}

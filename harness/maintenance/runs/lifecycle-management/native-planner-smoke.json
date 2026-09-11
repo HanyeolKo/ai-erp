@@ -1,0 +1,11 @@
+{
+  "kind": "native-role-discovery-smoke",
+  "tool": "collaboration.spawn_agent",
+  "task_name": "planner_role_smoke",
+  "agent_type": "ai-erp-product-planner",
+  "result": "not-invoked",
+  "raw_error": "unknown agent_type 'ai-erp-product-planner'",
+  "interpretation": "The current session tool registry does not expose the newly installed role. Static role/projection verification is separate from successful runtime invocation.",
+  "next_check": "Verify native role discovery and bounded invocation in a session that exposes the installed role before relying on native planner execution.",
+  "authorization_effect": "None; no product decisions, code or external actions executed."
+}

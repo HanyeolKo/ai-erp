@@ -1,0 +1,17 @@
+{
+  "parent": "/root",
+  "implementation_source_frozen": true,
+  "submitted_worker_evidence": "checks.json",
+  "deviations": [
+    {
+      "type": "evidence-filename",
+      "detail": "Terra worker wrote checks.json instead of contracted external-guard-terra-checks.json; preserved as submitted evidence summary, no production scope expansion."
+    },
+    {
+      "type": "evidence-quality",
+      "detail": "Worker summary includes placeholder command descriptions and abbreviated outputs; any raw-output label in worker result is not accepted as evidence of raw capture."
+    }
+  ],
+  "resolution": "Parent executed all required commands directly with subprocess capture into external-guard-terra-checks.json. Actual single full77 suite and all other checks exited0. Earlier73-test final-parent-checks.json applies to pre-Terra source only.",
+  "model_role_observability": "Dispatch selected Luna/high then evidenced Terra/medium. Provider per-call token/cache execution metadata unavailable; no measured savings claim."
+}

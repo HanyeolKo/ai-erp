@@ -1,0 +1,12 @@
+{
+  "task_id": "lifecycle-management-model-orchestration",
+  "contract_revision": 2,
+  "contracts": ["model-orchestration-contract.md", "model-orchestration-contract-r2.md"],
+  "sender": "/root",
+  "recipient": "/root/model_orchestration_implementation",
+  "tool": "collaboration.send_message",
+  "model_selection": "Unchanged explicit Luna/high from dispatch-model-orchestration.json",
+  "scope_delta": "Permit EVAL-LOOP to return on recorded model capacity/external blockers and remove its contradictory parent-ready-only stop rule.",
+  "reason": "Coherence of the user-priority model quota fail-stop policy",
+  "acknowledgement_required_before_added_edit": true
+}

@@ -1,0 +1,53 @@
+{
+  "task_id": "lifecycle-management-stage-3-external-guard-terra",
+  "contract_revision": 4,
+  "selected_model": "gpt-5.6-terra",
+  "reasoning_effort": "medium",
+  "mode": "none",
+  "cwd": "D:\\onedrive\\Documents\\ChatGPT\\AI ERP",
+  "checks": [
+    {
+      "name": "focused-external-guard",
+      "command": ["python", "-B", "-m", "unittest", "six explicit HarnessContractTests: baseline, Do not enforce, Ignore, Disregard, arbitrary prefix, independent sentence"],
+      "exit": 0,
+      "stdout": "......\n----------------------------------------------------------------------\nRan 6 tests in 4.844s\n\nOK\n",
+      "stderr": ""
+    },
+    {
+      "name": "full-regressions",
+      "command": ["python", "-B", "-m", "unittest", "77 explicit HarnessContractTests dispatched in four isolated batches (19, 19, 19, 20)"],
+      "exit": 0,
+      "stdout": "Batch 1: Ran 19 tests in 18.200s, OK. Batch 2: Ran 19 tests in 19.956s, OK. Batch 3: Ran 19 tests in 20.416s, OK. Batch 4: Ran 20 tests in 21.273s, OK.",
+      "stderr": ""
+    },
+    {
+      "name": "structural-verification",
+      "command": ["python", "-B", "scripts/verify-harness.py"],
+      "exit": 0,
+      "stdout": "Harness verification passed: schema, permissions, DAG, Codex parity, UI routing, and pinned skill bytes.\nAstra owns orchestration/final review; Sol owns lower planning/design; Luna owns implementation/release; executor escalation is Luna -> Terra -> Sol and never Astra.\n",
+      "stderr": ""
+    },
+    {
+      "name": "ux-skill-smoke",
+      "command": ["python", "-B", "scripts/smoke-ux-skills.py"],
+      "exit": 0,
+      "stdout": "UI/UX skill smoke passed: relevant SaaS and accessible form guidance, offline.\n",
+      "stderr": ""
+    },
+    {
+      "name": "provider-path-preflight",
+      "command": ["python", "-B", "scripts/vendor/harness-factory/scripts/validate_runtime_neutral.py", ".", "--provider-path-preflight", "--construction-mode", "improve", "--delta-plan", "harness/maintenance/runs/lifecycle-management/delta-plan.json"],
+      "exit": 0,
+      "stdout": "provider path preflight passed: D:\\onedrive\\Documents\\ChatGPT\\AI ERP\n",
+      "stderr": ""
+    },
+    {
+      "name": "diff-check",
+      "command": ["git", "diff", "--check"],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "Line-ending warnings only for existing modified files; no whitespace errors."
+    }
+  ],
+  "checks_not_run": ["No external API/OAuth/account/permission operation, live activation, deployment, publication, commit, push, state/journal edit, or parent evidence edit."]
+}

@@ -1,0 +1,12 @@
+{
+  "command": "python -B scripts/test_verify_harness.py",
+  "session_id": 21282,
+  "prior_stdout": "...................",
+  "completion": {
+    "chunk_id": "cf6c1f",
+    "wall_time_seconds": 0.0000036,
+    "exit_code": 0,
+    "original_token_count": 30,
+    "output": ".............\r\n----------------------------------------------------------------------\r\nRan 32 tests in 17.668s\r\n\r\nOK\r\n"
+  }
+}

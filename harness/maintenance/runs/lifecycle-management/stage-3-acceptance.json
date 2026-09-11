@@ -1,0 +1,18 @@
+{
+  "task_id": "lifecycle-management-stage-3",
+  "effective_contract": "stage3 revisions1-3 plus external-guard-escalation.md revision4, model policy revision3 superseding prior model rules",
+  "reviewer_verdict": "pass",
+  "parent": "/root",
+  "parent_acceptance": "accepted",
+  "remaining_defects": 0,
+  "evidence": [
+    "final-review-2.json",
+    "external-guard-terra-checks.json",
+    "final-preservation.json"
+  ],
+  "limitations": [
+    "Native new-role invocation success",
+    "Live API/deployment/recovery",
+    "Measured token savings"
+  ]
+}

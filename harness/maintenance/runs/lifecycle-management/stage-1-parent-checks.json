@@ -1,0 +1,43 @@
+{
+  "task_id": "lifecycle-management-stage-1",
+  "contract_revision": 3,
+  "recorded_by": "parent /root",
+  "checks": [
+    {
+      "status": "fulfilled",
+      "value": {
+        "id": "project",
+        "command": "python -B scripts/verify-harness.py",
+        "chunk_id": "b39864",
+        "wall_time_seconds": 1.2199095,
+        "exit_code": 0,
+        "original_token_count": 68,
+        "output": "Harness verification passed: schema, permissions, DAG, Codex parity, UI routing, and pinned skill bytes.\r\nRouter/ui-ux-designer/reviewer inherit native model settings; implementer defaults to gpt-5.3-codex-spark/high with explicit gpt-5.6-luna/high fallback evidence.\r\n"
+      }
+    },
+    {
+      "status": "fulfilled",
+      "value": {
+        "id": "regression",
+        "command": "python -B scripts/test_verify_harness.py",
+        "chunk_id": "44b678",
+        "wall_time_seconds": 10.0037091,
+        "session_id": 21282,
+        "original_token_count": 5,
+        "output": "..................."
+      }
+    },
+    {
+      "status": "fulfilled",
+      "value": {
+        "id": "ux-smoke",
+        "command": "python -B scripts/smoke-ux-skills.py",
+        "chunk_id": "5b5196",
+        "wall_time_seconds": 1.5578471999999999,
+        "exit_code": 0,
+        "original_token_count": 20,
+        "output": "UI/UX skill smoke passed: relevant SaaS and accessible form guidance, offline.\r\n"
+      }
+    }
+  ]
+}

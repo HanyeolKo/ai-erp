@@ -1,0 +1,83 @@
+{
+  "task_id": "lifecycle-management-stage-2",
+  "contract_revision": 1,
+  "correction_round": 1,
+  "selected_model": "gpt-5.6-luna",
+  "reasoning_effort": "high",
+  "dispatch_evidence": "harness/maintenance/runs/lifecycle-management/dispatch-stage-2.json",
+  "fallback_reason": "Native gpt-5.3-codex-spark/high dispatch failed before execution with the provider usage limit; parent continued the explicit gpt-5.6-luna/high fallback.",
+  "review_input": "harness/maintenance/runs/lifecycle-management/stage-2-review-1.json",
+  "initial_red_evidence": {
+    "source": "harness/maintenance/runs/lifecycle-management/stage-2-checks.json",
+    "evidence_kind": "excerpt",
+    "note": "The earlier red mutation output is retained as an excerpt because the original tool output omitted middle failure details; it is not relabeled as raw output."
+  },
+  "fresh_checks": [
+    {
+      "name": "provider-path-preflight",
+      "command": [
+        "python",
+        "-B",
+        "scripts/vendor/harness-factory/scripts/validate_runtime_neutral.py",
+        ".",
+        "--provider-path-preflight",
+        "--construction-mode",
+        "improve",
+        "--delta-plan",
+        "harness/maintenance/runs/lifecycle-management/delta-plan.json"
+      ],
+      "exit": 0,
+      "stdout": "provider path preflight passed: D:\\onedrive\\Documents\\ChatGPT\\AI ERP\n",
+      "stderr": ""
+    },
+    {
+      "name": "structural-verification",
+      "command": [
+        "C:\\Users\\USER\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
+        "-B",
+        "scripts/verify-harness.py"
+      ],
+      "exit": 0,
+      "stdout": "Harness verification passed: schema, permissions, DAG, Codex parity, UI routing, and pinned skill bytes.\nRouter/ui-ux-designer/reviewer inherit native model settings; implementer defaults to gpt-5.3-codex-spark/high with explicit gpt-5.6-luna/high fallback evidence.\n",
+      "stderr": ""
+    },
+    {
+      "name": "full-regressions",
+      "command": [
+        "C:\\Users\\USER\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
+        "-B",
+        "scripts/test_verify_harness.py"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "..........................................\n----------------------------------------------------------------------\nRan 42 tests in 32.210s\n\nOK\n"
+    },
+    {
+      "name": "ux-skill-smoke",
+      "command": [
+        "C:\\Users\\USER\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
+        "-B",
+        "scripts/smoke-ux-skills.py"
+      ],
+      "exit": 0,
+      "stdout": "UI/UX skill smoke passed: relevant SaaS and accessible form guidance, offline.\n",
+      "stderr": ""
+    },
+    {
+      "name": "diff-check",
+      "command": ["git", "diff", "--check"],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "warning: in the working copy of 'AGENTS.md', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'harness/state/state.json', CRLF will be replaced by LF the next time Git touches it\nwarning: in the working copy of 'scripts/test_verify_harness.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'scripts/verify-harness.py', LF will be replaced by CRLF the next time Git touches it\n"
+    }
+  ],
+  "correction_coverage": [
+    "RELEASE-REVIEW and its rubric distinguish readiness/outcome review modes from preparation/execution action modes; RELEASE-FLOW returns execution result to parent, then independent outcome review, then parent acceptance.",
+    "RELEASE-FLOW explains that publishing by push or merge to main triggers CI, successful main CI may trigger production deployment through .github/workflows/deploy-production.yml, and parent same-SHA CI proof is required before authorization.",
+    "VERIFICATION-MATRIX records exact API commands and package/workflow sources, migration inventory/checksum functions and test command, full workflow filenames, and manual old-app compatibility review as manual evidence.",
+    "ai-erp-eval includes release-manager in the executor set and its canonical/projection bytes were synchronized after provider preflight."
+  ],
+  "checks_not_run": [
+    "No release execution, production deployment, publication, external write, commit, push, state/journal edit, parent-contract edit, app/deploy-code edit, or stage 3 work was performed."
+  ]
+}

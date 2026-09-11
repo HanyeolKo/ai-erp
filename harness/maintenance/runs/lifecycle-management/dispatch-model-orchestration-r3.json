@@ -1,0 +1,16 @@
+{
+  "task_id": "lifecycle-management-model-orchestration",
+  "contract_revision": 3,
+  "contracts": [
+    "model-orchestration-contract.md",
+    "model-orchestration-contract-r2.md",
+    "model-orchestration-contract-r3.md"
+  ],
+  "sender": "/root",
+  "recipient": "/root/model_orchestration_implementation",
+  "tool": "collaboration.followup_task",
+  "model_selection": "Existing explicit gpt-5.6-luna/high; same bounded agent context",
+  "authority": "User correction: Luna -> Terra -> Sol; Sol failure requires orchestrator self-review, never Astra executor",
+  "provider_token_usage": null,
+  "status": "dispatched"
+}

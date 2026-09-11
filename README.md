@@ -75,6 +75,15 @@ OpenAPI와 Swagger 검토 artifact는 production image의 `/assets/api-docs/`에
 - [UI/UX 전담 에이전트와 화면 기획 절차](docs/architecture/ui-ux-agent-guide.md)
 
 화면 기획은 `router -> ui-ux-designer -> reviewer`를 거치며, 구현은 승인된 상위 계약과 경량 `implementer` 실행 단계를 따른다. 하네스와 고정된 UX 스킬은 Git에서 함께 관리하고 `python -B scripts/verify-harness.py`로 구조를 검증한다.
+모델 기본값은 최상위 오케스트레이션·최종 검토에 Astra, 하위 기획·화면 설계에 Sol, 확정 구현·릴리스 실행에 Luna를 명시한다. 실행자 에스컬레이션은 부모가 Luna → Terra → Sol 순서로만 선택하며 Astra 실행자로 올리지 않는다. 동시 작업은 두 개, 위임 깊이는 한 단계로 제한한다.
+
+## 하네스 라이프사이클과 외부 의존성
+
+`router`는 범위를 정한 `TASK-ASSIGNMENT.md`를 만들고, `product-planner`는 제품 증분 계획을 작성한다. 화면 구조와 상호작용은 `ui-ux-designer`, 코드·테스트·동작 설정은 승인된 계약을 받은 `implementer`, 독립 검토와 판정은 `reviewer`, 배포 준비·관찰·복구 근거는 `release-manager`가 담당한다. 흐름은 상위 에이전트의 dispatch → 수신자의 acknowledgement → 범위가 제한된 실행 → 근거 반환 → 독립 검토 → 상위 승인 또는 수정 요청이다. `INCREMENT-PLAN.md`, `SCREEN-PLAN.md`, `IMPLEMENTATION-CONTRACT.md`, `RELEASE-CONTRACT.md`가 각 단계의 연결 문서다.
+
+외부 API 예를 들어 Google OAuth/Calendar를 운영 연결하려면 대상 계정·tenant, API 버전, OAuth callback과 권한, 외부 담당자, 현재 환경에서 수행한 안전한 readiness check가 모두 기록되어야 한다. 설정이 `missing` 또는 `unknown`이면 의존하는 작업은 즉시 중단하고 `harness/templates/BLOCKER-REPORT.md`에 소유자, 해결 선택지, 재개 검사와 정제된 근거를 적어 상위 에이전트로 돌린다. 명시적으로 승인된 `offline-contract-only` 테스트는 독립적인 경우 진행할 수 있지만 live integration 성공으로 표시하지 않는다. goal-mode 지속 실행도 이 차단을 해제하지 않는다.
+
+작은 수정은 유효한 증분 ID·계획 revision·현재 검토를 재사용할 수 있고, 계획만 필요한 작업은 배포 없이 독립 검토와 상위 승인을 거쳐 완료할 수 있다. 파일 지침과 구조 테스트는 자동 스케줄러가 아니며 Native 역할 호출이나 운영 결과를 증명하지 않는다. 현재 `native-planner-smoke.json`은 `unknown agent_type`을 기록하므로 새 역할의 실제 런타임 동작은 인증되지 않았다.
 
 ## 버전
 

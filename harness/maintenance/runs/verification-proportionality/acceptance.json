@@ -1,0 +1,20 @@
+{
+  "task": "verification-proportionality",
+  "risk": "high",
+  "parent": "/root",
+  "disposition": "accepted",
+  "review": "review-3.json",
+  "checks": {
+    "initial_full_suite": 83,
+    "final_affected_policy_tests": 9,
+    "final_structure_and_projection": "pass",
+    "diff": "pass"
+  },
+  "evidence_note": "Final raw skip wording about unchanged projections is inaccurate: ai-erp-verify projection content changed. Existing preflight covers unchanged authorized provider paths/delta; final project verifier reran embedded Factory and parity on corrected source. Raw history preserved; no duplicate standalone run.",
+  "scope_note": "Initial context-budget deviation was explicitly authorized for bounded correction, retaining review-1 history.",
+  "not_claimed": [
+    "live API/deployment success",
+    "measured token savings",
+    "final full-suite rerun"
+  ]
+}

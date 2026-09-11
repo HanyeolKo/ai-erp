@@ -1,0 +1,20 @@
+{
+  "task_id": "lifecycle-management-model-orchestration",
+  "contract_revision": 1,
+  "contract": "model-orchestration-contract.md",
+  "sender": "/root",
+  "recipient": "/root/model_orchestration_implementation",
+  "recipient_role": "implementer",
+  "tool": "collaboration.spawn_agent",
+  "agent_type": "default",
+  "selected_model": "gpt-5.6-luna",
+  "reasoning_effort": "high",
+  "fork_turns": "none",
+  "selection_reason": "User explicitly prioritized Luna implementation and Astra decisions/review; fresh bounded context replaces the interrupted large-context implementation turn.",
+  "context_manifest": ["AGENTS.md", ".agents/skills/ai-erp-implement/SKILL.md", "harness/team/agents/implementer.md", "model-orchestration-contract.md", "docs/architecture/orchestration-model-policy.md"],
+  "output_target_words": 250,
+  "actual_provider_token_usage": null,
+  "usage_availability": "Tool returned canonical task name; no per-call token/cache metrics supplied.",
+  "authority": "Exact user-priority contract files only; no external or Git publication.",
+  "result": "dispatched"
+}

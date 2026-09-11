@@ -1,0 +1,19 @@
+{
+  "verdict": "fail",
+  "reviewer": "/root/proportionate_review",
+  "model": "gpt-6-astra",
+  "effort": "high",
+  "resolved": [
+    "VP-02"
+  ],
+  "remaining": {
+    "VP-01": "MODEL-ORCHESTRATION and CHECKPOINT retain unconditional detailed budget fields",
+    "VP-03": "ai-erp-verify retains Astra for all mandatory specialist plan reviews",
+    "VP-04": "Remove added prose guard/test outside structured policy function scope"
+  },
+  "accepted_notes": [
+    "Context-budget correction authorized",
+    "Embedded Factory parity explanation corrected"
+  ],
+  "next": "Same-model bounded correction attempt 3; no full suite rerun"
+}

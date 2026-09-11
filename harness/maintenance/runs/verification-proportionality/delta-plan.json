@@ -1,0 +1,165 @@
+{
+  "schema_version": "1.0",
+  "change_id": "verification-proportionality",
+  "mode": "improve",
+  "interview_receipt": {
+    "status": "complete",
+    "decisions": {
+      "purpose": {
+        "value": "Manage iterative product planning and design, frontend/backend implementation, verification, authorized deployment/recovery, and feedback through bounded parent-owned increments.",
+        "source": "request"
+      },
+      "deliverable_type": {
+        "value": "Risk-proportionate verification: low parent acceptance, standard optional Sol review, high independent Astra, compact task record and batch-end checks. Preserve mandatory specialist and release/external/access safeguards.",
+        "source": "request"
+      },
+      "task_evaluator": {
+        "value": "task-review",
+        "source": "approved-decision"
+      },
+      "operation_mode": {
+        "value": "attended bounded tasks",
+        "source": "approved-decision"
+      },
+      "cost_sensitivity": {
+        "value": "Prioritize task token efficiency: Astra top-level orchestration/final review; Sol/medium lower planning/routing/design; Luna/high execution with Spark alternative; judge-owned Luna -> Terra -> Sol escalation for evidenced capability failures; Sol ceiling triggers orchestrator assignment self-review, never Astra execution.",
+        "source": "request"
+      },
+      "report_language": {
+        "value": "ko",
+        "source": "approved-decision"
+      },
+      "terminology": {
+        "value": "localized",
+        "source": "approved-decision"
+      },
+      "runtime_targets": {
+        "value": [
+          "codex"
+        ],
+        "source": "approved-decision"
+      },
+      "approval_gates": {
+        "value": [
+          "destructive-change",
+          "external-write"
+        ],
+        "source": "approved-decision"
+      },
+      "reporting": {
+        "enabled": {
+          "value": true,
+          "source": "approved-decision"
+        },
+        "reader_destination": {
+          "value": "notion",
+          "source": "approved-decision"
+        },
+        "reader_target": {
+          "value": "345de20d-f69b-4fe8-b79b-a204c819a7f8",
+          "source": "approved-decision"
+        }
+      }
+    },
+    "profile": {
+      "current": "core",
+      "recommended": "core",
+      "selected": "core",
+      "reason_codes": [
+        "bounded-task-work"
+      ],
+      "confirmation_source": "request",
+      "override_reason": null
+    }
+  },
+  "deltas": [
+    {
+      "classification": "modify-proposed",
+      "paths": [
+        ".agents/skills/ai-erp-eval/SKILL.md",
+        ".agents/skills/ai-erp-frontend-design/SKILL.md",
+        ".agents/skills/ai-erp-implement/SKILL.md",
+        ".agents/skills/ai-erp-plan/SKILL.md",
+        ".agents/skills/ai-erp-release/SKILL.md",
+        ".agents/skills/ai-erp-ui-ux-pro-max/SKILL.md",
+        ".agents/skills/ai-erp-ui-ux/SKILL.md",
+        ".agents/skills/ai-erp-verify/SKILL.md",
+        ".agents/skills/ai-erp-web-design-guidelines/SKILL.md",
+        ".agents/skills/ai-erp/SKILL.md",
+        ".codex/agents/ai-erp-implementer.toml",
+        ".codex/agents/ai-erp-product-planner.toml",
+        ".codex/agents/ai-erp-release-manager.toml",
+        ".codex/agents/ai-erp-reviewer.toml",
+        ".codex/agents/ai-erp-router.toml",
+        ".codex/agents/ai-erp-ui-ux-designer.toml",
+        "AGENTS.md",
+        "docs/architecture/orchestration-model-policy.md",
+        "docs/architecture/ui-ux-agent-guide.md",
+        "harness/ENVIRONMENT.md",
+        "harness/HARNESS.md",
+        "harness/evaluation/INCREMENT-PLAN-RUBRIC.md",
+        "harness/evaluation/RELEASE-REVIEW-RUBRIC.md",
+        "harness/evaluation/TASK-REVIEW-RUBRIC.md",
+        "harness/evaluation/UI-PLAN-RUBRIC.md",
+        "harness/harness-spec.json",
+        "harness/ledger/JOURNAL-FORMAT.md",
+        "harness/loops/EVAL-LOOP.md",
+        "harness/loops/EXECUTION-LOOP.md",
+        "harness/policies/MODEL-ORCHESTRATION.md",
+        "harness/recovery/CHECKPOINT.md",
+        "harness/recovery/RECOVERY-PLAYBOOK.md",
+        "harness/skills/ai-erp-eval/SKILL.md",
+        "harness/skills/ai-erp-frontend-design/SKILL.md",
+        "harness/skills/ai-erp-implement/SKILL.md",
+        "harness/skills/ai-erp-plan/SKILL.md",
+        "harness/skills/ai-erp-release/SKILL.md",
+        "harness/skills/ai-erp-ui-ux-pro-max/SKILL.md",
+        "harness/skills/ai-erp-ui-ux/SKILL.md",
+        "harness/skills/ai-erp-verify/SKILL.md",
+        "harness/skills/ai-erp-web-design-guidelines/SKILL.md",
+        "harness/skills/ai-erp/SKILL.md",
+        "harness/team/TEAM-ARCHITECTURE.md",
+        "harness/team/agents/implementer.md",
+        "harness/team/agents/product-planner.md",
+        "harness/team/agents/release-manager.md",
+        "harness/team/agents/reviewer.md",
+        "harness/team/agents/router.md",
+        "harness/team/agents/ui-ux-designer.md",
+        "harness/templates/BLOCKER-REPORT.md",
+        "harness/templates/IMPLEMENTATION-CONTRACT.md",
+        "harness/templates/IMPLEMENTATION-RESULT.md",
+        "harness/templates/INCREMENT-PLAN.md",
+        "harness/templates/INCREMENT-RECORD.md",
+        "harness/templates/INCREMENT-REVIEW.md",
+        "harness/templates/MODEL-ESCALATION.md",
+        "harness/templates/MODEL-USAGE-RECORD.md",
+        "harness/templates/RELEASE-CONTRACT.md",
+        "harness/templates/RELEASE-RESULT.md",
+        "harness/templates/RELEASE-REVIEW.md",
+        "harness/templates/SCREEN-PLAN.md",
+        "harness/templates/TASK-ASSIGNMENT.md",
+        "harness/templates/TASK-RECORD.md",
+        "harness/templates/UI-REVIEW.md",
+        "harness/workflows/DELEGATION-PROTOCOL.md",
+        "harness/workflows/EXTERNAL-DEPENDENCIES.md",
+        "harness/workflows/INCREMENT-LIFECYCLE.md",
+        "harness/workflows/RELEASE-FLOW.md",
+        "harness/workflows/VERIFICATION-MATRIX.md",
+        "scripts/test_verify_harness.py",
+        "scripts/verify-harness.py",
+        "harness/budget/CONTEXT-BUDGET.md"
+      ],
+      "reason": "Apply user-approved conditional reviews/checks and compact records atomically."
+    },
+    {
+      "classification": "add",
+      "paths": [
+        "harness/policies/VERIFICATION.json",
+        "harness/templates/TASK-RECORD.md"
+      ],
+      "reason": "Small risk-policy source and combined task record."
+    }
+  ],
+  "conflicts": [],
+  "approval_required": []
+}

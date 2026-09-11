@@ -1,0 +1,14 @@
+{
+  "task_id": "lifecycle-management-stage-1",
+  "contract_revision": 3,
+  "correction_round": 1,
+  "reviewer": "/root/config_review",
+  "reviewer_verdict": "pass",
+  "remaining_stage_defects": 0,
+  "resolved_defects": ["S1-PLANNING-DOMAIN", "S1-PLANNING-BRANCHES", "S1-PLANNING-EVALUATOR", "S1-REGRESSION-COVERAGE"],
+  "evidence": ["stage-1-correction-1-result.md", "stage-1-correction-1-checks.json", "stage-1-preservation.json", "parent-rulings-stage-1.json"],
+  "parent": "/root",
+  "parent_acceptance": "accepted",
+  "next_action": "Dispatch stage-2-contract.md revision 1 to the same Luna/high implementer.",
+  "limitations": ["Initial red evidence is summarized.", "No live planner, application or deployment execution.", "The receipt deviation remains recorded."]
+}
