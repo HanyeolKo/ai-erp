@@ -119,6 +119,16 @@ class HarnessContractTests(unittest.TestCase):
         path.write_text(path.read_text(encoding="utf-8") + "\nDrift.\n", encoding="utf-8")
         self.assertIn("differs from canonical", self.errors())
 
+    def test_visual_role_write_access_fails(self):
+        path = self.root / ".codex/agents/ai-erp-ui-visual-designer.toml"
+        path.write_text(path.read_text(encoding="utf-8").replace('sandbox_mode = "read-only"', 'sandbox_mode = "workspace-write"'), encoding="utf-8")
+        self.assertIn("Codex agent access parity mismatch", self.errors())
+
+    def test_visual_role_boundary_text_is_required(self):
+        path = self.root / "harness/team/agents/ui-visual-designer.md"
+        path.write_text(path.read_text(encoding="utf-8").replace("data-encoding", "data-boundary"), encoding="utf-8")
+        self.assertIn("ui-visual-designer role must state boundary: data-encoding", self.errors())
+
     def test_missing_sandbox_is_not_hidden_by_model_compatibility(self):
         path = self.root / ".codex/agents/ai-erp-ui-ux-designer.toml"
         lines = path.read_text(encoding="utf-8").splitlines()
@@ -141,6 +151,28 @@ class HarnessContractTests(unittest.TestCase):
             })
         self.change_spec(add_back_edge)
         self.assertIn("acyclic", self.errors())
+
+    def test_visual_implementer_shortcut_fails(self):
+        def add_shortcut(spec):
+            spec["orchestration"]["handoffs"].append({
+                "from": "ui-visual-designer", "to": "implementer", "when": "visual result", "artifacts": ["harness/templates/IMPLEMENTATION-CONTRACT.md"]
+            })
+        self.change_spec(add_shortcut)
+        self.assertIn("forbidden routing shortcut/back edge", self.errors())
+
+    def test_visual_route_requires_functional_gate(self):
+        def weaken(spec):
+            edge = next(item for item in spec["orchestration"]["handoffs"] if item["from"] == "ui-ux-designer" and item["to"] == "ui-visual-designer")
+            edge["when"] = "A visual task is available."
+        self.change_spec(weaken)
+        self.assertIn("functional UI/UX plan", self.errors())
+
+    def test_direct_designer_review_route_cannot_accept_visual_work(self):
+        def weaken(spec):
+            edge = next(item for item in spec["orchestration"]["handoffs"] if item["from"] == "ui-ux-designer" and item["to"] == "reviewer")
+            edge["when"] = "Any screen plan is available."
+        self.change_spec(weaken)
+        self.assertIn("restricted to non-visual", self.errors())
 
     def test_router_implementer_edge_must_be_non_ui_contract_route(self):
         def weaken(spec):
@@ -170,6 +202,10 @@ class HarnessContractTests(unittest.TestCase):
             edge["artifacts"].remove("harness/templates/RELEASE-CONTRACT.md")
         self.change_spec(omit_artifact)
         self.assertIn("reviewer -> release-manager handoff artifacts", self.errors())
+
+    def test_missing_visual_template_fails(self):
+        (self.root / "harness/templates/VISUAL-CHANGE-PLAN.md").unlink()
+        self.assertIn("VISUAL-CHANGE-PLAN.md", self.errors())
 
     def test_task_review_pass_condition_rejects_pending_required_criteria(self):
         def weaken(spec):

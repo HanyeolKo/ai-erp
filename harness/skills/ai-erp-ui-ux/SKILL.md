@@ -7,6 +7,7 @@ description: "Plan ERP screens and user flows through the UI/UX designer before 
 
 Read `harness/harness-spec.json` and `harness/team/agents/ui-ux-designer.md`.
 Every screen planning request MUST execute through the `ui-ux-designer` role, including direct calls to this skill; the orchestrator delegates before planning output or implementation.
+When the request is visual-only, the parent dispatches `ui-visual-designer` after this functional plan and before `reviewer`; this skill remains the mandatory first contact.
 The native Codex name is `ai-erp-ui-ux-designer`. If already running as that designer, execute the task here without delegating it to another designer.
 Inspect relevant local requirements and existing frontend conventions. Use only the applicable project skills:
 - `harness/skills/ai-erp-ui-ux-pro-max/SKILL.md` for design-system and UX pattern research.

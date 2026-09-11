@@ -14,6 +14,7 @@ Read `harness/policies/VERIFICATION.json` and `harness/templates/TASK-RECORD.md`
 | Method consistency | Contracted approach and declared commands were followed or deviation is explained |
 | Verification | Actual commands, exit codes, output paths, and checks not run are recorded |
 | UI gate compliance | UI behavior has specialist plan and passing independent `ui-plan-review` evidence before implementation |
+| Visual UI evidence | Visual implementation includes the accepted shared pattern contract and screen-to-rule mapping, preserves functional/data-encoding invariants, and records applicable visual, responsive, keyboard, and same-action evidence; CSS-only intent does not prove behavior safety |
 | Acceptance mapping | Every numbered criterion maps to concrete diff, test, or check evidence |
 | Readiness | Result is `ready-for-review` or `blocked`; reviewer owns required review verdicts and the parent owns acceptance |
 

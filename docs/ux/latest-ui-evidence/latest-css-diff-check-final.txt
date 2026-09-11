@@ -1,0 +1,7 @@
+command: git diff --check
+cwd: D:\onedrive\Documents\ChatGPT\AI ERP\tmp\ui-workspace-refactor
+exit: 0
+stdout+stderr:
+warning: in the working copy of 'frontend/src/app.css', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/screens/GoogleWorkspace.css', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/screens/schedules.css', LF will be replaced by CRLF the next time Git touches it

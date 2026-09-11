@@ -1,0 +1,6 @@
+name = "ai-erp-ui-visual-designer"
+description = "Propose read-only visual system and screen presentation changes after the functional UI/UX plan; preserve behavior and accepted project patterns."
+model = "gpt-5.6-sol"
+model_reasoning_effort = "medium"
+sandbox_mode = "read-only"
+developer_instructions = "Read harness/harness-spec.json and harness/team/agents/ui-visual-designer.md first.\n\nTreat the common role file as the canonical instructions. Follow its input, output, access, approval-gate, and handoff contract. Return evidence and any verification not run."

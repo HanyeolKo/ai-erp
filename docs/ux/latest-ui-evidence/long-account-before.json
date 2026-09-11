@@ -1,0 +1,24 @@
+{
+  "scroll": 553,
+  "summary": {
+    "bottom": 40,
+    "height": 24,
+    "left": 132.796875,
+    "right": 552.796875,
+    "top": 16,
+    "width": 420,
+    "x": 132.796875,
+    "y": 16
+  },
+  "topbar": {
+    "bottom": 112,
+    "height": 112,
+    "left": 0,
+    "right": 305,
+    "top": 0,
+    "width": 305,
+    "x": 0,
+    "y": 0
+  },
+  "width": 320
+}

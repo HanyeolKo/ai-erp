@@ -200,6 +200,8 @@ def verify_templates(root: Path, spec: dict) -> list[str]:
         root / "harness/evaluation/RELEASE-REVIEW-RUBRIC.md",
         root / "harness/workflows/VERIFICATION-MATRIX.md",
         root / "harness/workflows/RELEASE-FLOW.md",
+        root / "harness/templates/VISUAL-DESIGN-CONTRACT.md",
+        root / "harness/templates/VISUAL-CHANGE-PLAN.md",
     ]
     errors = []
     for path in required:
@@ -218,8 +220,8 @@ def verify_templates(root: Path, spec: dict) -> list[str]:
     assignment = root / "harness/templates/TASK-ASSIGNMENT.md"
     protocol = root / "harness/workflows/DELEGATION-PROTOCOL.md"
     required_text = {
-        contract: ("contract revision", "increment id", "plan revision", "plan/review paths", "permitted files", "acceptance criteria", "model reason", "context manifest", "context budget", "output budget", "fork/reuse", "usage availability", "ready-to-implement"),
-        result: ("contract revision", "Selected model", "Invocation", "model reason", "context manifest", "context budget", "output budget", "fork/reuse", "usage availability", "ready-for-review", "Checks not run"),
+        contract: ("contract revision", "increment id", "plan revision", "plan/review paths", "permitted files", "acceptance criteria", "model reason", "context manifest", "context budget", "output budget", "fork/reuse", "usage availability", "ready-to-implement", "VISUAL-DESIGN-CONTRACT", "data-encoding"),
+        result: ("contract revision", "Selected model", "Invocation", "model reason", "context manifest", "context budget", "output budget", "fork/reuse", "usage availability", "ready-for-review", "Checks not run", "screen-to-rule mapping", "data-encoding"),
         rubric: ("task-review", "gpt-5.3-codex-spark", "gpt-5.6-luna", "independent reviewer"),
         root / "harness/templates/INCREMENT-PLAN.md": ("increment id", "plan revision", "users", "deferred scope", "API", "acceptance criteria"),
         root / "harness/templates/INCREMENT-REVIEW.md": ("increment id", "plan revision", "independent evaluator", "verdict", "checks not run"),
@@ -234,6 +236,8 @@ def verify_templates(root: Path, spec: dict) -> list[str]:
         root / "harness/evaluation/RELEASE-REVIEW-RUBRIC.md": ("same-sha", "authorization", "data safety", "operator-action-required"),
         root / "harness/workflows/VERIFICATION-MATRIX.md": ("frontend", "backend", "database", "cwd", "not run"),
         root / "harness/workflows/RELEASE-FLOW.md": ("same-sha", "authorization", "operator-action-required", "not-requested"),
+        root / "harness/templates/VISUAL-DESIGN-CONTRACT.md": ("accepted pattern", "functional invariants", "data-encoding", "Unexecuted checks"),
+        root / "harness/templates/VISUAL-CHANGE-PLAN.md": ("rule IDs", "Preserved behavior", "responsive", "keyboard", "ui-plan-review"),
     }
     for path, markers in required_text.items():
         if path.is_file():
@@ -395,7 +399,7 @@ def verify_verification_policy(root: Path) -> list[str]:
 def verify_roles(root: Path, spec: dict) -> list[str]:
     errors: list[str] = []
     agents = {agent["id"]: agent for agent in spec["agents"]}
-    required_agents = {"router", "ui-ux-designer", "reviewer", "implementer", "product-planner", "release-manager"}
+    required_agents = {"router", "ui-ux-designer", "ui-visual-designer", "reviewer", "implementer", "product-planner", "release-manager"}
     if set(agents) != required_agents:
         missing = required_agents - set(agents)
         extra = set(agents) - required_agents
@@ -406,6 +410,7 @@ def verify_roles(root: Path, spec: dict) -> list[str]:
     required_tiers = {
         "router": "deep",
         "ui-ux-designer": "deep",
+        "ui-visual-designer": "deep",
         "reviewer": "deep",
         "implementer": "fast",
         "product-planner": "deep",
@@ -414,6 +419,7 @@ def verify_roles(root: Path, spec: dict) -> list[str]:
     expected_caps = {
         "router": {"routing", "verification"},
         "ui-ux-designer": {"ui-planning"},
+        "ui-visual-designer": {"ui-planning"},
         "reviewer": {"verification", "verdict", "defect-counting"},
         "implementer": {"execution", "verification"},
         "product-planner": {"product-planning"},
@@ -427,11 +433,13 @@ def verify_roles(root: Path, spec: dict) -> list[str]:
             errors.append(f"{role_id} must use model_tier {expected}")
         if set(agent.get("capabilities", [])) != expected_caps[role_id]:
             errors.append(f"{role_id} capabilities must be {sorted(expected_caps[role_id])}")
-        expected_access = "read-only" if role_id in {"router", "reviewer"} else "workspace-write"
+        expected_access = "read-only" if role_id in {"router", "ui-visual-designer", "reviewer"} else "workspace-write"
         if agent.get("access") != expected_access:
             errors.append(f"{role_id} access must be {expected_access}")
         if role_id == "implementer" and "ALL code, tests, and behavior-affecting configuration regardless of path" not in agent.get("description", ""):
             errors.append("implementer role text must cover all code/tests/config scope.")
+        if role_id == "ui-visual-designer" and agent.get("access") != "read-only":
+            errors.append("ui-visual-designer must use read-only access")
     implementer_text = (root / "harness/team/agents/implementer.md").read_text(encoding="utf-8") if (root / "harness/team/agents/implementer.md").is_file() else ""
     for phrase in ("no unresolved design decisions", "Do not push", "re-delegate", "final approval", "permission", "scope ambiguity"):
         if phrase.lower() not in implementer_text.lower():
@@ -444,6 +452,10 @@ def verify_roles(root: Path, spec: dict) -> list[str]:
     for phrase in ("release-preparation", "release-operations", "source", "tests", "configuration", "same-SHA", "operator-action-required", "re-delegate"):
         if phrase.lower() not in release_text.lower():
             errors.append(f"release-manager role must state boundary: {phrase}")
+    visual_text = (root / "harness/team/agents/ui-visual-designer.md").read_text(encoding="utf-8") if (root / "harness/team/agents/ui-visual-designer.md").is_file() else ""
+    for phrase in ("do not write any file", "no file write", "data-encoding", "hide actions", "add clicks"):
+        if phrase.lower() not in visual_text.lower():
+            errors.append(f"ui-visual-designer role must state boundary: {phrase}")
     return errors
 
 
@@ -452,6 +464,7 @@ def verify_model_and_paths(root: Path, spec: dict) -> list[str]:
     expected_models = {
         "router": ("gpt-5.6-sol", "medium"),
         "ui-ux-designer": ("gpt-5.6-sol", "medium"),
+        "ui-visual-designer": ("gpt-5.6-sol", "medium"),
         "reviewer": ("gpt-6-astra", "high"),
         "implementer": ("gpt-5.6-luna", "high"),
         "product-planner": ("gpt-5.6-sol", "medium"),
@@ -563,7 +576,7 @@ def verify_routing(root: Path, spec: dict) -> list[str]:
     required_skill_ids = {
         "ai-erp", "ai-erp-eval", "ai-erp-verify", "ai-erp-implement",
         "ai-erp-ui-ux", "ai-erp-frontend-design", "ai-erp-ui-ux-pro-max",
-        "ai-erp-web-design-guidelines",
+        "ai-erp-web-design-guidelines", "ai-erp-ui-visual-design",
         "ai-erp-plan",
         "ai-erp-release",
     }
@@ -590,6 +603,8 @@ def verify_routing(root: Path, spec: dict) -> list[str]:
         ("router", "product-planner"),
         ("product-planner", "reviewer"),
         ("product-planner", "ui-ux-designer"),
+        ("ui-ux-designer", "ui-visual-designer"),
+        ("ui-visual-designer", "reviewer"),
         ("reviewer", "release-manager"),
     }
     non_ui_edges = {("router", "implementer")}
@@ -599,7 +614,9 @@ def verify_routing(root: Path, spec: dict) -> list[str]:
         errors.append("non-UI implementation must include router -> implementer")
     forbidden = {
         ("router", "reviewer"),
+        ("router", "ui-visual-designer"),
         ("ui-ux-designer", "implementer"),
+        ("ui-visual-designer", "implementer"),
         ("implementer", "router"),
         ("implementer", "reviewer"),
     }
@@ -616,6 +633,15 @@ def verify_routing(root: Path, spec: dict) -> list[str]:
         matching = [item for item in handoffs if (item.get("from"), item.get("to")) == pair]
         if not matching or normalized(matching[0].get("when", "")) != normalized(expected_when):
             errors.append(f"{pair[0]} -> {pair[1]} condition must exactly preserve its approved prerequisite")
+    visual_edge = next((item for item in handoffs if (item.get("from"), item.get("to")) == ("ui-ux-designer", "ui-visual-designer")), None)
+    if not visual_edge or not all(phrase in visual_edge.get("when", "").lower() for phrase in ("functional", "visual", "preserv")):
+        errors.append("visual route must follow the functional UI/UX plan and preserve invariants")
+    visual_review_edge = next((item for item in handoffs if (item.get("from"), item.get("to")) == ("ui-visual-designer", "reviewer")), None)
+    if not visual_review_edge or not all(phrase in visual_review_edge.get("when", "").lower() for phrase in ("ui-plan-review", "pattern-contract-only", "n/a")):
+        errors.append("visual route must reach reviewer through ui-plan-review with pattern-contract N/A handling")
+    direct_ui_review = next((item for item in handoffs if (item.get("from"), item.get("to")) == ("ui-ux-designer", "reviewer")), None)
+    if not direct_ui_review or "non-visual" not in direct_ui_review.get("when", "").lower():
+        errors.append("direct ui-ux-designer -> reviewer route must be restricted to non-visual plans")
     for pair, expected_artifacts in REQUIRED_HANDOFF_ARTIFACTS.items():
         edge = next((item for item in handoffs if (item.get("from"), item.get("to")) == pair), None)
         if edge and set(edge.get("artifacts", [])) != expected_artifacts:
@@ -629,6 +655,7 @@ def verify_routing(root: Path, spec: dict) -> list[str]:
             "ai-erp-verify": ("verification", "reviewer", "harness-structure"),
             "ai-erp-implement": ("domain", "implementer", "task-review"),
             "ai-erp-ui-ux": ("domain", "ui-ux-designer", "ui-plan-review"),
+            "ai-erp-ui-visual-design": ("domain", "ui-ux-designer", "ui-plan-review"),
             "ai-erp-frontend-design": ("domain", "ui-ux-designer", "ui-plan-review"),
             "ai-erp-ui-ux-pro-max": ("domain", "ui-ux-designer", "ui-plan-review"),
             "ai-erp-web-design-guidelines": ("domain", "ui-ux-designer", "ui-plan-review"),
@@ -697,6 +724,7 @@ def verify_routing(root: Path, spec: dict) -> list[str]:
         "harness/HARNESS.md",
         "harness/skills/ai-erp/SKILL.md",
         "harness/team/agents/ui-ux-designer.md",
+        "harness/team/agents/ui-visual-designer.md",
         "harness/team/agents/implementer.md",
     ):
         text = (root / relative).read_text(encoding="utf-8")

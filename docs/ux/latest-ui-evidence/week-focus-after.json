@@ -1,0 +1,34 @@
+{
+  "days": [
+    "260px",
+    "260px",
+    "260px",
+    "260px",
+    "260px",
+    "260px",
+    "260px"
+  ],
+  "events": [
+    {
+      "focused": true,
+      "hitHref": "#/projects/p1/schedules/s1",
+      "href": "#/projects/p1/schedules/s1",
+      "inline": "top: 41.6667%; min-height: 4.16667%; left: 0%; width: 100%;",
+      "link": "10:00–11:00 9월 운영 일정 확정",
+      "offset": "2px",
+      "outline": "rgb(180, 83, 9) solid 3px",
+      "overflow": "visible"
+    },
+    {
+      "focused": false,
+      "hitHref": "#/projects/p1/schedules/s2",
+      "href": "#/projects/p1/schedules/s2",
+      "inline": "top: 41.6667%; min-height: 4.16667%; left: 0%; width: 100%;",
+      "link": "10:00–11:00 9월 고객 동기화 점검",
+      "offset": "0px",
+      "outline": "rgb(36, 88, 166) none 3px",
+      "overflow": "visible"
+    }
+  ],
+  "root": "16px"
+}

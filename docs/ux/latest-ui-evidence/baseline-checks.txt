@@ -1,0 +1,8 @@
+Latest base verification (2026-09-11, cwd D:/onedrive/Documents/ChatGPT/AI ERP/tmp/ui-workspace-refactor)
+Base: origin/main058f782. No frontend changes at this point.
+1. pnpm install --frozen-lockfile --offline: exit0.
+2. pnpm --dir frontend test: exit0, 15 test files,232 tests passed, duration29.16s (18:56:43 run). Existing jsdom navigation and TimeoutOverflow warnings.
+3. JAVA_HOME=D:/onedrive/Documents/ChatGPT/AI ERP/.tools/jdk-25.0.4.1+1; backend/gradlew.bat test openapi3: exit0, BUILD SUCCESSFUL1m23s. XML totals135tests,0failures,0errors,0skipped. Normal build output path. Deprecated/native-access warnings only.
+4. pnpm api:generate: exit0; OpenAPI3.0.1 validation and generated frontend/src/api/generated.ts, swagger build succeeded. Generated output is ignored as configured.
+5. Baseline browser:19 actual current routes at1440x900/390x844, synthetic loopback API; JSON captures widths/control inventory and PNG captures. Google-specific requests currently show permission/error fallback; success workflows require separate fixtures or current existing tests and cannot be called live verified.
+Commands were run through parent exec sessions; Gradle session27916 and frontend session19389. Backend XML in backend/build/test-results/test/ is the raw local source. This txt is a summarized execution record, not full stdout.

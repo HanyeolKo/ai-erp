@@ -24,17 +24,19 @@ Do not archive short conversation replies, temporary notes, raw command output, 
 - Entry: `$ai-erp`; planning: `$ai-erp-plan`; release: `$ai-erp-release`; task review: `$ai-erp-eval` using `task-review`, `increment-plan-review`, or `release-review`; structure: `$ai-erp-verify`.
 - For all non-UI implementation tasks (frontend/backend/scripts/infra/.github, root build/config, tests, and behavior-affecting configuration), route through `$ai-erp-implement` after the parent contract is explicit and complete.
 - Every screen planning request MUST route to `ui-ux-designer` before drafting screen decisions or implementation. This includes pages, flows, layouts, navigation, forms, tables, dashboards, accessibility, states, and interaction changes.
+- Visual planning then uses the read-only `ui-visual-designer` after the functional `ui-ux-designer` plan and before independent review; preserve ordinary UI planning routes.
 - General product planning routes to `product-planner` with `TASK-ASSIGNMENT.md`; accepted plans requiring screens then route through `ui-ux-designer` and `ui-plan-review`.
 - Parent-controlled dispatch, acknowledgement, return, independent review and acceptance follow `harness/workflows/DELEGATION-PROTOCOL.md`.
 - Accepted implementation evidence enters `release-manager` only through parent assignment; release readiness is distinct from deployment completion and unresolved recovery is `operator-action-required`.
 - Graph:
   - `router -> product-planner -> reviewer` for product planning; `product-planner -> ui-ux-designer` is allowed only after accepted `increment-plan-review` when screens are required.
   - `reviewer -> release-manager` for accepted implementation release preparation; independent `release-review` precedes any authorized execution.
-  - `router -> ui-ux-designer -> reviewer` for UI planning.
+   - `router -> ui-ux-designer -> reviewer` for UI planning.
+   - Visual planning uses `router -> ui-ux-designer -> ui-visual-designer -> reviewer`.
   - `router -> implementer` for non-UI implementation tasks after a complete parent contract; the parent applies the risk policy and requests only an applicable review.
   - `reviewer -> implementer` for UI implementation after passing `ui-plan-review` and completing the parent contract.
   - Every stage returns to the upper orchestrator; no screen shortcut or reverse implementation edge is allowed.
-- Native Codex names are `ai-erp-ui-ux-designer`, `ai-erp-router`, `ai-erp-reviewer`, `ai-erp-implementer`, `ai-erp-product-planner`, and `ai-erp-release-manager`.
+- Native Codex names are `ai-erp-ui-ux-designer`, `ai-erp-ui-visual-designer`, `ai-erp-router`, `ai-erp-reviewer`, `ai-erp-implementer`, `ai-erp-product-planner`, and `ai-erp-release-manager`.
 - Backend and frontend changes follow the same mandatory UI specialist gate before changing screen behavior.
 - Project skills: `.agents/skills/ai-erp*/SKILL.md`; native role wrappers: `.codex/agents/ai-erp-*.toml`.
 - Select pinned vendor guidance through `$ai-erp-frontend-design`, `$ai-erp-ui-ux-pro-max`, and `$ai-erp-web-design-guidelines`; load only relevant material.

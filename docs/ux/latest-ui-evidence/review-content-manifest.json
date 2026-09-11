@@ -1,0 +1,130 @@
+{
+  "base": "058f7827393f76715d80706bf383ccac6ae23ee6",
+  "normalization": "CRLF to LF; all other bytes preserved",
+  "files": [
+    {
+      "path": ".agents/skills/ai-erp-implement/SKILL.md",
+      "sha256_lf": "b98dcd96f626e429959eb61c7215aacd1cd8a60fab686704782b4a73150cfc57"
+    },
+    {
+      "path": ".agents/skills/ai-erp-ui-ux/SKILL.md",
+      "sha256_lf": "ab37036b28e61726cb0cb051f8f51ed04f2771313d2580318b45e6c4233cb133"
+    },
+    {
+      "path": ".agents/skills/ai-erp-ui-visual-design/SKILL.md",
+      "sha256_lf": "cbe09b38ab4c44dbc69b35687f475b35586969d285eaae39b301d899ea412a51"
+    },
+    {
+      "path": ".agents/skills/ai-erp/SKILL.md",
+      "sha256_lf": "1fe88c7f0867f3163c47840ca327956b29649ec1022cfa43743128e971c0fee6"
+    },
+    {
+      "path": ".codex/agents/ai-erp-ui-visual-designer.toml",
+      "sha256_lf": "a37a02735c984e3d6abef215596212b6400b1ce3326b13528031607f1bca4a4a"
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256_lf": "6e2291ec045f30d8f997d83e8693c32002cb50085ffc59e9869ca01a35161bfe"
+    },
+    {
+      "path": "docs/architecture/ui-ux-agent-guide.md",
+      "sha256_lf": "e3279c7247f296df3abafcfd5eec85dc7519cff1fb6673003e183b8133542536"
+    },
+    {
+      "path": "frontend/src/app.css",
+      "sha256_lf": "c6e831da569e2dc56bda2eaaa9393df9977ca8e57737ce3aac6fd17952f89c81"
+    },
+    {
+      "path": "frontend/src/screens/GoogleWorkspace.css",
+      "sha256_lf": "57b742599b8765895611aa14b5285e6edb8b494f67b3e464c5cf18b03edc623e"
+    },
+    {
+      "path": "frontend/src/screens/schedules.css",
+      "sha256_lf": "4741756cb2b60eedf36085bccd361ab840d9168fec2d292c73cfaa415807349f"
+    },
+    {
+      "path": "harness/HARNESS.md",
+      "sha256_lf": "4ae96509e3ece9424bd329c8c83d35149dd67a9b5c3a14fd306edf69524f160a"
+    },
+    {
+      "path": "harness/evaluation/TASK-REVIEW-RUBRIC.md",
+      "sha256_lf": "ea384321c55db220cb3056c5c71c212d2cf6b14b688ecc63a2b26f3475ac3505"
+    },
+    {
+      "path": "harness/evaluation/UI-PLAN-RUBRIC.md",
+      "sha256_lf": "9de0293d8a2b25fce313cf7f7759374f6d177159fcdf797f8780961047c354d6"
+    },
+    {
+      "path": "harness/harness-spec.json",
+      "sha256_lf": "fca0dc3026158dad2db0b32ec2d8d82970ab41e2c81e8f1b58dd74d28320c3a3"
+    },
+    {
+      "path": "harness/skills/ai-erp-implement/SKILL.md",
+      "sha256_lf": "b98dcd96f626e429959eb61c7215aacd1cd8a60fab686704782b4a73150cfc57"
+    },
+    {
+      "path": "harness/skills/ai-erp-ui-ux/SKILL.md",
+      "sha256_lf": "ab37036b28e61726cb0cb051f8f51ed04f2771313d2580318b45e6c4233cb133"
+    },
+    {
+      "path": "harness/skills/ai-erp-ui-visual-design/SKILL.md",
+      "sha256_lf": "cbe09b38ab4c44dbc69b35687f475b35586969d285eaae39b301d899ea412a51"
+    },
+    {
+      "path": "harness/skills/ai-erp/SKILL.md",
+      "sha256_lf": "1fe88c7f0867f3163c47840ca327956b29649ec1022cfa43743128e971c0fee6"
+    },
+    {
+      "path": "harness/team/TEAM-ARCHITECTURE.md",
+      "sha256_lf": "ad7580dda06a09b5801f70e0cb4778ba6d281f3dfc15607045e9b008ae2346e8"
+    },
+    {
+      "path": "harness/team/agents/implementer.md",
+      "sha256_lf": "ad6e7f9645ef6074b38cde73b6cf8ab1c000595f6a2c55bd98efd3514d8612ac"
+    },
+    {
+      "path": "harness/team/agents/reviewer.md",
+      "sha256_lf": "d6ccef0516e50c24306ab9cd80508b1c982c5d893481305758ee23633e5e1c53"
+    },
+    {
+      "path": "harness/team/agents/router.md",
+      "sha256_lf": "cc7ef4a7fe19e98100de758260c142e5cd35789feaf5d6e3c47082424554631d"
+    },
+    {
+      "path": "harness/team/agents/ui-ux-designer.md",
+      "sha256_lf": "5beb066138872afba13f284390773b4fcbca7a2efc3bc30174ac417179262b95"
+    },
+    {
+      "path": "harness/team/agents/ui-visual-designer.md",
+      "sha256_lf": "bf50fbbcb8c2216545666f020fa730d1c15d8300420da2f0fc63874434ce295c"
+    },
+    {
+      "path": "harness/templates/IMPLEMENTATION-CONTRACT.md",
+      "sha256_lf": "c9b375b7ba10ad481ec60419f0c54a031aa27fd036f514e6689f885c7f1b61a6"
+    },
+    {
+      "path": "harness/templates/IMPLEMENTATION-RESULT.md",
+      "sha256_lf": "3801c77363af2e6faf87a07c2f802a8a9666cc9cbb29e78114395a540ebb7759"
+    },
+    {
+      "path": "harness/templates/VISUAL-CHANGE-PLAN.md",
+      "sha256_lf": "7badd8a45ecccc7a5a11b89f04497f2b16999f8ebe36e3cb42c37d07bd3abab5"
+    },
+    {
+      "path": "harness/templates/VISUAL-DESIGN-CONTRACT.md",
+      "sha256_lf": "7617ff3ea8c6f89b54eb339f360c08f2dd26a64787726c2e2c14a84af3ea1bbc"
+    },
+    {
+      "path": "scripts/test_verify_harness.py",
+      "sha256_lf": "871d7b908bc5d26491eacf58f0fbbc6c8e54dbfecf08b2dffdcb5491b98d56a0"
+    },
+    {
+      "path": "scripts/ui-preview-server.mjs",
+      "sha256_lf": "14ae13d5b1bbcd087d456879714a423cbc2ed254b0b2def2c85aa32b4df3ed1f"
+    },
+    {
+      "path": "scripts/verify-harness.py",
+      "sha256_lf": "3f1dfdab75b34048d72c1ebe302efcc01d567cef60e359932b94f974616044eb"
+    }
+  ]
+}

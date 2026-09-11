@@ -1,0 +1,170 @@
+[
+  {
+    "name": "account",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "width": 1440
+  },
+  {
+    "name": "google",
+    "mainOverflow": 0,
+    "overflow": -15,
+    "width": 1440
+  },
+  {
+    "name": "drive",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "width": 1440
+  },
+  {
+    "name": "mail",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "width": 1440
+  },
+  {
+    "name": "files",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "width": 1440
+  },
+  {
+    "name": "project-calendar",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "width": 1440
+  },
+  {
+    "name": "members",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "width": 1440
+  },
+  {
+    "name": "account",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "width": 768
+  },
+  {
+    "name": "google",
+    "mainOverflow": 0,
+    "overflow": -15,
+    "width": 768
+  },
+  {
+    "name": "drive",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "width": 768
+  },
+  {
+    "name": "mail",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "width": 768
+  },
+  {
+    "name": "files",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "width": 768
+  },
+  {
+    "name": "project-calendar",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "width": 768
+  },
+  {
+    "name": "members",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "width": 768
+  },
+  {
+    "name": "account",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "width": 390
+  },
+  {
+    "name": "google",
+    "mainOverflow": 0,
+    "overflow": -15,
+    "width": 390
+  },
+  {
+    "name": "drive",
+    "mainOverflow": 0,
+    "overflow": -15,
+    "width": 390
+  },
+  {
+    "name": "mail",
+    "mainOverflow": 0,
+    "overflow": -15,
+    "width": 390
+  },
+  {
+    "name": "files",
+    "mainOverflow": 0,
+    "overflow": -15,
+    "width": 390
+  },
+  {
+    "name": "project-calendar",
+    "mainOverflow": 0,
+    "overflow": -15,
+    "width": 390
+  },
+  {
+    "name": "members",
+    "mainOverflow": 0,
+    "overflow": -15,
+    "width": 390
+  },
+  {
+    "name": "account",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "width": 320
+  },
+  {
+    "name": "google",
+    "mainOverflow": 0,
+    "overflow": -15,
+    "width": 320
+  },
+  {
+    "name": "drive",
+    "mainOverflow": 0,
+    "overflow": -15,
+    "width": 320
+  },
+  {
+    "name": "mail",
+    "mainOverflow": 0,
+    "overflow": -15,
+    "width": 320
+  },
+  {
+    "name": "files",
+    "mainOverflow": 0,
+    "overflow": -15,
+    "width": 320
+  },
+  {
+    "name": "project-calendar",
+    "mainOverflow": 0,
+    "overflow": -15,
+    "width": 320
+  },
+  {
+    "name": "members",
+    "mainOverflow": 0,
+    "overflow": -15,
+    "width": 320
+  }
+]

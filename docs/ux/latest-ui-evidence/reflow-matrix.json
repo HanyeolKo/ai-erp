@@ -1,0 +1,904 @@
+[
+  {
+    "size": "tablet",
+    "name": "projects",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "smallButtons": [
+      {
+        "height": 40,
+        "text": "본문으로 건너뛰기"
+      },
+      {
+        "height": 40,
+        "text": "새 프로젝트"
+      },
+      {
+        "height": 40,
+        "text": "초대로 참여"
+      },
+      {
+        "height": 40,
+        "text": "목록 새로고침"
+      }
+    ],
+    "width": 768
+  },
+  {
+    "size": "tablet",
+    "name": "dashboard",
+    "mainOverflow": 0,
+    "overflow": -15,
+    "smallButtons": [
+      {
+        "height": 40,
+        "text": "본문으로 건너뛰기"
+      },
+      {
+        "height": 40,
+        "text": "일정 만들기"
+      },
+      {
+        "height": 40,
+        "text": "구성원 초대"
+      }
+    ],
+    "width": 768
+  },
+  {
+    "size": "tablet",
+    "name": "schedules",
+    "mainOverflow": 0,
+    "overflow": -15,
+    "smallButtons": [
+      {
+        "height": 40,
+        "text": "본문으로 건너뛰기"
+      },
+      {
+        "height": 40,
+        "text": "월간 보기"
+      },
+      {
+        "height": 40,
+        "text": "주간 보기"
+      },
+      {
+        "height": 40,
+        "text": "이전 기간"
+      },
+      {
+        "height": 40,
+        "text": "다음 기간"
+      },
+      {
+        "height": 40,
+        "text": "이전 일정 페이지"
+      },
+      {
+        "height": 40,
+        "text": "다음 일정 페이지"
+      }
+    ],
+    "width": 768
+  },
+  {
+    "size": "tablet",
+    "name": "create",
+    "mainOverflow": 0,
+    "overflow": -15,
+    "smallButtons": [
+      {
+        "height": 40,
+        "text": "본문으로 건너뛰기"
+      },
+      {
+        "height": 40,
+        "text": "취소"
+      },
+      {
+        "height": 40,
+        "text": "일정 저장"
+      },
+      {
+        "height": 40,
+        "text": "이전 참석자 목록"
+      },
+      {
+        "height": 40,
+        "text": "다음 참석자 목록"
+      }
+    ],
+    "width": 768
+  },
+  {
+    "size": "tablet",
+    "name": "detail",
+    "mainOverflow": 0,
+    "overflow": -15,
+    "smallButtons": [
+      {
+        "height": 40,
+        "text": "본문으로 건너뛰기"
+      },
+      {
+        "height": 40,
+        "text": "일정 목록"
+      },
+      {
+        "height": 40,
+        "text": "일정 수정"
+      },
+      {
+        "height": 40,
+        "text": "일정 취소"
+      },
+      {
+        "height": 40,
+        "text": "변경 확인"
+      }
+    ],
+    "width": 768
+  },
+  {
+    "size": "tablet",
+    "name": "account",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "smallButtons": [
+      {
+        "height": 40,
+        "text": "본문으로 건너뛰기"
+      },
+      {
+        "height": 40,
+        "text": "Google 서비스 연결"
+      },
+      {
+        "height": 40,
+        "text": "Calendar 연결 설정"
+      },
+      {
+        "height": 40,
+        "text": "다른 계정으로 로그인"
+      }
+    ],
+    "width": 768
+  },
+  {
+    "size": "tablet",
+    "name": "google",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "smallButtons": [
+      {
+        "height": 40,
+        "text": "본문으로 건너뛰기"
+      },
+      {
+        "height": 40,
+        "text": "내 계정으로 돌아가기"
+      },
+      {
+        "height": 40,
+        "text": "다시 시도"
+      }
+    ],
+    "width": 768
+  },
+  {
+    "size": "tablet",
+    "name": "drive",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "smallButtons": [
+      {
+        "height": 40,
+        "text": "본문으로 건너뛰기"
+      }
+    ],
+    "width": 768
+  },
+  {
+    "size": "tablet",
+    "name": "mail",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "smallButtons": [
+      {
+        "height": 40,
+        "text": "본문으로 건너뛰기"
+      },
+      {
+        "height": 40,
+        "text": "Google 연결 설정"
+      }
+    ],
+    "width": 768
+  },
+  {
+    "size": "tablet",
+    "name": "files",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "smallButtons": [
+      {
+        "height": 40,
+        "text": "본문으로 건너뛰기"
+      },
+      {
+        "height": 40,
+        "text": "다시 시도"
+      },
+      {
+        "height": 40,
+        "text": "다시 시도"
+      }
+    ],
+    "width": 768
+  },
+  {
+    "size": "tablet",
+    "name": "project-calendar",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "smallButtons": [
+      {
+        "height": 40,
+        "text": "본문으로 건너뛰기"
+      },
+      {
+        "height": 40,
+        "text": "다시 시도"
+      }
+    ],
+    "width": 768
+  },
+  {
+    "size": "tablet",
+    "name": "members",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "smallButtons": [
+      {
+        "height": 40,
+        "text": "본문으로 건너뛰기"
+      },
+      {
+        "height": 40,
+        "text": "이전"
+      },
+      {
+        "height": 40,
+        "text": "다음"
+      }
+    ],
+    "width": 768
+  },
+  {
+    "size": "tablet",
+    "name": "notifications",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "smallButtons": [
+      {
+        "height": 40,
+        "text": "본문으로 건너뛰기"
+      },
+      {
+        "height": 40,
+        "text": "이전"
+      },
+      {
+        "height": 40,
+        "text": "다음"
+      }
+    ],
+    "width": 768
+  },
+  {
+    "size": "tablet",
+    "name": "edit",
+    "mainOverflow": 0,
+    "overflow": -15,
+    "smallButtons": [
+      {
+        "height": 40,
+        "text": "본문으로 건너뛰기"
+      },
+      {
+        "height": 40,
+        "text": "취소"
+      },
+      {
+        "height": 40,
+        "text": "일정 저장"
+      },
+      {
+        "height": 40,
+        "text": "이전 참석자 목록"
+      },
+      {
+        "height": 40,
+        "text": "다음 참석자 목록"
+      }
+    ],
+    "width": 768
+  },
+  {
+    "size": "tablet",
+    "name": "invite-create",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "smallButtons": [
+      {
+        "height": 40,
+        "text": "본문으로 건너뛰기"
+      },
+      {
+        "height": 40,
+        "text": "이전"
+      },
+      {
+        "height": 40,
+        "text": "다음"
+      },
+      {
+        "height": 41.59375,
+        "text": "×"
+      },
+      {
+        "height": 40,
+        "text": "다시 시도"
+      },
+      {
+        "height": 40,
+        "text": "초대 상태 다시 확인"
+      },
+      {
+        "height": 40,
+        "text": "초대 만들기"
+      }
+    ],
+    "width": 768
+  },
+  {
+    "size": "tablet",
+    "name": "invite",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "smallButtons": [
+      {
+        "height": 40,
+        "text": "본문으로 건너뛰기"
+      },
+      {
+        "height": 40,
+        "text": "초대 수락"
+      },
+      {
+        "height": 40,
+        "text": "초대 거절"
+      }
+    ],
+    "width": 768
+  },
+  {
+    "size": "tablet",
+    "name": "calendar",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "smallButtons": [
+      {
+        "height": 40,
+        "text": "본문으로 건너뛰기"
+      },
+      {
+        "height": 40,
+        "text": "연결 상태 새로고침"
+      }
+    ],
+    "width": 768
+  },
+  {
+    "size": "tablet",
+    "name": "unknown",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "smallButtons": [
+      {
+        "height": 40,
+        "text": "본문으로 건너뛰기"
+      }
+    ],
+    "width": 768
+  },
+  {
+    "size": "tablet",
+    "name": "missing",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "smallButtons": [
+      {
+        "height": 40,
+        "text": "본문으로 건너뛰기"
+      },
+      {
+        "height": 40,
+        "text": "접근 상태 다시 확인"
+      }
+    ],
+    "width": 768
+  },
+  {
+    "size": "narrow",
+    "name": "projects",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "smallButtons": [
+      {
+        "height": 40,
+        "text": "목록 새로고침"
+      }
+    ],
+    "width": 320
+  },
+  {
+    "size": "narrow",
+    "name": "dashboard",
+    "mainOverflow": 0,
+    "overflow": -15,
+    "smallButtons": [],
+    "width": 320
+  },
+  {
+    "size": "narrow",
+    "name": "schedules",
+    "mainOverflow": 0,
+    "overflow": -15,
+    "smallButtons": [],
+    "width": 320
+  },
+  {
+    "size": "narrow",
+    "name": "create",
+    "mainOverflow": 0,
+    "overflow": -15,
+    "smallButtons": [],
+    "width": 320
+  },
+  {
+    "size": "narrow",
+    "name": "detail",
+    "mainOverflow": 0,
+    "overflow": -15,
+    "smallButtons": [],
+    "width": 320
+  },
+  {
+    "size": "narrow",
+    "name": "account",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "smallButtons": [],
+    "width": 320
+  },
+  {
+    "size": "narrow",
+    "name": "google",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "smallButtons": [],
+    "width": 320
+  },
+  {
+    "size": "narrow",
+    "name": "drive",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "smallButtons": [],
+    "width": 320
+  },
+  {
+    "size": "narrow",
+    "name": "mail",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "smallButtons": [],
+    "width": 320
+  },
+  {
+    "size": "narrow",
+    "name": "files",
+    "mainOverflow": 0,
+    "overflow": -15,
+    "smallButtons": [],
+    "width": 320
+  },
+  {
+    "size": "narrow",
+    "name": "project-calendar",
+    "mainOverflow": 0,
+    "overflow": -15,
+    "smallButtons": [],
+    "width": 320
+  },
+  {
+    "size": "narrow",
+    "name": "members",
+    "mainOverflow": 0,
+    "overflow": -15,
+    "smallButtons": [],
+    "width": 320
+  },
+  {
+    "size": "narrow",
+    "name": "notifications",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "smallButtons": [],
+    "width": 320
+  },
+  {
+    "size": "narrow",
+    "name": "edit",
+    "mainOverflow": 0,
+    "overflow": -15,
+    "smallButtons": [],
+    "width": 320
+  },
+  {
+    "size": "narrow",
+    "name": "invite-create",
+    "mainOverflow": 0,
+    "overflow": -15,
+    "smallButtons": [],
+    "width": 320
+  },
+  {
+    "size": "narrow",
+    "name": "invite",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "smallButtons": [],
+    "width": 320
+  },
+  {
+    "size": "narrow",
+    "name": "calendar",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "smallButtons": [],
+    "width": 320
+  },
+  {
+    "size": "narrow",
+    "name": "unknown",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "smallButtons": [],
+    "width": 320
+  },
+  {
+    "size": "narrow",
+    "name": "missing",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "smallButtons": [],
+    "width": 320
+  },
+  {
+    "size": "mobile375",
+    "name": "projects",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "smallButtons": [
+      {
+        "height": 40,
+        "text": "목록 새로고침"
+      }
+    ],
+    "width": 375
+  },
+  {
+    "size": "mobile375",
+    "name": "dashboard",
+    "mainOverflow": 0,
+    "overflow": -15,
+    "smallButtons": [],
+    "width": 375
+  },
+  {
+    "size": "mobile375",
+    "name": "schedules",
+    "mainOverflow": 0,
+    "overflow": -15,
+    "smallButtons": [],
+    "width": 375
+  },
+  {
+    "size": "mobile375",
+    "name": "create",
+    "mainOverflow": 0,
+    "overflow": -15,
+    "smallButtons": [],
+    "width": 375
+  },
+  {
+    "size": "mobile375",
+    "name": "detail",
+    "mainOverflow": 0,
+    "overflow": -15,
+    "smallButtons": [],
+    "width": 375
+  },
+  {
+    "size": "mobile375",
+    "name": "account",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "smallButtons": [],
+    "width": 375
+  },
+  {
+    "size": "mobile375",
+    "name": "google",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "smallButtons": [],
+    "width": 375
+  },
+  {
+    "size": "mobile375",
+    "name": "drive",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "smallButtons": [],
+    "width": 375
+  },
+  {
+    "size": "mobile375",
+    "name": "mail",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "smallButtons": [],
+    "width": 375
+  },
+  {
+    "size": "mobile375",
+    "name": "files",
+    "mainOverflow": 0,
+    "overflow": -15,
+    "smallButtons": [],
+    "width": 375
+  },
+  {
+    "size": "mobile375",
+    "name": "project-calendar",
+    "mainOverflow": 0,
+    "overflow": -15,
+    "smallButtons": [],
+    "width": 375
+  },
+  {
+    "size": "mobile375",
+    "name": "members",
+    "mainOverflow": 0,
+    "overflow": -15,
+    "smallButtons": [],
+    "width": 375
+  },
+  {
+    "size": "mobile375",
+    "name": "notifications",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "smallButtons": [],
+    "width": 375
+  },
+  {
+    "size": "mobile375",
+    "name": "edit",
+    "mainOverflow": 0,
+    "overflow": -15,
+    "smallButtons": [],
+    "width": 375
+  },
+  {
+    "size": "mobile375",
+    "name": "invite-create",
+    "mainOverflow": 0,
+    "overflow": -15,
+    "smallButtons": [],
+    "width": 375
+  },
+  {
+    "size": "mobile375",
+    "name": "invite",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "smallButtons": [],
+    "width": 375
+  },
+  {
+    "size": "mobile375",
+    "name": "calendar",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "smallButtons": [],
+    "width": 375
+  },
+  {
+    "size": "mobile375",
+    "name": "unknown",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "smallButtons": [],
+    "width": 375
+  },
+  {
+    "size": "mobile375",
+    "name": "missing",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "smallButtons": [],
+    "width": 375
+  },
+  {
+    "size": "zoom200-equivalent",
+    "name": "projects",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "smallButtons": [
+      {
+        "height": 40,
+        "text": "목록 새로고침"
+      }
+    ],
+    "width": 720
+  },
+  {
+    "size": "zoom200-equivalent",
+    "name": "dashboard",
+    "mainOverflow": 0,
+    "overflow": -15,
+    "smallButtons": [],
+    "width": 720
+  },
+  {
+    "size": "zoom200-equivalent",
+    "name": "schedules",
+    "mainOverflow": 0,
+    "overflow": -15,
+    "smallButtons": [],
+    "width": 720
+  },
+  {
+    "size": "zoom200-equivalent",
+    "name": "create",
+    "mainOverflow": 0,
+    "overflow": -15,
+    "smallButtons": [],
+    "width": 720
+  },
+  {
+    "size": "zoom200-equivalent",
+    "name": "detail",
+    "mainOverflow": 0,
+    "overflow": -15,
+    "smallButtons": [],
+    "width": 720
+  },
+  {
+    "size": "zoom200-equivalent",
+    "name": "account",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "smallButtons": [],
+    "width": 720
+  },
+  {
+    "size": "zoom200-equivalent",
+    "name": "google",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "smallButtons": [],
+    "width": 720
+  },
+  {
+    "size": "zoom200-equivalent",
+    "name": "drive",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "smallButtons": [],
+    "width": 720
+  },
+  {
+    "size": "zoom200-equivalent",
+    "name": "mail",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "smallButtons": [],
+    "width": 720
+  },
+  {
+    "size": "zoom200-equivalent",
+    "name": "files",
+    "mainOverflow": 0,
+    "overflow": -15,
+    "smallButtons": [],
+    "width": 720
+  },
+  {
+    "size": "zoom200-equivalent",
+    "name": "project-calendar",
+    "mainOverflow": 0,
+    "overflow": -15,
+    "smallButtons": [],
+    "width": 720
+  },
+  {
+    "size": "zoom200-equivalent",
+    "name": "members",
+    "mainOverflow": 0,
+    "overflow": -15,
+    "smallButtons": [],
+    "width": 720
+  },
+  {
+    "size": "zoom200-equivalent",
+    "name": "notifications",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "smallButtons": [],
+    "width": 720
+  },
+  {
+    "size": "zoom200-equivalent",
+    "name": "edit",
+    "mainOverflow": 0,
+    "overflow": -15,
+    "smallButtons": [],
+    "width": 720
+  },
+  {
+    "size": "zoom200-equivalent",
+    "name": "invite-create",
+    "mainOverflow": 0,
+    "overflow": -15,
+    "smallButtons": [],
+    "width": 720
+  },
+  {
+    "size": "zoom200-equivalent",
+    "name": "invite",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "smallButtons": [],
+    "width": 720
+  },
+  {
+    "size": "zoom200-equivalent",
+    "name": "calendar",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "smallButtons": [],
+    "width": 720
+  },
+  {
+    "size": "zoom200-equivalent",
+    "name": "unknown",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "smallButtons": [],
+    "width": 720
+  },
+  {
+    "size": "zoom200-equivalent",
+    "name": "missing",
+    "mainOverflow": 0,
+    "overflow": 0,
+    "smallButtons": [],
+    "width": 720
+  }
+]

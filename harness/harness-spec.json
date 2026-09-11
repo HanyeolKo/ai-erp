@@ -107,6 +107,19 @@
       "access": "workspace-write"
     },
     {
+      "id": "ui-visual-designer",
+      "description": "Propose read-only visual system and screen presentation changes after the functional UI/UX plan; preserve behavior and accepted project patterns.",
+      "lane": "execution",
+      "capabilities": [
+        "ui-planning"
+      ],
+      "domains": [
+        "ui-ux"
+      ],
+      "model_tier": "deep",
+      "access": "read-only"
+    },
+    {
       "id": "reviewer",
       "description": "Review independent evidence, issue task verdicts, and count stable defects.",
       "lane": "evaluation",
@@ -205,6 +218,16 @@
         "ui-ux"
       ],
       "instructions": "harness/skills/ai-erp-ui-ux/SKILL.md",
+      "evaluator": "ui-plan-review"
+    },
+    {
+      "id": "ai-erp-ui-visual-design",
+      "kind": "domain",
+      "entry_agent": "ui-ux-designer",
+      "domains": [
+        "ui-ux"
+      ],
+      "instructions": "harness/skills/ai-erp-ui-visual-design/SKILL.md",
       "evaluator": "ui-plan-review"
     },
     {
@@ -321,8 +344,27 @@
       {
         "from": "ui-ux-designer",
         "to": "reviewer",
-        "when": "A screen plan is available and implementation awaits independent review.",
+        "when": "A non-visual screen plan is available and implementation awaits independent review; visual plans use ui-visual-designer first.",
         "artifacts": [
+          "harness/templates/UI-REVIEW.md"
+        ]
+      },
+      {
+        "from": "ui-ux-designer",
+        "to": "ui-visual-designer",
+        "when": "A visual planning task has a completed functional UI/UX plan; the visual specialist maps presentation changes to accepted project patterns while preserving functional invariants.",
+        "artifacts": [
+          "harness/templates/VISUAL-DESIGN-CONTRACT.md",
+          "harness/templates/VISUAL-CHANGE-PLAN.md"
+        ]
+      },
+      {
+        "from": "ui-visual-designer",
+        "to": "reviewer",
+        "when": "A visual design contract is available for independent ui-plan-review; pattern-contract-only review may mark screen mapping N/A, then an accepted pattern permits a later screen change plan review.",
+        "artifacts": [
+          "harness/templates/VISUAL-DESIGN-CONTRACT.md",
+          "harness/templates/VISUAL-CHANGE-PLAN.md",
           "harness/templates/UI-REVIEW.md"
         ]
       },

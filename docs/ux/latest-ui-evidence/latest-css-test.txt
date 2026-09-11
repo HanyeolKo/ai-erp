@@ -1,0 +1,13 @@
+command: pnpm --dir frontend test
+cwd: D:\onedrive\Documents\ChatGPT\AI ERP\tmp\ui-workspace-refactor
+exit: 1
+stdout+stderr:
+
+> @ai-erp/frontend@0.0.1 test D:\onedrive\Documents\ChatGPT\AI ERP\tmp\ui-workspace-refactor\frontend
+> vitest run
+
+failed to load config from D:\onedrive\Documents\ChatGPT\AI ERP\tmp\ui-workspace-refactor\frontend\vite.config.ts
+
+Startup Error
+Error: Build failed with 1 error: [plugin externalize-deps] Error: spawn EPERM
+The failure occurs while Vite/Vitest resolves the config via optimizeSafeRealPathSync; no test files executed.

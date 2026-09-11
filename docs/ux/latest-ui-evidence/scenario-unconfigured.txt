@@ -1,0 +1,7 @@
+- main:
+  - link "AI ERP":
+    - /url: "#/"
+    - generic: AI
+    - generic: AI ERP
+  - heading "AI ERP" [level=1]
+  - paragraph: Google 로그인이 구성되지 않았습니다.

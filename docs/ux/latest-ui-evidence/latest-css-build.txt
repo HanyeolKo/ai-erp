@@ -1,0 +1,12 @@
+command: pnpm --dir frontend build
+cwd: D:\onedrive\Documents\ChatGPT\AI ERP\tmp\ui-workspace-refactor
+exit: 1
+stdout+stderr:
+
+> @ai-erp/frontend@0.0.1 build D:\onedrive\Documents\ChatGPT\AI ERP\tmp\ui-workspace-refactor\frontend
+> tsc -b && vite build
+
+failed to load config from D:\onedrive\Documents\ChatGPT\AI ERP\tmp\ui-workspace-refactor\frontend\vite.config.ts
+error during build:
+Error: Build failed with 1 error: [plugin externalize-deps] Error: spawn EPERM
+The failure occurs during Vite config loading after the TypeScript build step.

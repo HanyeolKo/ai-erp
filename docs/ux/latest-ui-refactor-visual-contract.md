@@ -1,0 +1,86 @@
+# Latest UI refactor visual contract
+
+## Contract identity and evidence
+
+- Task/base: `latest-ui-refactor`, `058f782`.
+- Actual specialist: a default agent acting as the read-only visual specialist, `gpt-5.6-sol`/`medium`; this document does not claim the native role.
+- Functional handoff: `docs/ux/latest-ui-refactor-functional-plan.md`; assignment: `docs/ux/latest-ui-refactor-assignment.md`.
+- Pattern: `ERP-WORKSPACE-01/v2-candidate`. It retains the accepted palette, local type, spacing, surface, control, and status principles of `ERP-WORKSPACE-01/v1`, and replaces its obsolete shell and route mapping. It becomes `ERP-WORKSPACE-01/v2` only after independent `ui-plan-review` and parent acceptance.
+- Observed sources: `frontend/src/App.tsx`, `frontend/src/ui.tsx`, `frontend/src/screens/Account.tsx`, `ProjectStart.tsx`, `Schedules.tsx`, `ScheduleForm.tsx`, `Detail.tsx`, `GoogleWorkspace.tsx`, `ProjectFiles.tsx`, the three CSS files named below, and representative `docs/ux/latest-ui-evidence/before-*.png`/JSON baselines.
+- Implementation scope: presentation-only edits to `frontend/src/app.css`, `frontend/src/screens/schedules.css`, and `frontend/src/screens/GoogleWorkspace.css`. Neutral TSX additions: **none**. Do not add wrappers, classes, icons, dependencies, text, or controls.
+
+Finding labels used below: **observed** describes `058f782`; **accepted** is fixed by the functional plan; **candidate** is this reviewable visual proposal.
+
+## Shared rules
+
+| ID | Status | Checkable rule |
+| --- | --- | --- |
+| V2-TOKEN | candidate | Define in `:root`: `--page:#F3F5F8`, `--surface:#FFFFFF`, `--surface-subtle:#F8FAFC`, `--text:#17243B`, `--text-secondary:#526079`, `--navy:#172B46`, `--navy-hover:#294568`, `--accent:#2458A6`, `--accent-hover:#1B478A`, `--accent-soft:#EDF3FC`, `--divider:#D9E1EC`, `--control-border:#7B899D`, `--focus:#B45309`, `--danger:#A82D26`, `--danger-soft:#FFF1F0`, `--success:#216244`, `--success-soft:#EDF8F1`, `--disabled-bg:#EEF1F5`, `--disabled-text:#657187`, `--disabled-border:#CDD5E0`, `--radius-control:8px`, `--radius-surface:12px`. Replace literal equivalents in all three CSS files with these tokens; do not introduce gradients or a new shadow system. |
+| V2-TYPE | candidate | Use `Segoe UI, Malgun Gothic, Apple SD Gothic Neo, system-ui, sans-serif`; root **`16px/1.6`** and body copy `15px/1.6`; `h1 28px/1.3`, `h2 20px/1.4`, `h3 16px/1.5`, metadata/eyebrow/help/time `13px/1.5`. Headings use `--text`, weight 700/800; supporting copy uses `--text-secondary`. No external font. Long names, email, IDs, titles, body text use `overflow-wrap:anywhere`; flex/grid children that contain them use `min-width:0`; no line clamp or ellipsis except the accepted mobile project-title exception E1. |
+| V2-SPACE | candidate | Use only 4/8/12/16/20/24/32/40px for new or normalized gaps, padding, and margins. Desktop content padding is `40px clamp(24px,4vw,56px) 72px`; mobile content padding `32px 16px 48px`. Page-heading/action groups use 24px/8px gaps. A meaningful white task surface uses 1px `--divider`, 12px radius, 24px padding (16px below 768px). Do not wrap an entire page in one card or nest decorative cards. |
+| V2-SHELL | accepted/candidate | Preserve the observed 72px desktop topbar, two-row 112px mobile topbar, `224px minmax(0,1fr)` desktop workspace, current `topbar-primary`, `topbar-secondary`, account `details`, sidebar DOM/order, and `<768px` `.is-open` toggle. Apply navy to brand mark/current navigation and pale page to the workspace; white topbar/sidebar remain separated by `--divider`. Active sidebar link is `--accent-soft` with a 3px navy inset/left marker; hover uses `--surface-subtle`. **No 13rem rail, fixed rail, new hamburger, or navigation relocation.** |
+| V2-HEADER | candidate | Existing `.page-heading` and `.schedule-heading` form the shared page header: eyebrow, h1, lead on the left and existing actions on the right; keep DOM and action order. Stack at `<768px`, with actions 16px below and full-width only where current schedule/mobile selectors already require it. Standalone narrow-page headings keep their current order and receive the same type/spacing rhythm. |
+| V2-SURFACE | candidate | Use white surfaces only for existing semantic groups: `.empty-state`, `.status-card`, `.account-card`, `.preview-card`, `.invite-details`, schedule radar/list/detail-summary/form fieldsets, Google account/service/binding/picker/status groups, and mail/Drive/project-file rows. Use subtle fill for explanatory/blocked/review/pre blocks. Lists remain lists and preserve server order. Avoid global `section`, `div`, `ul`, or `li` card rules. |
+| V2-CONTROL | candidate | All native buttons and `.button` retain meaning and order. Base/secondary are white with `--control-border` and `--text`/`--accent`; primary is `--accent` fill with white text and `--accent-hover` hover; danger is white with `--danger` border/text and `--danger-soft` hover. Controls are min-height 40px desktop, 44px at `<768px`, radius 8px, action gap 8px. Inputs/selects/textarea use white, `--control-border`, 8px radius, at least 40px height, and full-width only inside their current bounded forms. Disabled uses explicit disabled colors and full opacity; cursor may remain not-allowed. |
+| V2-FOCUS | accepted/candidate | Every existing link, button, summary, input, select, textarea, and dialog heading focus target gets visible `3px solid --focus` at 2px offset. On navy surfaces use a white 3px ring plus 1px navy separation if contrast requires it. Focus must not be clipped. Preserve skip-link reveal, route h1 focus, Dialog focus trap/Escape/caller return, and all tab stops. |
+| V2-STATE | candidate | `.notice` uses danger border/text with `--danger-soft`; `.uncertain-panel`, permission/reauth status use focus/amber styling; success uses `--success`/`--success-soft`; loading/help/unknown uses secondary text. Keep existing status words and `role`/`aria-live`; color never carries the only distinction. No skeleton, spinner, animation, or status icon. |
+| V2-DIALOG | candidate | Existing native `.modal` remains max 560px and `calc(100vh - 48px)` desktop, `calc(100vw - 24px)`/`calc(100vh - 24px)` mobile. Use white surface, 12px radius, one restrained existing elevation, divider header, 24px body (16px mobile), sticky behavior only if already present (none proposed). `.modal-actions` and `.action-row` preserve action/DOM order and wrap; destructive confirmation keeps danger last where source already places it. |
+| V2-RESP | accepted/candidate | Shell/mobile switch remains exactly `max-width:767px`; Google responsive rule aligns from 760px to 767px without behavior change; schedule filter remains 3 columns >1100, 2 columns 768–1100, 1 column <768. At 1440, 768, 390, 375, and 320px/200% zoom, ordinary document overflow is <=1px; controls and long text stay visible. Preserve current calendar-only bounded handling. `prefers-reduced-motion` remains, and no motion is added. |
+| V2-DATA | accepted | Preserve schedule `.schedule-weekday-row`, `.month-grid`, `.week-grid` at 7 columns; preserve mobile `.schedule-calendar {display:none}` and `.schedule-agenda {display:block}`. Preserve `.day-events {position:relative}` and its baseline effective desktop height **260px** as the day canvas. Preserve hour-label inline `top` and each event's inline `top`, `minHeight`, `left`, `width` values/units exactly. Calendar typography, padding, wrapping and viewport-relative horizontal position may change under the permitted visual rules, so full cell/event bounding boxes need not be byte-identical; the encoded coordinates, canvas reference, ordering, data attributes and click targets must retain their meaning. |
+
+## File implementation map
+
+- `frontend/src/app.css`: own V2-TOKEN/TYPE/SPACE, the current Shell/AuthShell, general headers, global controls/focus, project/member/notification/account/invitation surfaces, statuses, Dialog, long-text safeguards, and global responsive rules. Add existing-selector styling for `.account-service-links`, `.field-error`, `.invite-expired`, `.preview-card dl`, and `.modal-actions`; selectors already exist in TSX. Consolidate duplicate generic schedule presentation only after checking cascade effects; specifically retain the baseline effective desktop `.day-events` height of 260px even though `schedules.css` also declares 280px.
+- `frontend/src/screens/schedules.css`: alias `--schedule-*` to root tokens; implement shared header/surface/control/state rules within `.schedule-screen`. Keep V2-DATA declarations and the existing 767/768/1100 breakpoints semantically identical. Calendar palette, typography and wrapping may change; data-encoding coordinates and the 260px desktop day canvas may not.
+- `frontend/src/screens/GoogleWorkspace.css`: replace fallback literals with root tokens; align cards, rows, toolbars, selection, compose/review/detail, permission blocks and Calendar binding to shared surfaces and controls. Change its mobile query to `max-width:767px`; preserve tablist, form, list, Dialog, and action order.
+- `frontend/src/**/*.tsx`: no edits. If a later implementer proves an existing-selector collision, stop and return the exact element and selector to the parent; do not improvise a behavior-bearing wrapper.
+
+## Screen and route mapping
+
+| Screen/path | Rules | Measurable visual acceptance and preserved behavior | Exception/status |
+| --- | --- | --- | --- |
+| Auth/config/session states | V2-TOKEN, TYPE, CONTROL, FOCUS, STATE, RESP | `AuthShell` keeps brand, current content/order/login continuation; login and retry remain reachable at 320px. | E2; mapped |
+| `/` Projects + ProjectStart/InvitationEntry dialogs | V2-HEADER, SURFACE, CONTROL, DIALOG, RESP | Page actions, project rows, empty/recovery/pagination and both dialogs share tokens; creation/uncertain and invite validation/focus remain unchanged. | mapped |
+| `/join/:code`, `/invitations/:token` | V2-SURFACE, CONTROL, STATE, RESP | Preview/invite facts and accept/reject/recovery order remain; long project/email text wraps. | mapped |
+| `/account` | V2-SURFACE, CONTROL, FOCUS, RESP | Account card, service links and account-switch action are coherent and fully visible; service routes unchanged. | mapped |
+| `/notifications`, `/calendar` | V2-SURFACE, STATE, CONTROL, RESP | Notification server order/read action/link and Calendar status/reconnect remain; row controls wrap without clipping. | mapped |
+| `/account/google` | V2-HEADER, SURFACE, STATE, CONTROL, RESP | Account summary, three service cards, partial permission/configuration/reconnect/disconnect states align; all existing consent and return-context behavior remains. Current offline evidence covers connection-error/permission fallback only; it does not certify live Google responses. | mapped |
+| `/account/drive` | V2-HEADER, SURFACE, CONTROL, RESP | Search/reset, empty/list, external links and token pagination remain in current order and fit 320px. | mapped |
+| `/account/mail` + detail/compose/review dialogs | V2-HEADER, SURFACE, CONTROL, STATE, DIALOG, RESP | Inbox/sent tabs, search, rows, receipt states, preformatted body wrapping and review/send/discard sequence remain; dialog focus lifecycle unchanged. | mapped |
+| `/projects/:id` dashboard | V2-SHELL, HEADER, SURFACE, STATE, RESP | Onboarding, upcoming, queue, three metrics and conditional actions use shared hierarchy; no section or action moves. | mapped |
+| `/projects/:id/schedules` | V2-HEADER, CONTROL, SURFACE, RESP, DATA | View/period/filter/results/pagination retain DOM order; month/week and mobile agenda switch, seven columns, 260px desktop day canvas and inline `top/minHeight/left/width` values are identical. Wrapping-dependent bounds may vary. | E3; mapped |
+| `/projects/:id/schedules/new`, `/:scheduleId/edit` | V2-HEADER, SURFACE, CONTROL, STATE, RESP | Existing fieldsets become task surfaces; label/error relationships, validation focus, participant order and submit/cancel order remain. | mapped |
+| `/projects/:id/schedules/:scheduleId` | V2-HEADER, SURFACE, CONTROL, STATE, RESP | Summary, action permissions, participant/history/Calendar sequence and conditional ACK/retry remain unchanged. | mapped |
+| `/projects/:id/members`, `/invitations/new` | V2-HEADER, SURFACE, CONTROL, DIALOG, RESP | Member rows/role controls/pagination and share dialog states retain permission, focus and action order. | mapped |
+| `/projects/:id/files` + Drive picker dialog | V2-HEADER, SURFACE, CONTROL, STATE, DIALOG, RESP | Attached rows, attach/remove, search/select/confirm and disclosure copy remain visible and ordered; Drive originals unaffected. | mapped |
+| `/projects/:id/calendar` + disconnect dialog | V2-HEADER, SURFACE, CONTROL, STATE, DIALOG, RESP | Binding summary, writable Calendar picker, bind/unbind states and destructive confirmation retain current conditions/order. | mapped |
+| Missing project/access recovery/not-found | V2-STATE, CONTROL, FOCUS, RESP | Existing h1, explanation, retry and return links remain in DOM and keyboard order. | mapped |
+
+## Reviewed exceptions
+
+- **E1 accepted:** `.mobile-project-title` may keep single-line ellipsis because it is a compact shell locator; the full project name remains available through `title` and sidebar text. No content-area text may use this exception.
+- **E2 accepted:** `AuthShell` has no account menu/sidebar because authentication/configuration state controls availability; it still uses shared topbar/type/control rules.
+- **E3 accepted:** calendar canvas may use bounded horizontal handling where already intended. It may not cause global content overflow or replace the existing `<768px` agenda presentation.
+- **E4 candidate:** the current account-menu panel may retain its single existing elevation to establish overlay depth; cards and rows receive no shadow.
+- **E5 N/A:** no data table exists in the current route inventory. List semantics and row order are preserved; do not introduce a table or table-like ARIA roles.
+
+## Acceptance and review handoff
+
+- Static diff: only the three approved CSS files may change; TSX, routes, handlers, tests, API/session/config and dependencies have zero diff. No `13rem`, fixed rail, new menu, hidden action, reordered control, gradient, animation, line clamp, or broad element-level card selector.
+- Automated: existing frontend tests, typecheck and build pass. Route role/name tests pass for every mapped route and all current Dialogs.
+- Browser: compare deterministic local fixtures at 1440x900, 768x1024, 390x844, 375px, and 320px with 200% zoom. Record full-route screenshots, <=1px ordinary overflow, long-string wrapping, mobile menu open/close, and partial/error/empty/disabled states.
+- Schedule geometry: for the same month/week fixture, record the seven-column count, `.day-events` `position:relative` and effective desktop height 260px, hour-label inline `top`, and every `.week-event` inline `top/minHeight/left/width` value/units before and after; those data-encoding properties, DOM/event order and click targets must match. Record wrapping-dependent rectangles and viewport-relative horizontal positions for review, but do not fail solely because permitted typography/spacing/content padding changes those outer bounds.
+- Keyboard/a11y: keyboard-only order is unchanged; skip link, `aria-current/pressed/selected/expanded/live`, route h1 focus, every Dialog trap/Escape/caller return and 3px focus ring are verified. Measure >=4.5:1 normal text and >=3:1 large text/UI boundary/focus for actual pairs.
+- Required fixtures: empty onboarding, VIEWER, access recovery, month/week/agenda, invitation dialogs, Google partial permission/configuration, Drive attach, Gmail detail/compose/review and UNKNOWN receipt, Calendar bind/unbind. Google/Drive/Gmail/Calendar fixture evidence is explicitly synthetic and offline; the current no-fake-Google endpoints yield only connection-error/permission fallback screens and do not certify live integration.
+- Checks run by this specialist: source inspection only. Browser, screenshots, contrast, keyboard, tests, typecheck, build and geometry comparison were **not run** because this is a read-only planning handoff.
+- Next gate: independent `ui-plan-review` must verify revision `058f782`, full route/dialog mapping, CSS-only feasibility, exceptions and measurable checks. Implementation must not start until that review passes and the parent completes the implementation contract.
+
+## Archive
+
+- Canonical local source: `D:/onedrive/Documents/ChatGPT/AI ERP/tmp/ui-workspace-refactor/docs/ux/latest-ui-refactor-visual-contract.md`.
+- Notion synchronization is deferred to the parent after independent review/final acceptance, following the existing unread-page check for `AI 생성문서 관리`.
+
+## Parent adoption — 2026-09-11
+
+/root adopts ERP-WORKSPACE-01/v2 after the independent pattern-stage pass in latest-ui-refactor-ui-review.md. The candidate shared rules and mapped screens are accepted unchanged, with V2-DATA controlling data coordinates and effective260px canvas. Parent owns canonical persistence. Generic visual-specialist documentation writes were parent-scoped; native read-only no-write runtime was not exercised and is not claimed. Future native visual specialists return proposals for parent persistence.
+

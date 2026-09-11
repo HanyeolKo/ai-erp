@@ -1,0 +1,66 @@
+[
+  {
+    "key": "Tab",
+    "inDialog": true,
+    "modal": true,
+    "name": "닫기",
+    "outline": "rgb(180, 83, 9) solid 3px",
+    "tag": "BUTTON"
+  },
+  {
+    "key": "Tab",
+    "inDialog": true,
+    "modal": true,
+    "name": "",
+    "outline": "rgb(180, 83, 9) solid 3px",
+    "tag": "INPUT"
+  },
+  {
+    "key": "Tab",
+    "inDialog": true,
+    "modal": true,
+    "name": "취소",
+    "outline": "rgb(180, 83, 9) solid 3px",
+    "tag": "BUTTON"
+  },
+  {
+    "key": "Tab",
+    "inDialog": true,
+    "modal": true,
+    "name": "초대 확인",
+    "outline": "rgb(180, 83, 9) solid 3px",
+    "tag": "BUTTON"
+  },
+  {
+    "key": "Tab",
+    "inDialog": false,
+    "modal": true,
+    "name": "\n    본문으로 건너뛰기AIAI ERP서울프로젝트운영지원및품질관리담당자김관리자긴이름검증very.long.account.ide",
+    "outline": "rgb(23, 36, 59) none 3px",
+    "tag": "BODY"
+  },
+  {
+    "key": "Tab",
+    "inDialog": true,
+    "modal": true,
+    "name": "닫기",
+    "outline": "rgb(180, 83, 9) solid 3px",
+    "tag": "BUTTON"
+  },
+  {
+    "key": "Shift+Tab",
+    "inDialog": false,
+    "modal": true,
+    "name": "\n    본문으로 건너뛰기AIAI ERP서울프로젝트운영지원및품질관리담당자김관리자긴이름검증very.long.account.ide",
+    "outline": "rgb(23, 36, 59) none 3px",
+    "tag": "BODY"
+  },
+  {
+    "key": "Shift+Tab",
+    "inDialog": true,
+    "modal": true,
+    "name": "초대 확인",
+    "outline": "rgb(180, 83, 9) solid 3px",
+    "tag": "BUTTON"
+  }
+]

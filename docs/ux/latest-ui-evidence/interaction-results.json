@@ -1,0 +1,47 @@
+[
+  {
+    "case": "mail-long-review",
+    "dialogOverflow": 0,
+    "preOverflow": 0,
+    "preWhitespace": "pre-wrap",
+    "width": 320
+  },
+  {
+    "case": "mail-sent",
+    "result": "local SENT status and compose caller focus observed; no external request"
+  },
+  {
+    "case": "drive-selected",
+    "dialogOverflow": 0,
+    "summary": true
+  },
+  {
+    "case": "drive-attach",
+    "active": "Drive 파일 첨부",
+    "fileText": "서울 운영 로드맵.pdfapplication/pdf첨부자 김관리자 · 2026. 9. 9. 오후 1:00:00Google Drive에서 열기첨부 제거고객 브리핑 문서application/vnd.google-apps.document첨부자 김관리자 · 2026. 9. 10. 오전 9:02:00Google Drive에서 열기첨부 제거"
+  },
+  {
+    "case": "calendar-dialog-shift-tab-wrap",
+    "active": "\n    본문으로 건너뛰기AIAI ERP알림김관리자manager@example.com계정 설정Google 서비스내 DriveGmail다른 계정으로 로그인메뉴서울 스프린트 운영현재 프로젝트서울 스프린트 운영개요일정구성원파일Calendar 설정프로젝트 선택서울 스프린트 운영프로젝트 Calendar 설정ERP에서 확정한 일정을 Google Calendar에 표시합니다.현재 상태연결됨대상 Calendar: 서울 운영 일정연결 담당자: 김관리자기존 확정 일정을 반영하는 중…Calendar 연결 해제Calendar 연결 해제×기존 Google Calendar 일정은 그대로 남습니다. 연결 해제 후 새 동기화는 시작하지 않습니다. 이미 Google에 보낸 요청은 해제 후에도 완료될 수 있습니다.취소연결 해제\n    \n  \n\n",
+    "offset": "0px",
+    "outline": "rgb(23, 36, 59) none 3px"
+  },
+  {
+    "case": "calendar-dialog-tab-wrap",
+    "active": "\n    본문으로 건너뛰기AIAI ERP알림김관리자manager@example.com계정 설정Google 서비스내 DriveGmail다른 계정으로 로그인메뉴서울 스프린트 운영현재 프로젝트서울 스프린트 운영개요일정구성원파일Calendar 설정프로젝트 선택서울 스프린트 운영프로젝트 Calendar 설정ERP에서 확정한 일정을 Google Calendar에 표시합니다.현재 상태연결됨대상 Calendar: 서울 운영 일정연결 담당자: 김관리자기존 확정 일정을 반영하는 중…Calendar 연결 해제Calendar 연결 해제×기존 Google Calendar 일정은 그대로 남습니다. 연결 해제 후 새 동기화는 시작하지 않습니다. 이미 Google에 보낸 요청은 해제 후에도 완료될 수 있습니다.취소연결 해제\n    \n  \n\n"
+  },
+  {
+    "case": "calendar-dialog-escape",
+    "active": "Calendar 연결 해제",
+    "open": false
+  },
+  {
+    "case": "calendar-bind-unbind",
+    "result": "synthetic NOT_BOUND→BOUND→NOT_BOUND observed"
+  },
+  {
+    "case": "join-code-preview",
+    "heading": "프로젝트 참여",
+    "overflow": 0
+  }
+]
