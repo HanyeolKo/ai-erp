@@ -118,6 +118,33 @@
 .schedule-detail-summary span,
 .schedule-detail-summary small { color: var(--schedule-muted); overflow-wrap: anywhere; }
 .schedule-detail-summary strong { font-size: 18px; overflow-wrap: anywhere; }
+.schedule-calendar-inline { display: flex; flex-direction: column; justify-content: flex-end; margin: 0 0 16px; color: var(--schedule-muted); }
+.schedule-calendar-control-row { display: flex; align-items: flex-start; justify-content: flex-end; gap: 8px; max-width: 100%; }
+.schedule-calendar-trigger { display: inline-grid; flex: 0 0 44px; place-items: center; width: 44px; min-width: 44px; min-height: 44px; padding: 0; border: 1px solid transparent; border-radius: var(--radius-control); background: transparent; color: var(--accent); }
+.schedule-calendar-trigger:hover { background: var(--accent-soft); }
+.schedule-calendar-trigger:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.schedule-calendar-glyph { width: 18px; height: 18px; }
+.schedule-calendar-inline--synced .schedule-calendar-trigger { color: var(--success); }
+.schedule-calendar-inline--pending .schedule-calendar-trigger,
+.schedule-calendar-inline--loading .schedule-calendar-trigger { color: var(--accent); }
+.schedule-calendar-inline--failed .schedule-calendar-trigger,
+.schedule-calendar-inline--error .schedule-calendar-trigger,
+.schedule-calendar-inline--reauth_required .schedule-calendar-trigger { color: var(--danger); }
+.schedule-calendar-inline--access_denied .schedule-calendar-trigger,
+.schedule-calendar-inline--configuration_required .schedule-calendar-trigger { color: var(--focus); }
+.schedule-calendar-inline--unknown .schedule-calendar-trigger,
+.schedule-calendar-inline--not_connected .schedule-calendar-trigger { color: var(--schedule-muted); }
+.schedule-calendar-recovery { display: flex; min-width: 0; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
+.schedule-calendar-recovery > .loading { margin: 10px 0; }
+.schedule-calendar-recovery > .notice { flex-basis: 100%; max-width: 680px; }
+.schedule-calendar-recovery > button,
+.schedule-calendar-recovery > a { min-height: 44px; }
+.schedule-calendar-disclosure { width: min(360px, 100%); margin: 12px 0 0 auto; padding: 16px; border: 1px solid var(--schedule-line); border-radius: var(--radius-surface); background: var(--surface); color: var(--schedule-ink); font-size: 15px; }
+.schedule-calendar-disclosure p { margin: 0; overflow-wrap: anywhere; }
+.schedule-calendar-disclosure p + p,
+.schedule-calendar-disclosure details { margin-top: 8px; }
+.schedule-calendar-disclosure details { color: var(--schedule-muted); font-size: 13px; }
+.schedule-calendar-disclosure summary { cursor: pointer; font-weight: 700; }
 .schedule-detail-actions { margin: 20px 0 40px; }
 .schedule-detail-section { padding-top: 28px; border-top: 1px solid var(--schedule-line); }
 .schedule-detail-section + .schedule-detail-section { margin-top: 36px; }
@@ -127,7 +154,6 @@
 .schedule-participant-list li { display: flex; justify-content: space-between; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--schedule-line); }
 .schedule-participant-list span { color: var(--schedule-muted); overflow-wrap: anywhere; }
 .schedule-history ol { padding-left: 22px; }
-.schedule-calendar-status details { max-width: 680px; margin-top: 16px; }
 .schedule-detail-feedback { margin-top: 24px; }
 .schedule-success { margin-top: 20px; color: var(--success); font-weight: 800; }
 .schedule-editor { max-width: 760px; }
@@ -153,6 +179,12 @@
   .schedule-actions .button { width: 100%; }
   .schedule-radar { grid-template-columns: 1fr; }
   .schedule-detail-summary { grid-template-columns: 1fr; }
+  .schedule-calendar-inline { justify-content: stretch; }
+  .schedule-calendar-control-row { width: 100%; justify-content: stretch; }
+  .schedule-calendar-recovery { flex: 1; justify-content: flex-start; }
+  .schedule-calendar-recovery > button,
+  .schedule-calendar-recovery > a { flex: 1 1 100%; }
+  .schedule-calendar-disclosure { width: 100%; }
   .schedule-detail-actions .button { flex: 1 1 100%; }
   .schedule-participant-list li { align-items: flex-start; flex-direction: column; gap: 4px; }
   .schedule-date-fields { grid-template-columns: 1fr; gap: 0; }
