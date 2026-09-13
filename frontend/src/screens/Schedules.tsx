@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
-import { useQueries, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { api, PAGE_SIZE, type Dashboard as DashboardData, type Schedules as Rows } from "../api/client";
-import { acknowledgement, calendarStatus, capabilities, isAccessError, keys, useMe, useProject } from "../state";
+import { acknowledgement, capabilities, isAccessError, keys, useMe, useProject } from "../state";
 import { Link, ProjectMissing, QueryState, Shell } from "../ui";
 import { civilDateBoundary, dateInZone, displayTime, navigateDate, shiftDate, validZone, viewWindow } from "../time";
 import "./schedules.css";
@@ -17,14 +17,6 @@ const ackLabels: Record<string, string> = {
     PENDING: "확인 대기",
     ACKNOWLEDGED: "확인 완료",
     NOT_REQUIRED: "확인 대상 아님",
-};
-const calendarLabels: Record<string, string> = {
-    ALL: "전체 Calendar 상태",
-    REAUTH_REQUIRED: "연결 확인 필요",
-    FAILED: "동기화 실패",
-    PENDING: "동기화 중",
-    SYNCED: "동기화 완료",
-    NOT_CONNECTED: "연결되지 않음",
 };
 const statusLabel = (value: string) => statusLabels[value] ?? "상태 확인 필요";
 const ackLabel = (value: string) => ackLabels[value] ?? "확인 상태 확인 필요";
@@ -97,12 +89,54 @@ function eventPosition(schedule: Rows[number], day: string, zone: string) {
     return { start, duration: Math.max(1, end - start) };
 }
 
-function ScheduleAgenda({ days, zone, rows }: { days: string[]; zone: string; rows: Array<{ s: Rows[number]; ack: string; calendar?: string }> }) {
-    const groups = days.map(day => ({ day, events: rows.filter(row => dateInZone(row.s.startsAt, zone) <= day && dateInZone(new Date(new Date(row.s.endsAt).getTime() - 1).toISOString(), zone) >= day) })).filter(group => group.events.length);
+type ScheduleRow = { s: Rows[number]; ack: string };
+
+function eventSpan(schedule: Rows[number], zone: string) {
+    const startDay = dateInZone(schedule.startsAt, zone);
+    const endDay = dateInZone(new Date(new Date(schedule.endsAt).getTime() - 1).toISOString(), zone);
+    return { startDay, endDay };
+}
+
+function clockMinutes(instant: string, zone: string) {
+    const time = displayTime(instant, zone).slice(11);
+    return Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5));
+}
+
+function eventDayLabel(schedule: Rows[number], day: string, zone: string) {
+    const { startDay, endDay } = eventSpan(schedule, zone);
+    const start = displayTime(schedule.startsAt, zone).slice(11);
+    const endDate = dateInZone(schedule.endsAt, zone);
+    const end = endDate > endDay && displayTime(schedule.endsAt, zone).slice(11) === "00:00"
+        ? "24:00"
+        : displayTime(schedule.endsAt, zone).slice(11);
+    if (startDay === endDay) return `${start}–${end}`;
+    if (day === startDay) return `${start} 시작`;
+    if (day === endDay) return `${end} 종료`;
+    return "계속";
+}
+
+function sortEventsForDay(rows: ScheduleRow[], day: string, zone: string) {
+    return [...rows].sort((a, b) => {
+        const start = (row: ScheduleRow) => eventSpan(row.s, zone).startDay === day ? clockMinutes(row.s.startsAt, zone) : 0;
+        const byTime = start(a) - start(b);
+        if (byTime) return byTime;
+        const byTitle = a.s.title === b.s.title ? 0 : a.s.title < b.s.title ? -1 : 1;
+        return byTitle || (a.s.id === b.s.id ? 0 : a.s.id < b.s.id ? -1 : 1);
+    });
+}
+
+function eventStatusClass(status: string) {
+    if (status === "CONFIRMED") return "month-event--confirmed";
+    if (status === "CANCELLED") return "month-event--cancelled";
+    return "month-event--draft";
+}
+
+function ScheduleAgenda({ days, zone, rows }: { days: string[]; zone: string; rows: ScheduleRow[] }) {
+    const groups = days.map(day => ({ day, events: sortEventsForDay(rows.filter(row => { const span = eventSpan(row.s, zone); return span.startDay <= day && span.endDay >= day; }), day, zone) })).filter(group => group.events.length);
     if (!groups.length) return <p className="schedule-empty">조건에 맞는 일정이 없습니다.</p>;
     return <div className="schedule-agenda" aria-label="날짜별 일정">
         {groups.map(group => <section key={group.day} aria-labelledby={`agenda-${group.day}`}><h3 id={`agenda-${group.day}`}><time dateTime={group.day}>{group.day}</time></h3><ul className="schedule-list">
-            {group.events.map(({ s, ack, calendar }) => <li key={`${group.day}-${s.id}`}><Link to={`/projects/${s.projectId}/schedules/${s.id}`}>{s.title}</Link><span>{displayTime(s.startsAt, zone).slice(11)}–{displayTime(s.endsAt, zone).slice(11)}</span><span>{statusLabel(s.status)}</span><span>{ackLabel(ack)}</span><span>{calendarLabels[calendar ?? ""] ?? "Calendar 확인 필요"}</span></li>)}
+            {group.events.map(({ s, ack }) => <li key={`${group.day}-${s.id}`}><Link to={`/projects/${s.projectId}/schedules/${s.id}`}><span>{eventDayLabel(s, group.day, zone)} · </span><strong>{s.title} · </strong><span>{statusLabel(s.status)}</span></Link><span>{ackLabel(ack)}</span></li>)}
         </ul></section>)}
     </div>;
 }
@@ -118,7 +152,6 @@ export function Schedules({ id }: { id: string }) {
     const [text, setText] = useState("");
     const [status, setStatus] = useState("ALL");
     const [ack, setAck] = useState("ALL");
-    const [calendar, setCalendar] = useState("ALL");
     const [mine, setMine] = useState(false);
     const [after, setAfter] = useState("");
     const [before, setBefore] = useState("");
@@ -131,11 +164,9 @@ export function Schedules({ id }: { id: string }) {
         catch (error) { return { from: "", to: "", error: error instanceof Error ? error.message : "날짜 범위를 확인하세요." }; }
     }, [after, before, range.from, range.to, zone]);
     const list = useQuery({ queryKey: [...keys.schedules(id), effectiveRange.from, effectiveRange.to, page], queryFn: () => api.schedules(id, effectiveRange.from, effectiveRange.to, page), enabled: project.isSuccess && !!project.data && !effectiveRange.error });
-    const connection = useQuery({ queryKey: keys.connection, queryFn: api.calendar, enabled: project.isSuccess && !!project.data });
     const rows = effectiveRange.error || !project.isSuccess || !project.data || !list.isSuccess ? [] : list.data;
-    const projections = useQueries({ queries: rows.slice(0, PAGE_SIZE).map(schedule => ({ queryKey: keys.projection(id, schedule.id), queryFn: () => api.projection(id, schedule.id), staleTime: 30000 })) });
-    const enriched = rows.map((schedule, index) => ({ s: schedule, projection: projections[index], ack: acknowledgement(schedule, me.data!.id), calendar: calendarStatus(connection.data, projections[index]?.data) }));
-    const filtered = enriched.filter(row => (!text || row.s.title.toLocaleLowerCase().includes(text.toLocaleLowerCase()) || row.s.description?.toLocaleLowerCase().includes(text.toLocaleLowerCase())) && (status === "ALL" || row.s.status === status) && (ack === "ALL" || row.ack === ack) && (calendar === "ALL" || row.calendar === calendar) && (!mine || row.s.createdBy === me.data!.id));
+    const enriched: ScheduleRow[] = rows.map(schedule => ({ s: schedule, ack: acknowledgement(schedule, me.data!.id) }));
+    const filtered = enriched.filter(row => (!text || row.s.title.toLocaleLowerCase().includes(text.toLocaleLowerCase()) || row.s.description?.toLocaleLowerCase().includes(text.toLocaleLowerCase())) && (status === "ALL" || row.s.status === status) && (ack === "ALL" || row.ack === ack) && (!mine || row.s.createdBy === me.data!.id));
     const overlap = (schedule: Rows[number], day: string) => dateInZone(schedule.startsAt, zone) <= day && dateInZone(new Date(new Date(schedule.endsAt).getTime() - 1).toISOString(), zone) >= day;
     if (!project.isSuccess) return <Shell><QueryState query={project} loadingMessage="프로젝트를 불러오는 중입니다." errorMessage="프로젝트를 불러오지 못했습니다." /></Shell>;
     if (!project.data) return <Shell><ProjectMissing onRetry={() => project.refetch()} isFetching={project.isFetching} /></Shell>;
@@ -147,17 +178,14 @@ export function Schedules({ id }: { id: string }) {
             <header className="schedule-heading"><div><p className="eyebrow">{project.data.name}</p><h1>프로젝트 일정</h1><p className="lead">기간과 확인 상태를 살펴보고 일정 상세에서 필요한 작업을 처리하세요.</p></div><div className="schedule-actions">{canCreate && <Link className="button button-primary" to={`/projects/${id}/schedules/new`}>일정 만들기</Link>}</div></header>
             <section className="schedule-period" aria-label="일정 기간 탐색"><div className="schedule-view-toggle" role="group" aria-label="일정 보기"><button type="button" aria-pressed={view === "month"} onClick={() => { setView("month"); setPage(0); }}>월간 보기</button><button type="button" aria-pressed={view === "week"} onClick={() => { setView("week"); setPage(0); }}>주간 보기</button></div><div className="schedule-period-controls"><button type="button" aria-label="이전 기간" onClick={() => move(navigateDate(anchor, view, -1))}>이전 기간</button><label>기준 날짜<input type="date" value={anchor} onChange={event => move(event.target.value)} /></label><button type="button" aria-label="다음 기간" onClick={() => move(navigateDate(anchor, view, 1))}>다음 기간</button></div></section>
             {!validZone(zoneInput) && <p role="alert" id="schedule-zone-error" className="schedule-inline-alert">지원하지 않는 IANA 시간대입니다. Asia/Seoul로 표시합니다.</p>}
-            <details className="schedule-filters"><summary>상세 필터 <span>검색·상태·확인·Calendar·날짜 범위</span></summary><div className="schedule-filter-grid"><label>검색<input value={text} onChange={event => { setText(event.target.value); setPage(0); }} /></label><label>표시 시간대<input value={zoneInput} aria-invalid={!validZone(zoneInput)} aria-describedby={!validZone(zoneInput) ? "schedule-zone-error" : undefined} onChange={event => { setZone(event.target.value); setPage(0); }} /></label><label>날짜 이후<input type="date" value={after} aria-invalid={!!effectiveRange.error} aria-describedby={effectiveRange.error ? "schedule-range-error" : "schedule-range-help"} onChange={event => { setAfter(event.target.value); setPage(0); }} /></label><label>날짜 이전<input type="date" value={before} aria-invalid={!!effectiveRange.error} aria-describedby={effectiveRange.error ? "schedule-range-error" : "schedule-range-help"} onChange={event => { setBefore(event.target.value); setPage(0); }} /></label><label>상태<select value={status} onChange={event => setStatus(event.target.value)}>{filterOptions(["ALL", "DRAFT", "CONFIRMED", "CANCELLED"], statusLabels)}</select></label><label>확인 상태<select value={ack} onChange={event => setAck(event.target.value)}>{filterOptions(["ALL", "PENDING", "ACKNOWLEDGED", "NOT_REQUIRED"], ackLabels)}</select></label><label>Calendar 상태<select value={calendar} onChange={event => setCalendar(event.target.value)}>{filterOptions(["ALL", "REAUTH_REQUIRED", "FAILED", "PENDING", "SYNCED", "NOT_CONNECTED"], calendarLabels)}</select></label><label className="schedule-check"><input type="checkbox" checked={mine} onChange={event => setMine(event.target.checked)} />내가 만든 일정</label></div></details>
+            <details className="schedule-filters"><summary>상세 필터 <span>검색·상태·확인·날짜 범위</span></summary><div className="schedule-filter-grid"><label>검색<input value={text} onChange={event => { setText(event.target.value); setPage(0); }} /></label><label>표시 시간대<input value={zoneInput} aria-invalid={!validZone(zoneInput)} aria-describedby={!validZone(zoneInput) ? "schedule-zone-error" : undefined} onChange={event => { setZone(event.target.value); setPage(0); }} /></label><label>날짜 이후<input type="date" value={after} aria-invalid={!!effectiveRange.error} aria-describedby={effectiveRange.error ? "schedule-range-error" : "schedule-range-help"} onChange={event => { setAfter(event.target.value); setPage(0); }} /></label><label>날짜 이전<input type="date" value={before} aria-invalid={!!effectiveRange.error} aria-describedby={effectiveRange.error ? "schedule-range-error" : "schedule-range-help"} onChange={event => { setBefore(event.target.value); setPage(0); }} /></label><label>상태<select value={status} onChange={event => setStatus(event.target.value)}>{filterOptions(["ALL", "DRAFT", "CONFIRMED", "CANCELLED"], statusLabels)}</select></label><label>확인 상태<select value={ack} onChange={event => setAck(event.target.value)}>{filterOptions(["ALL", "PENDING", "ACKNOWLEDGED", "NOT_REQUIRED"], ackLabels)}</select></label><label className="schedule-check"><input type="checkbox" checked={mine} onChange={event => setMine(event.target.checked)} />내가 만든 일정</label></div></details>
             <p id="schedule-range-help" className="schedule-help">현재 페이지의 최대 {PAGE_SIZE}개 일정에 필터를 적용합니다. 날짜 범위는 양 끝 날짜를 포함합니다.</p>
-            {effectiveRange.error ? <p role="alert" id="schedule-range-error" className="schedule-inline-alert">{effectiveRange.error}</p> : <QueryState query={list} />}<QueryState query={connection} label="연결 다시 시도" />
-            {connection.data?.configurationRequired && <p>Calendar 연동이 구성되지 않았습니다.</p>}{connection.data?.status === "REAUTH_REQUIRED" && <Link to="/calendar">Calendar 다시 연결</Link>}
-            {enriched.filter(row => row.projection?.isError).map(row => <div key={row.s.id} className="schedule-inline-alert"><p>{row.s.title} Calendar 상태를 불러오지 못했습니다.</p><QueryState query={row.projection} label="투영 다시 시도" /></div>)}
-            {projections.some(query => query.isPending) && <p role="status">Calendar 투영을 불러오는 중입니다.</p>}
+            {effectiveRange.error ? <p role="alert" id="schedule-range-error" className="schedule-inline-alert">{effectiveRange.error}</p> : <QueryState query={list} />}
             {list.isSuccess && !effectiveRange.error && <>
                 <div className="schedule-period-summary"><div><p className="eyebrow">현재 범위</p><h2>{view === "month" ? "월간 일정" : "주간 일정"}</h2><p>{range.days[0]} ~ {range.days[range.days.length - 1]} · {zone}</p></div>{after && before && <p>조회 기간: {after} ~ {before} · 목록은 조회 기간 전체를 검색합니다.</p>}</div>
                 <ScheduleAgenda days={range.days} zone={zone} rows={filtered} />
-                <div className="schedule-calendar" aria-label={view === "month" ? "월간 일정" : "주간 일정"} role="grid"><div className="schedule-weekday-row">{weekdays.map(day => <div role="columnheader" key={day}>{day}</div>)}</div><div className={view === "month" ? "month-grid" : "week-grid"}>{range.days.map(day => { const events = filtered.filter(row => overlap(row.s, day)); return <div role="gridcell" data-date={day} aria-label={day} key={day}><time dateTime={day}>{day.slice(5)}</time>{view === "month" ? <div className="month-signals"><span>{events.length}건</span><span>확인 대기 {events.filter(row => row.ack === "PENDING").length}</span><span>Calendar 위험 {events.filter(row => row.calendar === "FAILED" || row.calendar === "REAUTH_REQUIRED").length}</span></div> : <div className="day-events">{[0, 6, 12, 18].map(hour => <span aria-hidden="true" className="hour-label" key={hour} style={{ top: `${hour / 24 * 100}%` }}>{String(hour).padStart(2, "0")}:00</span>)}{events.map((row, index) => { const position = eventPosition(row.s, day, zone); return <div className="week-event" key={row.s.id} data-start-minute={position.start} data-duration-minute={position.duration} style={{ top: `${position.start / 1440 * 100}%`, minHeight: `${position.duration / 1440 * 100}%`, left: `${index / events.length * 100}%`, width: `${100 / events.length}%` }}><Link to={`/projects/${id}/schedules/${row.s.id}`}>{displayTime(row.s.startsAt, zone).slice(11)}–{displayTime(row.s.endsAt, zone).slice(11)} {row.s.title}</Link><small>{statusLabel(row.s.status)}</small></div>; })}</div>}</div>; })}</div></div>
-                <section className="schedule-results" aria-labelledby="schedule-results-title"><div className="section-heading"><div><p className="eyebrow">현재 페이지</p><h2 id="schedule-results-title">일정 목록</h2></div><span className="schedule-help">{filtered.length}건 표시</span></div>{!filtered.length && <p className="schedule-empty">조건에 맞는 일정이 없습니다.</p>}<ul className="schedule-list">{filtered.map(row => <li key={row.s.id}><Link to={`/projects/${id}/schedules/${row.s.id}`}>{row.s.title}</Link><div><time dateTime={row.s.startsAt}>{displayTime(row.s.startsAt, zone)}</time><span>~ {displayTime(row.s.endsAt, zone)}</span></div><span>{statusLabel(row.s.status)}</span><span>{ackLabel(row.ack)}</span><span>{calendarLabels[row.calendar ?? ""] ?? "Calendar 확인 필요"}</span></li>)}</ul></section>
+                <div className="schedule-calendar" aria-label={view === "month" ? "월간 일정" : "주간 일정"} role="grid"><div className="schedule-weekday-row">{weekdays.map(day => <div role="columnheader" key={day}>{day}</div>)}</div><div className={view === "month" ? "month-grid" : "week-grid"}>{range.days.map(day => { const events = filtered.filter(row => overlap(row.s, day)); return <div role="gridcell" data-date={day} aria-label={day} key={day}><time dateTime={day}>{day.slice(5)}</time>{view === "month" ? <div className="month-events">{sortEventsForDay(events, day, zone).map(row => <Link className={`month-event ${eventStatusClass(row.s.status)}`} key={row.s.id} to={`/projects/${id}/schedules/${row.s.id}`}><span>{eventDayLabel(row.s, day, zone)} · </span><strong>{row.s.title} · </strong><span>{statusLabel(row.s.status)}</span></Link>)}</div> : <div className="day-events">{[0, 6, 12, 18].map(hour => <span aria-hidden="true" className="hour-label" key={hour} style={{ top: `${hour / 24 * 100}%` }}>{String(hour).padStart(2, "0")}:00</span>)}{events.map((row, index) => { const position = eventPosition(row.s, day, zone); return <div className="week-event" key={row.s.id} data-start-minute={position.start} data-duration-minute={position.duration} style={{ top: `${position.start / 1440 * 100}%`, minHeight: `${position.duration / 1440 * 100}%`, left: `${index / events.length * 100}%`, width: `${100 / events.length}%` }}><Link to={`/projects/${id}/schedules/${row.s.id}`}>{displayTime(row.s.startsAt, zone).slice(11)}–{displayTime(row.s.endsAt, zone).slice(11)} {row.s.title}</Link><small>{statusLabel(row.s.status)}</small></div>; })}</div>}</div>; })}</div></div>
+                <section className="schedule-results" aria-labelledby="schedule-results-title"><div className="section-heading"><div><p className="eyebrow">현재 페이지</p><h2 id="schedule-results-title">일정 목록</h2></div><span className="schedule-help">{filtered.length}건 표시</span></div>{!filtered.length && <p className="schedule-empty">조건에 맞는 일정이 없습니다.</p>}<ul className="schedule-list">{filtered.map(row => <li key={row.s.id}><Link to={`/projects/${id}/schedules/${row.s.id}`}>{row.s.title}</Link><div><time dateTime={row.s.startsAt}>{displayTime(row.s.startsAt, zone)}</time><span>~ {displayTime(row.s.endsAt, zone)}</span></div><span>{statusLabel(row.s.status)}</span><span>{ackLabel(row.ack)}</span></li>)}</ul></section>
                 <nav className="schedule-pagination" aria-label="일정 페이지 이동"><span>현재 {page + 1}페이지</span><button type="button" disabled={!page || list.isFetching} onClick={() => setPage(page - 1)}>이전 일정 페이지</button><button type="button" disabled={rows.length < PAGE_SIZE || list.isFetching || page >= 10000} onClick={() => setPage(page + 1)}>다음 일정 페이지</button></nav>
             </>}
         </div>
