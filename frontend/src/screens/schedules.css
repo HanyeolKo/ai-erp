@@ -64,8 +64,16 @@
 .schedule-calendar .week-grid > div { min-height: 112px; padding: 10px; border: 1px solid var(--schedule-line); border-radius: var(--radius-control); background: var(--surface); }
 .schedule-calendar .month-grid > div > time,
 .schedule-calendar .week-grid > div > time { display: block; font-weight: 800; }
-.month-signals { display: flex; flex-direction: column; gap: 4px; margin-top: 16px; color: var(--schedule-muted); font-size: 13px; }
-.month-signals span:first-child { color: var(--schedule-ink); font-weight: 800; }
+.month-events { display: flex; flex-direction: column; gap: 4px; min-width: 0; margin-top: 8px; }
+.month-event { display: block; min-width: 0; padding: 4px 6px; border-left: 3px solid var(--accent); border-radius: 4px; background: var(--schedule-soft); color: var(--schedule-ink); font-size: 13px; line-height: 1.5; text-decoration: none; overflow-wrap: anywhere; }
+.month-event span,
+.month-event strong { display: block; min-width: 0; overflow-wrap: anywhere; }
+.month-event strong { font-weight: 700; }
+.month-event:hover strong,
+.month-event:focus-visible strong { text-decoration: underline; }
+.month-event--confirmed { border-left-color: var(--success); background: var(--success-soft); }
+.month-event--cancelled { border-left-color: var(--danger); background: var(--danger-soft); }
+.month-event--draft { border-left-color: var(--schedule-muted); }
 .day-events { position: relative; height: 260px; margin-top: 6px; }
 .hour-label { position: absolute; left: 0; color: var(--schedule-muted); font-size: 13px; }
 .week-event { position: absolute; z-index: 1; overflow: visible; padding: 5px; border-left: 3px solid var(--accent); border-radius: 4px; background: var(--schedule-soft); color: var(--schedule-ink); font-size: 13px; }
@@ -139,6 +147,9 @@
   .schedule-agenda .schedule-list { margin-top: 8px; }
   .schedule-agenda .schedule-list li { display: grid; grid-template-columns: 1fr auto; align-items: start; gap: 5px 10px; }
   .schedule-agenda .schedule-list li a { grid-column: 1 / -1; }
+  .schedule-agenda .schedule-list li a { display: block; min-width: 0; }
+  .schedule-agenda .schedule-list li a span,
+  .schedule-agenda .schedule-list li a strong { display: block; overflow-wrap: anywhere; }
   .schedule-agenda .schedule-list li span { color: var(--schedule-muted); font-size: 13px; }
   .schedule-results { margin-top: 32px; }
   .schedule-results .schedule-list li { display: grid; grid-template-columns: 1fr auto; align-items: start; }

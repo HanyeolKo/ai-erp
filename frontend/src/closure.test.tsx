@@ -1,10 +1,9 @@
-import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, test, vi } from "vitest";
 import App from "./App";
 import { http, json } from "./test/http";
 afterEach(() => { vi.unstubAllGlobals(); window.location.hash = ""; sessionStorage.clear(); });
-const calendarLabels: Record<string, string> = { REAUTH_REQUIRED: "연결 확인 필요", FAILED: "동기화 실패", PENDING: "동기화 중", SYNCED: "동기화 완료", NOT_CONNECTED: "연결되지 않음" };
 const mount = (path: string) => { window.location.hash = `#${path}`; render(<App />); return userEvent.setup(); };
 const change = (label: string, value: string) => fireEvent.change(screen.getByLabelText(label), { target: { value } });
 test.each([
@@ -18,16 +17,14 @@ test.each([
   await waitFor(() => expect(server.calls.some(c => c.url === expected)).toBe(true));
   expect(screen.queryByRole("alert")).not.toBeInTheDocument();
 });
-test.each(["REAUTH_REQUIRED", "FAILED", "PENDING", "SYNCED", "NOT_CONNECTED"])("P03 keeps and filters known connection %s when projection fails", async status => {
-  const server = http(); server.on("GET", "/api/v1/calendar/connection", () => json({ status, configurationRequired: false }));
-  server.on("GET", "/api/v1/projects/p1/schedules/s1/calendar", () => json({ code: "PROJECTION_UNAVAILABLE" }, 500));
-  const user = mount("/projects/p1/schedules"); await screen.findByText("PROJECTION_UNAVAILABLE");
-  const row = within(screen.getAllByRole("link", { name: "Design review" })[0].closest("li")!);
-  expect(row.getByText(calendarLabels[status])).toBeInTheDocument();
-  await user.click(screen.getByText("상세 필터"));
-  await user.selectOptions(screen.getByLabelText("Calendar 상태"), status);
-  expect((screen.getAllByRole("link", { name: "Design review" })).length).toBeGreaterThan(0);
-  expect(screen.getByRole("button", { name: "투영 다시 시도" })).toBeEnabled();
+test("P03 schedule browsing omits Calendar diagnostics and per-schedule projection requests", async () => {
+  const server = http();
+  mount("/projects/p1/schedules");
+  expect(await screen.findByRole("heading", { name: "프로젝트 일정" })).toBeInTheDocument();
+  expect(screen.queryByLabelText("Calendar 상태")).not.toBeInTheDocument();
+  expect(screen.queryByText("동기화 완료")).not.toBeInTheDocument();
+  expect(screen.queryByText("Calendar 연동이 구성되지 않았습니다.")).not.toBeInTheDocument();
+  expect(server.calls.some(call => call.url.includes("/calendar"))).toBe(false);
 });
 test("P05 projection error does not suppress known reauthorization status or reconnect navigation", async () => {
   const server = http(); server.on("GET", "/api/v1/calendar/connection", () => json({ status: "REAUTH_REQUIRED", configurationRequired: false }));
