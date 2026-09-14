@@ -1,0 +1,48 @@
+{
+  "canvases": [
+    {
+      "height": "1152px",
+      "position": "relative"
+    },
+    {
+      "height": "1152px",
+      "position": "relative"
+    },
+    {
+      "height": "1152px",
+      "position": "relative"
+    },
+    {
+      "height": "1152px",
+      "position": "relative"
+    },
+    {
+      "height": "1152px",
+      "position": "relative"
+    },
+    {
+      "height": "1152px",
+      "position": "relative"
+    },
+    {
+      "height": "1152px",
+      "position": "relative"
+    }
+  ],
+  "events": [
+    {
+      "date": "2026-09-10",
+      "duration": "60",
+      "href": "#/projects/p1/schedules/s1",
+      "start": "600",
+      "style": "top: 41.6667%; height: 4.16667%; left: 0%; width: 100%;"
+    },
+    {
+      "date": "2026-09-11",
+      "duration": "60",
+      "href": "#/projects/p1/schedules/s2",
+      "start": "600",
+      "style": "top: 41.6667%; height: 4.16667%; left: 0%; width: 100%;"
+    }
+  ]
+}

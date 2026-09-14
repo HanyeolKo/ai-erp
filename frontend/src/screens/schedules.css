@@ -14,6 +14,8 @@
 .schedule-actions,
 .schedule-detail-actions,
 .schedule-form-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.schedule-heading .schedule-actions { flex-shrink: 0; }
+.schedule-heading .schedule-actions .button { min-width: max-content; white-space: nowrap; }
 .schedule-onboarding { margin-top: 24px; padding: 32px 0; border-top: 1px solid var(--schedule-line); border-bottom: 1px solid var(--schedule-line); }
 .schedule-onboarding h2 { max-width: 560px; margin: 6px 0 10px; }
 .schedule-onboarding p:last-child { max-width: 560px; color: var(--schedule-muted); overflow-wrap: anywhere; }
@@ -34,14 +36,15 @@
 .schedule-list li a { min-width: min(260px, 100%); font-weight: 800; }
 .schedule-list li > div { display: flex; gap: 8px; min-width: 0; color: var(--schedule-muted); overflow-wrap: anywhere; }
 .schedule-empty { color: var(--schedule-muted); overflow-wrap: anywhere; }
-.schedule-period { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; padding: 20px 0; border-top: 1px solid var(--schedule-line); border-bottom: 1px solid var(--schedule-line); }
+.schedule-period { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 16px 0; border-top: 1px solid var(--schedule-line); border-bottom: 1px solid var(--schedule-line); }
 .schedule-view-toggle,
 .schedule-period-controls,
 .schedule-pagination { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 .schedule-view-toggle button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent); color: var(--surface); }
-.schedule-period-controls label { margin: 0; }
-.schedule-period-controls input { width: 150px; }
-.schedule-period-controls label:last-child input { width: 190px; }
+.schedule-period-controls > button { min-height: 40px; }
+.schedule-period-trigger { min-width: 190px; max-width: min(34vw, 320px); color: var(--accent); }
+.schedule-period-trigger span { overflow-wrap: anywhere; }
+.schedule-today { min-width: 64px; }
 .schedule-filters { margin-top: 24px; border-bottom: 1px solid var(--schedule-line); }
 .schedule-filters summary { width: fit-content; padding: 8px 0 12px; color: var(--accent); cursor: pointer; font-weight: 800; }
 .schedule-filters summary span { margin-left: 8px; color: var(--schedule-muted); font-size: 13px; font-weight: 400; }
@@ -193,13 +196,16 @@
   .schedule-form-actions .button { flex: 1; }
   .schedule-view-toggle { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .schedule-view-toggle button { min-height: 44px; }
-  .schedule-period-controls { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; align-items: end; gap: 8px; margin-top: 16px; }
-  .schedule-period-controls button { width: 44px; min-height: 44px; padding: 0 4px; overflow: hidden; text-indent: -9999px; white-space: nowrap; }
-  .schedule-period-controls button::after { display: block; text-indent: 0; font-size: 18px; }
-  .schedule-period-controls button[aria-label="이전 기간"]::after { content: "‹"; }
-  .schedule-period-controls button[aria-label="다음 기간"]::after { content: "›"; }
-  .schedule-period-controls label,
-  .schedule-period-controls input { width: 100%; }
+  .schedule-period-controls { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px 64px; align-items: stretch; gap: 8px; margin-top: 16px; }
+  .schedule-period-controls > button { min-height: 44px; }
+  .schedule-period-controls > button[aria-label="이전 기간"],
+  .schedule-period-controls > button[aria-label="다음 기간"] { width: 44px; padding: 0 4px; overflow: hidden; font-size: 0; white-space: nowrap; }
+  .schedule-period-controls > button[aria-label="이전 기간"]::after,
+  .schedule-period-controls > button[aria-label="다음 기간"]::after { display: block; font-size: 20px; }
+  .schedule-period-controls > button[aria-label="이전 기간"]::after { content: "‹"; }
+  .schedule-period-controls > button[aria-label="다음 기간"]::after { content: "›"; }
+  .schedule-period-trigger { min-width: 0; max-width: none; padding: 8px; }
+  .schedule-today { min-width: 64px; padding: 8px 6px; }
   .schedule-filter-grid { grid-template-columns: 1fr; }
   .schedule-filters summary span { display: block; margin: 3px 0 0; }
   .schedule-calendar { display: none; }
@@ -225,3 +231,19 @@
 
 @media (min-width: 768px) { .schedule-listing .schedule-agenda { display: none; } }
 @media (min-width: 768px) and (max-width: 1100px) { .schedule-filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+@media (min-width: 768px) and (max-width: 1100px) {
+  .schedule-period { display: block; }
+  .schedule-view-toggle { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; }
+  .schedule-view-toggle button { min-height: 44px; }
+  .schedule-period-controls { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px 64px; align-items: stretch; width: 100%; margin-top: 16px; }
+  .schedule-period-controls > button { min-height: 44px; }
+  .schedule-period-controls > button[aria-label="이전 기간"],
+  .schedule-period-controls > button[aria-label="다음 기간"] { width: 44px; padding: 0 4px; overflow: hidden; font-size: 0; white-space: nowrap; }
+  .schedule-period-controls > button[aria-label="이전 기간"]::after,
+  .schedule-period-controls > button[aria-label="다음 기간"]::after { display: block; font-size: 20px; }
+  .schedule-period-controls > button[aria-label="이전 기간"]::after { content: "‹"; }
+  .schedule-period-controls > button[aria-label="다음 기간"]::after { content: "›"; }
+  .schedule-period-trigger { min-width: 0; max-width: none; padding: 8px; }
+  .schedule-today { min-width: 64px; padding: 8px 6px; }
+}

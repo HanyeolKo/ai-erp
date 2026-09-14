@@ -1,0 +1,246 @@
+{
+  "checks": [
+    {
+      "name": "date-jump-applies-selected-month",
+      "result": "pass",
+      "detail": "AX native date edit 2026-10-14; Move closed dialog, period became2026년10월, focus returned 날짜로 이동"
+    },
+    {
+      "name": "mobile-menu-notification-escape",
+      "result": "pass",
+      "detail": "390px; Escape closes modal, preserves expanded project menu and hash, restores focus to 알림"
+    },
+    {
+      "name": "notification-mark-read-local-fixture",
+      "result": "pass",
+      "detail": "Explicit read action replaces button with 읽음 while modal remains open; no production mutation"
+    },
+    {
+      "name": "week-geometry-preserved",
+      "result": "pass",
+      "detail": "Exact JSON match: seven 1152px canvases, both event coordinates/durations/order/links unchanged"
+    },
+    {
+      "name": "notification-preserves-search-filter",
+      "result": "pass",
+      "detail": "Search 운영 remains unchanged before/during/after popup; hash stays project schedules"
+    },
+    {
+      "name": "date-jump-empty-error-and-escape",
+      "result": "pass",
+      "detail": "390px native date clear keeps dialog open with inline error; Shift+Tab stays inside dialog; Escape returns to period trigger with unchanged September anchor"
+    },
+    {
+      "name": "notification-related-link",
+      "result": "pass",
+      "detail": "Related schedule link closes popup and opens #/projects/p1/schedules/s1"
+    },
+    {
+      "name": "legacy-notification-route",
+      "result": "pass",
+      "detail": "Direct #/notifications retains full-page heading/content without dialog"
+    },
+    {
+      "name": "mobile-date-dialog-controls",
+      "result": "pass",
+      "detail": {
+        "buttons": [
+          {
+            "height": 44,
+            "text": "×",
+            "width": 44
+          },
+          {
+            "height": 44,
+            "text": "취소",
+            "width": 148.5
+          },
+          {
+            "height": 44,
+            "text": "이동",
+            "width": 148.5
+          }
+        ],
+        "width": 339
+      }
+    }
+  ],
+  "responsive": [
+    {
+      "controls": [
+        {
+          "height": 40,
+          "name": "이전 기간",
+          "top": 222.890625,
+          "width": 98.140625
+        },
+        {
+          "height": 40,
+          "name": "날짜로 이동",
+          "top": 222.890625,
+          "width": 215.1875
+        },
+        {
+          "height": 40,
+          "name": "다음 기간",
+          "top": 222.890625,
+          "width": 98.140625
+        },
+        {
+          "height": 40,
+          "name": "오늘",
+          "top": 222.890625,
+          "width": 64
+        }
+      ],
+      "overflow": -15,
+      "width": 1440
+    },
+    {
+      "controls": [
+        {
+          "height": 44,
+          "name": "이전 기간",
+          "top": 336.890625,
+          "width": 44
+        },
+        {
+          "height": 44,
+          "name": "날짜로 이동",
+          "top": 336.890625,
+          "width": 291.5625
+        },
+        {
+          "height": 44,
+          "name": "다음 기간",
+          "top": 336.890625,
+          "width": 44
+        },
+        {
+          "height": 44,
+          "name": "오늘",
+          "top": 336.890625,
+          "width": 64
+        }
+      ],
+      "overflow": -15,
+      "toggles": [
+        {
+          "height": 44,
+          "top": 276.890625,
+          "width": 229.78125
+        },
+        {
+          "height": 44,
+          "top": 276.890625,
+          "width": 229.78125
+        }
+      ],
+      "width": 768
+    },
+    {
+      "controls": [
+        {
+          "height": 60,
+          "name": "이전 기간",
+          "top": 421.890625,
+          "width": 44
+        },
+        {
+          "height": 60,
+          "name": "날짜로 이동",
+          "top": 421.890625,
+          "width": 167
+        },
+        {
+          "height": 60,
+          "name": "다음 기간",
+          "top": 421.890625,
+          "width": 44
+        },
+        {
+          "height": 60,
+          "name": "오늘",
+          "top": 421.890625,
+          "width": 64
+        }
+      ],
+      "overflow": -15,
+      "width": 390
+    },
+    {
+      "controls": [
+        {
+          "height": 60,
+          "name": "이전 기간",
+          "top": 421.890625,
+          "width": 44
+        },
+        {
+          "height": 60,
+          "name": "날짜로 이동",
+          "top": 421.890625,
+          "width": 152
+        },
+        {
+          "height": 60,
+          "name": "다음 기간",
+          "top": 421.890625,
+          "width": 44
+        },
+        {
+          "height": 60,
+          "name": "오늘",
+          "top": 421.890625,
+          "width": 64
+        }
+      ],
+      "overflow": -15,
+      "width": 375
+    },
+    {
+      "controls": [
+        {
+          "height": 81,
+          "name": "이전 기간",
+          "top": 421.890625,
+          "width": 44
+        },
+        {
+          "height": 81,
+          "name": "날짜로 이동",
+          "top": 421.890625,
+          "width": 97
+        },
+        {
+          "height": 81,
+          "name": "다음 기간",
+          "top": 421.890625,
+          "width": 44
+        },
+        {
+          "height": 81,
+          "name": "오늘",
+          "top": 421.890625,
+          "width": 64
+        }
+      ],
+      "notification": {
+        "bottom": 50,
+        "height": 44,
+        "left": 152,
+        "right": 206,
+        "top": 6,
+        "width": 54,
+        "x": 152,
+        "y": 6
+      },
+      "overflow": -15,
+      "width": 320
+    }
+  ],
+  "limitations": [
+    "Actual browser zoom unverified: supported keyboard shortcuts did not alter devicePixelRatio/innerWidth. Separate viewport-width reflow checked down to 320px."
+  ],
+  "fixture": "Local fictional fixture. Production reads only; no live provider or production mutation claims."
+}

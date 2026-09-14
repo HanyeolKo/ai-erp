@@ -29,10 +29,10 @@ import {
   isSessionContextActive,
   terminateSession,
 } from "../session";
+import { NotificationContent } from "../Notifications";
 import {
   Dialog,
   go,
-  internalLink,
   Link,
   Notice,
   ProjectMissing,
@@ -1201,95 +1201,13 @@ export function Members({
 export function InviteCreate({ id }: { id: string }) {
   return <Members id={id} inviteInitially />;
 }
-const notificationLabels: Record<string, string> = {
-  SCHEDULE_CREATED: "일정 생성",
-  SCHEDULE_UPDATED: "일정 변경",
-  SCHEDULE_CONFIRMED: "일정 확정",
-  SCHEDULE_CANCELLED: "일정 취소",
-  SCHEDULE_ACKNOWLEDGED: "참여자 확인",
-  CALENDAR_SYNCED: "Calendar 동기화 완료",
-  CALENDAR_SYNC_FAILED: "Calendar 동기화 실패",
-  INVITATION_CREATED: "초대 생성",
-  INVITATION_ACCEPTED: "초대 수락",
-  INVITATION_REJECTED: "초대 거절",
-};
 export function Notifications() {
-  const [page, setPage] = useState(0);
-  const qc = useQueryClient();
-  const list = useQuery({
-    queryKey: [...keys.notifications, page],
-    queryFn: () => api.notifications(page),
-  });
-  const read = useMutation({
-    mutationFn: api.readNotification,
-    onMutate: captureSession,
-    onSuccess: (_, __, ctx) =>
-      isSessionContextActive(ctx)
-        ? qc.invalidateQueries({ queryKey: keys.notifications })
-        : undefined,
-  });
   return (
     <Shell>
       <div className="narrow-page">
         <p className="eyebrow">모든 프로젝트</p>
         <h1>알림</h1>
-        <QueryState query={list} />
-        {list.isSuccess &&
-          (list.data.length ? (
-            <ul className="notification-list">
-              {list.data.map((n) => (
-                <li key={n.id}>
-                  <div>
-                    <strong>
-                      {notificationLabels[n.type] ?? "프로젝트 알림"}
-                    </strong>
-                    <time dateTime={n.createdAt}>{dateLabel(n.createdAt)}</time>
-                  </div>
-                  {internalLink(n.link) && (
-                    <Link to={internalLink(n.link)!}>
-                      {n.link?.includes("/schedules/")
-                        ? "관련 일정 보기"
-                        : "관련 프로젝트 보기"}
-                    </Link>
-                  )}
-                  {n.readAt ? (
-                    "읽음"
-                  ) : (
-                    <button
-                      type="button"
-                      disabled={read.isPending}
-                      onClick={() => !read.isPending && read.mutate(n.id)}
-                    >
-                      읽음 처리
-                    </button>
-                  )}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <div className="empty-state">
-              <h2>새 알림이 없습니다</h2>
-              <p>새로운 프로젝트 활동이 생기면 여기에 표시됩니다.</p>
-            </div>
-          ))}
-        {read.isError && <Notice error={read.error} />}
-        <div className="pagination">
-          <button
-            disabled={!page || list.isFetching}
-            onClick={() => setPage(page - 1)}
-          >
-            이전
-          </button>
-          <span>{page + 1} 페이지</span>
-          <button
-            disabled={
-              !list.isSuccess || list.data.length < 100 || list.isFetching
-            }
-            onClick={() => setPage(page + 1)}
-          >
-            다음
-          </button>
-        </div>
+        <NotificationContent compact />
       </div>
     </Shell>
   );

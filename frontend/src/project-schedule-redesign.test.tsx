@@ -63,7 +63,9 @@ test("weekly calendar preserves local clock placement and translated status", as
   http();
   const user = mount("/projects/p1/schedules");
   await screen.findByRole("heading", { name: "프로젝트 일정" });
+  await user.click(await screen.findByRole("button", { name: "날짜로 이동" }));
   fireEvent.change(screen.getByLabelText("기준 날짜"), { target: { value: "2090-09-10" } });
+  await user.click(screen.getByRole("button", { name: "이동" }));
   await user.click(screen.getByRole("button", { name: "주간 보기" }));
   const grid = await screen.findByRole("grid", { name: "주간 일정" });
   const event = within(grid).getByRole("link", { name: /Design review/ }).closest("[data-start-minute]");

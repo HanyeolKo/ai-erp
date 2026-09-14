@@ -289,6 +289,9 @@ export function Schedules({ id }: { id: string }) {
     const [dialogStart, setDialogStart] = useState("");
     const [dialogEnd, setDialogEnd] = useState("");
     const [dialogError, setDialogError] = useState<string | null>(null);
+    const [dateJumpOpen, setDateJumpOpen] = useState(false);
+    const [dateJumpInput, setDateJumpInput] = useState(anchor);
+    const [dateJumpError, setDateJumpError] = useState<string | null>(null);
     const [pendingId, setPendingId] = useState<string | null>(null);
     const [lockedIds, setLockedIds] = useState<Set<string>>(() => new Set());
     const [overrides, setOverrides] = useState<Record<string, Rows[number]>>({});
@@ -416,11 +419,27 @@ export function Schedules({ id }: { id: string }) {
     if (!project.data) return <Shell><ProjectMissing onRetry={() => project.refetch()} isFetching={project.isFetching} /></Shell>;
     if (isAccessError(list.error)) return <Shell><h1>일정을 불러올 수 없습니다</h1><QueryState query={list} /></Shell>;
     const move = (value: string) => { if (/^\d{4}-\d{2}-\d{2}$/.test(value)) { setAnchor(value); setPage(0); } };
+    const openDateJump = () => { setDateJumpInput(anchor); setDateJumpError(null); setDateJumpOpen(true); };
+    const closeDateJump = () => { setDateJumpOpen(false); setDateJumpError(null); };
+    const submitDateJump = () => {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(dateJumpInput)) {
+            setDateJumpError("날짜를 YYYY-MM-DD 형식으로 입력하세요.");
+            return;
+        }
+        try {
+            civilDateBoundary(dateJumpInput, zone);
+            move(dateJumpInput);
+            setDateJumpOpen(false);
+            setDateJumpError(null);
+        } catch (error) {
+            setDateJumpError(error instanceof Error ? error.message : "날짜를 확인하세요.");
+        }
+    };
     const canCreate = list.isSuccess && capabilities(project.data, me.data!.id).create;
     return <Shell project={project.data}>
         <div className="schedule-screen schedule-listing">
             <header className="schedule-heading"><div><p className="eyebrow">{project.data.name}</p><h1>프로젝트 일정</h1><p className="lead">기간과 확인 상태를 살펴보고 일정 상세에서 필요한 작업을 처리하세요.</p></div><div className="schedule-actions">{canCreate && <Link className="button button-primary" to={`/projects/${id}/schedules/new`}>일정 만들기</Link>}</div></header>
-            <section className="schedule-period" aria-label="일정 기간 탐색"><div className="schedule-view-toggle" role="group" aria-label="일정 보기"><button type="button" aria-pressed={view === "month"} onClick={() => { setView("month"); setPage(0); }}>월간 보기</button><button type="button" aria-pressed={view === "week"} onClick={() => { setView("week"); setPage(0); }}>주간 보기</button></div><div className="schedule-period-controls"><button type="button" aria-label="이전 기간" onClick={() => move(navigateDate(anchor, view, -1))}>이전 기간</button><label>기준 날짜<input type="date" value={anchor} onChange={event => move(event.target.value)} /></label><button type="button" aria-label="다음 기간" onClick={() => move(navigateDate(anchor, view, 1))}>다음 기간</button></div></section>
+            <section className="schedule-period" aria-label="일정 기간 탐색"><div className="schedule-view-toggle" role="group" aria-label="일정 보기"><button type="button" aria-pressed={view === "month"} onClick={() => { setView("month"); setPage(0); }}>월간 보기</button><button type="button" aria-pressed={view === "week"} onClick={() => { setView("week"); setPage(0); }}>주간 보기</button></div><div className="schedule-period-controls"><button type="button" aria-label="이전 기간" onClick={() => move(navigateDate(anchor, view, -1))}>이전 기간</button><button className="schedule-period-trigger" type="button" aria-label="날짜로 이동" aria-haspopup="dialog" aria-expanded={dateJumpOpen} onClick={openDateJump}><span aria-hidden="true">{view === "month" ? `${anchor.slice(0, 4)}년 ${Number(anchor.slice(5, 7))}월` : `${range.days[0]} ~ ${range.days[range.days.length - 1]}`}</span></button><button type="button" aria-label="다음 기간" onClick={() => move(navigateDate(anchor, view, 1))}>다음 기간</button><button className="schedule-today" type="button" onClick={() => move(dateInZone(new Date().toISOString(), zone))}>오늘</button></div></section>
             {!validZone(zoneInput) && <p role="alert" id="schedule-zone-error" className="schedule-inline-alert">지원하지 않는 IANA 시간대입니다. Asia/Seoul로 표시합니다.</p>}
             <details className="schedule-filters"><summary>상세 필터 <span>검색·상태·확인·날짜 범위</span></summary><div className="schedule-filter-grid"><label>검색<input value={text} onChange={event => { setText(event.target.value); setPage(0); }} /></label><label>표시 시간대<input value={zoneInput} aria-invalid={!validZone(zoneInput)} aria-describedby={!validZone(zoneInput) ? "schedule-zone-error" : undefined} onChange={event => { setZone(event.target.value); setPage(0); }} /></label><label>날짜 이후<input type="date" value={after} aria-invalid={!!effectiveRange.error} aria-describedby={effectiveRange.error ? "schedule-range-error" : "schedule-range-help"} onChange={event => { setAfter(event.target.value); setPage(0); }} /></label><label>날짜 이전<input type="date" value={before} aria-invalid={!!effectiveRange.error} aria-describedby={effectiveRange.error ? "schedule-range-error" : "schedule-range-help"} onChange={event => { setBefore(event.target.value); setPage(0); }} /></label><label>상태<select value={status} onChange={event => setStatus(event.target.value)}>{filterOptions(["ALL", "DRAFT", "CONFIRMED", "CANCELLED"], statusLabels)}</select></label><label>확인 상태<select value={ack} onChange={event => setAck(event.target.value)}>{filterOptions(["ALL", "PENDING", "ACKNOWLEDGED", "NOT_REQUIRED"], ackLabels)}</select></label><label className="schedule-check"><input type="checkbox" checked={mine} onChange={event => setMine(event.target.checked)} />내가 만든 일정</label></div></details>
             <p id="schedule-range-help" className="schedule-help">현재 페이지의 최대 {PAGE_SIZE}개 일정에 필터를 적용합니다. 날짜 범위는 양 끝 날짜를 포함합니다.</p>
@@ -442,6 +461,14 @@ export function Schedules({ id }: { id: string }) {
                 <label>종료<input type="datetime-local" value={dialogEnd} onChange={event => setDialogEnd(event.target.value)} /></label>
                 {dialogError && <p id="schedule-dialog-error" role="alert" className="schedule-inline-alert">{dialogError}</p>}
                 <div className="schedule-form-actions"><button type="button" onClick={closeDialog}>취소</button><button type="submit" className="button-primary" disabled={!!pendingId}>변경 저장</button></div>
+            </form>
+        </Dialog>
+        <Dialog open={dateJumpOpen} title="날짜로 이동" labelledBy="schedule-date-jump-title" className="schedule-date-jump-dialog" onClose={closeDateJump}>
+            <form onSubmit={event => { event.preventDefault(); submitDateJump(); }}>
+                <label htmlFor="schedule-date-jump-input">기준 날짜</label>
+                <input id="schedule-date-jump-input" type="date" value={dateJumpInput} aria-invalid={!!dateJumpError} aria-describedby={dateJumpError ? "schedule-date-jump-error" : undefined} onChange={event => { setDateJumpInput(event.target.value); setDateJumpError(null); }} />
+                {dateJumpError && <p id="schedule-date-jump-error" role="alert" className="schedule-inline-alert">{dateJumpError}</p>}
+                <div className="schedule-form-actions"><button type="button" className="button" onClick={closeDateJump}>취소</button><button type="submit" className="button button-primary">이동</button></div>
             </form>
         </Dialog>
     </Shell>;

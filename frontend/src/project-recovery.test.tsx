@@ -110,7 +110,7 @@ test("protected query 401 removes the old workspace and stays signed out on rout
   const server = http(); const user = mount("/projects/p1/schedules/s1");
   await screen.findByRole("heading", { name: schedule.title });
   server.on("GET", "/api/v1/notifications", () => json({ code: "UNAUTHENTICATED" }, 401));
-  await user.click(screen.getByRole("link", { name: "알림" }));
+  await user.click(screen.getByRole("button", { name: "알림" }));
   expect(await screen.findByRole("link", { name: "Google로 로그인" })).toBeInTheDocument();
   await act(async () => { window.location.hash = "#/projects/p1/schedules/s1"; window.dispatchEvent(new HashChangeEvent("hashchange")); });
   expect(screen.queryByRole("heading", { name: schedule.title })).not.toBeInTheDocument();

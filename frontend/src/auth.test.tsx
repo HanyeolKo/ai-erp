@@ -8,7 +8,7 @@ afterEach(() => { cleanup(); vi.unstubAllGlobals(); window.history.replaceState(
 const mount = (path = "/") => { window.location.hash = `#${path}`; render(<App />); };
 const expectNoBusinessNavigation = () => {
   expect(screen.queryByRole("navigation", { name: "주 메뉴" })).not.toBeInTheDocument();
-  expect(screen.queryByRole("link", { name: "알림" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "알림" })).not.toBeInTheDocument();
   expect(screen.queryByRole("link", { name: "Calendar" })).not.toBeInTheDocument();
 };
 

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type MouseEventHandler, type ReactNode } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { api, ApiError, type Project } from "./api/client";
 import {
@@ -6,6 +6,7 @@ import {
   isSessionContextActive,
   terminateSession,
 } from "./session";
+import { NotificationContent } from "./Notifications";
 export const go = (path: string) => {
   window.location.hash = `#${path}`;
 };
@@ -30,6 +31,7 @@ export function Link({
   children: ReactNode;
   className?: string;
   "aria-current"?: "page";
+  onClick?: MouseEventHandler<HTMLAnchorElement>;
 }) {
   return (
     <a className={className} href={`#${to}`} {...props}>
@@ -45,6 +47,7 @@ export function Shell({
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [logoutError, setLogoutError] = useState<unknown>();
   const me = useQuery({ queryKey: ["me"], queryFn: api.me });
   const menuButton = useRef<HTMLButtonElement>(null);
@@ -66,9 +69,12 @@ export function Shell({
       terminateSession();
     },
   });
-  useEffect(() => setOpen(false), [project?.id, window.location.hash]);
   useEffect(() => {
-    if (!open) return;
+    setOpen(false);
+    setNotificationsOpen(false);
+  }, [project?.id, window.location.hash]);
+  useEffect(() => {
+    if (!open || notificationsOpen) return;
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
       event.preventDefault();
@@ -77,7 +83,7 @@ export function Shell({
     };
     document.addEventListener("keydown", closeOnEscape);
     return () => document.removeEventListener("keydown", closeOnEscape);
-  }, [open]);
+  }, [open, notificationsOpen]);
   return (
     <main
       className={project ? "app-shell has-project" : "app-shell lobby-shell"}
@@ -98,7 +104,17 @@ export function Shell({
             <span>AI ERP</span>
           </Link>
           <div className="topbar-actions">
-            {project && <Link to="/notifications">알림</Link>}
+            {project && (
+              <button
+                className="text-button notification-trigger"
+                type="button"
+                aria-haspopup="dialog"
+                aria-expanded={notificationsOpen}
+                onClick={() => setNotificationsOpen(true)}
+              >
+                알림
+              </button>
+            )}
             <details className="account-menu">
               <summary>{me.data?.displayName || "내 계정"}</summary>
               <div className="account-menu-panel">
@@ -205,6 +221,18 @@ export function Shell({
           {children}
         </section>
       </div>
+      {project && (
+        <Dialog
+          open={notificationsOpen}
+          title="알림"
+          labelledBy="notification-dialog-title"
+          onClose={() => setNotificationsOpen(false)}
+        >
+          {notificationsOpen && (
+            <NotificationContent compact onNavigate={() => setNotificationsOpen(false)} />
+          )}
+        </Dialog>
+      )}
     </main>
   );
 }
@@ -379,12 +407,14 @@ export function Dialog({
   children,
   onClose,
   labelledBy,
+  className,
 }: {
   open: boolean;
   title: string;
   children: ReactNode;
   onClose: () => void;
   labelledBy?: string;
+  className?: string;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const caller = useRef<HTMLElement | null>(null);
@@ -408,14 +438,15 @@ export function Dialog({
       requestAnimationFrame(() => caller.current?.focus());
     }
     wasOpen.current = open;
-    return () => {
-      if (d.open) {
-        suppressClose.current = true;
-        if (typeof d.close === "function") d.close();
-        else d.removeAttribute("open");
-      }
-    };
   }, [open]);
+  useEffect(() => () => {
+    const d = ref.current;
+    if (d?.open) {
+      suppressClose.current = true;
+      if (typeof d.close === "function") d.close();
+      else d.removeAttribute("open");
+    }
+  }, []);
   useEffect(() => {
     const d = ref.current;
     if (!d) return;
@@ -433,13 +464,19 @@ export function Dialog({
   return (
     <dialog
       ref={ref}
-      className="modal"
+      className={className ? `modal ${className}` : "modal"}
       aria-labelledby={labelledBy}
       onClose={() => {
         if (suppressClose.current) {
           suppressClose.current = false;
           return;
         }
+        onClose();
+      }}
+      onKeyDown={(event) => {
+        if (event.key !== "Escape") return;
+        event.preventDefault();
+        event.stopPropagation();
         onClose();
       }}
     >
