@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, type Schedule } from "../api/client";
 import { accessKey, accessRead, accessReadCanClear, acknowledgement, calendarStatus, capabilities, clearAccessDenial, isAccessError, keys, recordAccessDenial, refreshSchedule, useAccessDenied, useMe, useProject } from "../state";
@@ -10,8 +10,50 @@ import "./schedules.css";
 const statusLabels: Record<string, string> = { DRAFT: "초안", CONFIRMED: "확정", CANCELLED: "취소" };
 const statusLabel = (value: string) => statusLabels[value] ?? "상태 확인 필요";
 const projectionLabel = (value?: string) => value === "FAILED" || value === "REAUTH_REQUIRED" ? "연결 확인 필요" : value === "PENDING" ? "동기화 중" : value === "SYNCED" ? "동기화 완료" : value === "NOT_CONNECTED" ? "연결되지 않음" : "상태 확인 필요";
+const connectionStatusLabel = (value?: string) => value === "CONNECTED" ? "연결됨" : projectionLabel(value);
+const compactCalendarLabels: Record<string, string> = { LOADING: "상태 확인 중", CONFIGURATION_REQUIRED: "구성 필요", ACCESS_DENIED: "접근 확인 필요", ERROR: "오류 확인 필요", REAUTH_REQUIRED: "다시 연결 필요", FAILED: "연결 확인 필요", PENDING: "동기화 중", SYNCED: "동기화 완료", NOT_CONNECTED: "연결되지 않음", UNKNOWN: "상태 확인 필요" };
+const compactCalendarOutline = "M5.5 6.5A2 2 0 0 1 7.5 4.5h9a2 2 0 0 1 2 2v13h-13v-13zm3-3v3m7-3v3m-10 6h13";
+const compactCalendarGlyphs: Record<string, string> = { LOADING: "M12 4a8 8 0 1 0 8 8", CONFIGURATION_REQUIRED: "M12 3.5l1.8 1.2 2.1-.2.8 2 1.7 1.4-.8 2 1.2 1.8-1.2 1.8.8 2-1.7 1.4-.8 2-2.1-.2L12 20.5l-1.8-1.2-2.1.2-.8-2-1.7-1.4.8-2L5.2 12l1.2-1.8-.8-2 1.7-1.4.8-2 2.1.2L12 3.5zm0 5.2v3.8m0 3h.01", REAUTH_REQUIRED: "M19 8V4m0 0h-4m4 0-3.1 3.1A7.5 7.5 0 1 0 19.2 14", FAILED: "M12 4v9m0 4h.01", PENDING: "M12 5v7l4 2", SYNCED: "M4 12.5l5 5L20 6.5", NOT_CONNECTED: "M5 12h14", UNKNOWN: "M9.6 9a2.5 2.5 0 1 1 4.2 1.8c-1.2 1-1.8 1.4-1.8 3.2m0 3h.01" };
 const participantLabel = (value: string) => value === "PENDING" ? "확인 대기" : value === "ACKNOWLEDGED" ? "확인 완료" : "확인 대상 아님";
 const changeLabel = (value: string) => value === "SCHEDULE_CREATED" ? "일정 생성" : value === "SCHEDULE_CHANGED" ? "일정 변경" : value === "SCHEDULE_CONFIRMED" ? "일정 확정" : value === "SCHEDULE_CANCELLED" ? "일정 취소" : value === "SCHEDULE_ACKNOWLEDGED" ? "변경 확인" : "일정 변경";
+
+function CalendarGlyph({ state }: { state: string }) {
+    const glyph = compactCalendarGlyphs[state] ?? compactCalendarGlyphs.FAILED;
+    return <svg className="schedule-calendar-glyph" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d={compactCalendarOutline} fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" /><g transform="translate(12 12) scale(.55) translate(-12 -12)"><path d={glyph} fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" /></g></svg>;
+}
+
+function CalendarStatus({ calendar, connection, projection, projectionDenied, configurationRequired, caps, blocked, run }: { calendar?: string; connection: { isPending: boolean; isError: boolean; isFetching?: boolean; data?: { status?: string }; error: unknown; refetch: () => unknown }; projection: { isPending: boolean; isError: boolean; isFetching?: boolean; data?: { status?: string; businessRevision?: number }; error: unknown; refetch: () => unknown }; projectionDenied: boolean; configurationRequired: boolean; caps: { retry: boolean }; blocked: boolean; run: (action: "retry") => void }) {
+    const triggerRef = useRef<HTMLButtonElement>(null);
+    const [open, setOpen] = useState(false);
+    const hasQueryError = projection.isError || connection.isError;
+    const state = projectionDenied ? "ACCESS_DENIED" : hasQueryError ? "ERROR" : configurationRequired ? "CONFIGURATION_REQUIRED" : (projection.isPending && !projection.data) || (connection.isPending && !connection.data) ? "LOADING" : calendar ?? "UNKNOWN";
+    const label = compactCalendarLabels[state] ?? compactCalendarLabels.UNKNOWN;
+    const toggle = () => setOpen(value => !value);
+    useEffect(() => {
+        if (!open) return;
+        const closeOnEscape = (event: KeyboardEvent) => {
+            if (event.key !== "Escape") return;
+            event.preventDefault();
+            setOpen(false);
+            triggerRef.current?.focus();
+        };
+        document.addEventListener("keydown", closeOnEscape);
+        return () => document.removeEventListener("keydown", closeOnEscape);
+    }, [open]);
+    return <div className={`schedule-calendar-inline schedule-calendar-inline--${state.toLowerCase()}`}>
+        <div className="schedule-calendar-control-row">
+            <button ref={triggerRef} className="schedule-calendar-trigger" type="button" aria-label={`Calendar: ${label}`} aria-expanded={open} aria-controls="calendar-status-disclosure" onClick={toggle}><CalendarGlyph state={state} /></button>
+            <div className="schedule-calendar-recovery">
+                {(projection.isError || (!projection.isPending && !(projection.isFetching && projection.data))) && <QueryState query={projection} label={projectionDenied ? "Calendar 접근 상태 다시 확인" : "투영 다시 시도"} />}
+                {(connection.isError || (!connection.isPending && !(connection.isFetching && connection.data))) && <QueryState query={connection} label="연결 상태 다시 확인" />}
+                {configurationRequired && <p>Calendar 연동이 구성되지 않았습니다.</p>}
+                {!configurationRequired && calendar === "REAUTH_REQUIRED" && <Link to="/calendar">Calendar 다시 연결</Link>}
+                {!configurationRequired && calendar !== "REAUTH_REQUIRED" && !projectionDenied && caps.retry && <button className="button button-secondary" disabled={blocked} onClick={() => run("retry")}>Calendar 동기화 다시 시도</button>}
+            </div>
+        </div>
+        {open && <div id="calendar-status-disclosure" className="schedule-calendar-disclosure" role="region" aria-label="Calendar 상태 상세"><p><strong>{label}</strong></p>{connection.data && <p>계정 연결 상태 · {connectionStatusLabel(connection.data.status)}</p>}{!projectionDenied && projection.data && <details><summary>진단 정보</summary><p>최근 변경 버전 · {projection.data.businessRevision}</p></details>}</div>}
+    </div>;
+}
 
 export function Detail({ id, scheduleId }: { id: string; scheduleId: string }) {
     const qc = useQueryClient();
@@ -48,8 +90,7 @@ export function Detail({ id, scheduleId }: { id: string; scheduleId: string }) {
     const schedule = detail.data;
     const caps = capabilities(project.data, me.data!.id, schedule, projectionDenied ? undefined : projection.data);
     const calendar = calendarStatus(connection.data, projectionDenied ? undefined : projection.data);
-    const calendarLabel = calendar ? projectionLabel(calendar) : (connection.data || projection.data) ? "상태 확인 필요" : undefined;
-    const configurationRequired = connection.data?.configurationRequired || (!projectionDenied && projection.data?.retryClassification === "CONFIGURATION_REQUIRED");
+    const configurationRequired = Boolean(connection.data?.configurationRequired || (!projectionDenied && projection.data?.retryClassification === "CONFIGURATION_REQUIRED"));
     const denied = command.isError && isAccessError(command.error);
     const blocked = command.isPending || denied || writeDenied;
     const recoverAccess = async () => { const recoveryContext = captureSession(); const [membership, latest] = await Promise.all([project.refetch(), detail.refetch()]); if (!isSessionContextActive(recoveryContext)) return; if (membership.isSuccess && membership.data && latest.isSuccess) { clearAccessDenial(writeAccessKey); command.reset(); } };
@@ -64,10 +105,10 @@ export function Detail({ id, scheduleId }: { id: string; scheduleId: string }) {
         <div className="schedule-screen schedule-detail">
             <header className="schedule-heading schedule-detail-heading"><div><p className="eyebrow">{project.data.name} · 일정 상세</p><h1>{schedule.title}</h1><p className="lead">{schedule.description || "설명이 없는 일정입니다."}</p></div><Link className="button button-secondary" to={`/projects/${id}/schedules`}>일정 목록</Link></header>
             <section className="schedule-detail-summary" aria-label="일정 요약"><div><span>일정 상태</span><strong>{statusLabel(schedule.status)}</strong></div><div><span>일정 시간</span><strong><time dateTime={schedule.startsAt}>{displayTime(schedule.startsAt)}</time> ~ <time dateTime={schedule.endsAt}>{displayTime(schedule.endsAt)}</time></strong><small>Asia/Seoul 기준</small></div></section>
+            <CalendarStatus calendar={calendar} connection={connection} projection={projection} projectionDenied={projectionDenied} configurationRequired={configurationRequired} caps={caps} blocked={blocked} run={run} />
             <div className="schedule-detail-actions" aria-label="일정 작업">{caps.edit && !blocked && <Link className="button button-secondary" to={`/projects/${id}/schedules/${scheduleId}/edit`}>일정 수정</Link>}{caps.confirm && <button className="button button-primary" disabled={blocked} onClick={() => run("confirm")}>일정 확정</button>}{caps.cancel && <button className="button button-danger" disabled={blocked} onClick={() => run("cancel")}>일정 취소</button>}</div>
             <section className="schedule-detail-section" aria-labelledby="participants-title"><p className="eyebrow">참여자</p><h2 id="participants-title">참여자 확인</h2><p>내 확인 상태 · {participantLabel(ownAck)}</p><h3>프로젝트 구성원</h3>{schedule.participants.some(participant => participant.memberUserId) ? <ul className="schedule-participant-list">{schedule.participants.filter(participant => participant.memberUserId).map(participant => <li key={participant.memberUserId}><strong>{participantDisplay(participant)}</strong><span>{schedule.businessRevision <= 0 ? "확인 대상 아님" : participant.acknowledged ? "확인 완료" : "확인 대기"}</span></li>)}</ul> : <p>내부 참석자가 없습니다.</p>}<h3>외부 참석자</h3>{schedule.participants.some(participant => participant.externalEmail) ? <ul className="schedule-participant-list">{schedule.participants.filter(participant => participant.externalEmail).map(participant => <li key={participant.externalEmail}>{participant.externalEmail}<span>Calendar 참석 대상 · 앱 변경 확인 대상 아님</span></li>)}</ul> : <p>외부 참석자가 없습니다.</p>}{caps.ack && <button className="button button-primary" disabled={blocked} onClick={() => run("ack")}>변경 확인</button>}</section>
             <section className="schedule-detail-section schedule-history" aria-labelledby="history-title"><p className="eyebrow">기록</p><h2 id="history-title">변경 이력</h2>{schedule.changes.length ? <ol>{schedule.changes.map((change, index) => <li key={index}>{changeLabel(change.type)} · <time dateTime={change.createdAt}>{displayTime(change.createdAt)}</time></li>)}</ol> : <p>변경 이력이 없습니다.</p>}<p className="schedule-help">최근 변경을 최대 100개까지 표시합니다.</p></section>
-            <section className="schedule-detail-section schedule-calendar-status" aria-labelledby="calendar-title"><p className="eyebrow">외부 연동</p><h2 id="calendar-title">Calendar 동기화</h2><QueryState query={projection} label={projectionDenied ? "Calendar 접근 상태 다시 확인" : "투영 다시 시도"} /><QueryState query={connection} label="연결 상태 다시 확인" />{calendarLabel && <p>동기화 상태 · <strong>{calendarLabel}</strong></p>}{connection.data && <p>계정 연결 상태 · {projectionLabel(connection.data.status)}</p>}{!projectionDenied && projection.data && <details><summary>오류 상세</summary><p>기술 진단 정보는 필요한 경우에만 확인하세요.</p><p>최근 변경 버전 · {projection.data.businessRevision}</p></details>}{configurationRequired ? <p>Calendar 연동이 구성되지 않았습니다.</p> : calendar === "REAUTH_REQUIRED" ? <Link to="/calendar">Calendar 다시 연결</Link> : !projectionDenied && caps.retry && <button className="button button-secondary" disabled={blocked} onClick={() => run("retry")}>Calendar 동기화 다시 시도</button>}</section>
             {command.isError && <section className="schedule-detail-feedback"><Notice error={command.error} />{denied ? <RetryButton onRetry={recoverAccess} isFetching={project.isFetching || detail.isFetching} /> : <RetryButton onRetry={() => detail.refetch()} isFetching={detail.isFetching}>최신 일정 불러오기</RetryButton>}</section>}{writeDenied && !command.isError && <section className="schedule-detail-feedback"><p>일정 변경 권한을 다시 확인해야 합니다.</p><RetryButton onRetry={recoverAccess} isFetching={project.isFetching || detail.isFetching}>접근 상태 다시 확인</RetryButton></section>}{command.isSuccess && <p className="schedule-success" role="status">요청을 처리했습니다.</p>}
         </div>
     </Shell>;

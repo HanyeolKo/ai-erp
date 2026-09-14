@@ -83,24 +83,24 @@ test("projection permission denial removes cached Calendar status and retry thro
   const server = http();
   server.on("GET", "/api/v1/projects/p1/schedules/s1/calendar", () => json({ scheduleId: "s1", status: "FAILED", retryClassification: "TRANSIENT", businessRevision: 4 }));
   const user = mount("/projects/p1/schedules/s1");
-  await screen.findByText("연결 확인 필요");
+  await screen.findByRole("button", { name: "Calendar: 연결 확인 필요" });
   expect(screen.getByRole("button", { name: "Calendar 동기화 다시 시도" })).toBeEnabled();
 
   server.on("GET", "/api/v1/projects/p1/schedules/s1/calendar", () => json({ code: "PROJECTION_FORBIDDEN" }, 403));
   await refreshStaleQueries();
   await screen.findByText("PROJECTION_FORBIDDEN");
-  expect(screen.queryByText(/연결 확인 필요/)).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Calendar: 연결 확인 필요" })).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Calendar 동기화 다시 시도" })).not.toBeInTheDocument();
 
   server.on("GET", "/api/v1/projects/p1/schedules/s1/calendar", () => json({ code: "PROJECTION_RETRY_FAILED" }, 500));
   await user.click(screen.getByRole("button", { name: "Calendar 접근 상태 다시 확인" }));
   await screen.findByText("PROJECTION_RETRY_FAILED");
-  expect(screen.queryByText(/연결 확인 필요/)).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Calendar: 연결 확인 필요" })).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Calendar 동기화 다시 시도" })).not.toBeInTheDocument();
 
   server.on("GET", "/api/v1/projects/p1/schedules/s1/calendar", () => json({ scheduleId: "s1", status: "FAILED", retryClassification: "TRANSIENT", businessRevision: 4 }));
   await user.click(screen.getByRole("button", { name: "Calendar 접근 상태 다시 확인" }));
-  expect(await screen.findByText("연결 확인 필요")).toBeInTheDocument();
+  expect(await screen.findByRole("button", { name: "Calendar: 연결 확인 필요" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Calendar 동기화 다시 시도" })).toBeEnabled();
   expect(server.calls.filter(call => call.method === "GET" && call.url === "/api/v1/projects/p1/schedules/s1/calendar")).toHaveLength(4);
 });

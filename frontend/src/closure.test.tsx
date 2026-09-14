@@ -30,7 +30,7 @@ test("P05 projection error does not suppress known reauthorization status or rec
   const server = http(); server.on("GET", "/api/v1/calendar/connection", () => json({ status: "REAUTH_REQUIRED", configurationRequired: false }));
   server.on("GET", "/api/v1/projects/p1/schedules/s1/calendar", () => json({ code: "PROJECTION_UNAVAILABLE" }, 500));
   const user = mount("/projects/p1/schedules/s1"); await screen.findByText("PROJECTION_UNAVAILABLE");
-  expect(screen.getByText("연결 확인 필요", { selector: "strong" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Calendar: 오류 확인 필요" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "투영 다시 시도" })).toBeEnabled();
   await user.click(screen.getByRole("link", { name: "Calendar 다시 연결" }));
   expect(await screen.findByRole("heading", { name: "Calendar 연결" })).toBeInTheDocument();

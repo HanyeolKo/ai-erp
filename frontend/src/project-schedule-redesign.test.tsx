@@ -83,7 +83,7 @@ test("detail translates lifecycle and Calendar states while keeping participant 
   expect(screen.getByText("나")).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "일정 취소" })).toBeEnabled();
   expect(screen.getByText(/일정 확정/)).toBeInTheDocument();
-  expect(screen.getByRole("heading", { name: "Calendar 동기화" })).toBeInTheDocument();
+  expect(await screen.findByRole("button", { name: "Calendar: 상태 확인 필요" })).toBeInTheDocument();
   expect(server.calls.some(call => call.url.includes("/calendar"))).toBe(true);
 });
 
