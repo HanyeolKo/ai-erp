@@ -35,17 +35,17 @@ CREATE TABLE schedule.schedule_property_value (
     checkbox_value BOOLEAN,
     date_value DATE,
     option_id UUID,
-    CHECK ((text_value IS NOT NULL)::int + (number_value IS NOT NULL)::int + (checkbox_value IS NOT NULL)::int + (date_value IS NOT NULL)::int + (option_id IS NOT NULL)::int = 1),
-    CHECK ((value_type = 'TEXT' AND text_value IS NOT NULL AND number_value IS NULL AND checkbox_value IS NULL AND date_value IS NULL AND option_id IS NULL)
+    CONSTRAINT schedule_property_value_one_value_ck CHECK ((text_value IS NOT NULL)::int + (number_value IS NOT NULL)::int + (checkbox_value IS NOT NULL)::int + (date_value IS NOT NULL)::int + (option_id IS NOT NULL)::int = 1),
+    CONSTRAINT schedule_property_value_type_column_ck CHECK ((value_type = 'TEXT' AND text_value IS NOT NULL AND number_value IS NULL AND checkbox_value IS NULL AND date_value IS NULL AND option_id IS NULL)
         OR (value_type = 'NUMBER' AND text_value IS NULL AND number_value IS NOT NULL AND checkbox_value IS NULL AND date_value IS NULL AND option_id IS NULL)
         OR (value_type = 'CHECKBOX' AND text_value IS NULL AND number_value IS NULL AND checkbox_value IS NOT NULL AND date_value IS NULL AND option_id IS NULL)
         OR (value_type = 'DATE' AND text_value IS NULL AND number_value IS NULL AND checkbox_value IS NULL AND date_value IS NOT NULL AND option_id IS NULL)
         OR (value_type = 'SINGLE_SELECT' AND text_value IS NULL AND number_value IS NULL AND checkbox_value IS NULL AND date_value IS NULL AND option_id IS NOT NULL)),
     UNIQUE (project_id, schedule_id, property_id),
-    FOREIGN KEY (project_id, schedule_id) REFERENCES schedule.project_schedule(project_id, id),
-    FOREIGN KEY (project_id, property_id) REFERENCES schedule.schedule_property(project_id, id),
-    FOREIGN KEY (property_id, value_type) REFERENCES schedule.schedule_property(id, property_type),
-    FOREIGN KEY (property_id, option_id) REFERENCES schedule.schedule_property_option(property_id, id)
+    CONSTRAINT schedule_property_value_project_schedule_fk FOREIGN KEY (project_id, schedule_id) REFERENCES schedule.project_schedule(project_id, id),
+    CONSTRAINT schedule_property_value_project_property_fk FOREIGN KEY (project_id, property_id) REFERENCES schedule.schedule_property(project_id, id),
+    CONSTRAINT schedule_property_value_property_type_fk FOREIGN KEY (property_id, value_type) REFERENCES schedule.schedule_property(id, property_type),
+    CONSTRAINT schedule_property_value_property_option_fk FOREIGN KEY (property_id, option_id) REFERENCES schedule.schedule_property_option(property_id, id)
 );
 CREATE INDEX schedule_property_value_query_idx ON schedule.schedule_property_value(project_id, property_id, schedule_id);
 

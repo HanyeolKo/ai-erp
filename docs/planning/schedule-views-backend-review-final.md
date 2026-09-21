@@ -1,0 +1,82 @@
+# Schedule views backend final review — active attempt3 precheck
+
+- Task `schedule-views-delivery`; reviewer `/root/views_backend_review`, native Astra/high; 2026-09-22.
+- ACK implementation r1/API r2 and parent amendment authorizing exact V9 deployment-input allowlist/count/checksum plus regressions. Existing accepted UI prerequisite reused; frontend excluded.
+- Reviewed backend snapshot `974e912` against explicit base `49d79fe553bb4048a72671b503609e2d2c38ce58`, current source/tests/generated API, final executor result and prior r2 findings. Sol attempt3 is still active; this is early feedback, not a terminal executor handoff.
+- **Current source precheck: no unresolved source findings in the reviewed repairs. Final HIGH-risk verdict remains PENDING the frozen source SHA and real PostgreSQL/Docker CI.** The resumed-source assessment and safeguard reconciliation below supersede the original source findings; no final PASS or acceptance is claimed. Parent retains acceptance, Git and release ownership.
+
+### Normalizer safeguard reconciliation for CI checkpoint
+
+- Narrow follow-up inspection confirms SV-BE-009's remaining safeguard repaired: raw scalar key set must equal type/description/nullable with object type and nullable=true; normalized scalar key set must equal oneOf/description and its alternatives must exactly equal the three branch maps (only string permits null). Duplicate alternatives and unexpected properties/items/required now reject.
+- Raw/normalized value-map containers also enforce exact key sets; transformations remain scoped to workspace component names and recognized scalar markers/counts. Validation precedes writing the temporary artifact, so rejection leaves the input unchanged.
+- Tests now cover idempotent repeated normalization, wrong count, unexpected raw keys, unchanged file on rejection, and preservation of an unrelated schema's explicit null. No broad rereview or unchanged checks rerun.
+- Parent reports full local `clean test compileIntegrationTestJava openapi3 bootJar` exit0, 152 tests with no failures; uncached contract and targeted normalizer checks pass. Parent also reports `pnpm api:generate` and frontend typecheck exit0 against the normalized artifact; those are downstream integration evidence, not a frontend review by this reviewer.
+- All previously reported source findings SV-BE-001–012 are reconciled at source/precheck level. Required database/runtime evidence, including actual service snapshot/EXPLAIN/named constraints and numeric no-op assertions, must still execute successfully on the exact committed source. Parent must provide stable SHA and PostgreSQL/Docker CI before the independent final verdict can be PASS.
+
+## Resumed review of repairs after 974e912
+
+- Parent explicitly amended implementation r1 to include `backend/build.gradle`, workspace-only JVM OpenAPI normalizer and tests, with no new dependencies or Docker changes. Scope/revision/accepted UI gate remain valid. Reviewed current working source during the executor's full local command; final immutable SHA has not yet been supplied.
+- **SV-BE-002 source repaired:** DATE value writes now enforce exact four-digit ISO format and LocalDate validation; previous strict filter/status corrections retained.
+- **SV-BE-012 source repaired:** `sameValue` parses typed inputs and compares NUMBER using BigDecimal.compareTo. The parsed decimal uses the numeric node's textual decimal representation; strings remain rejected. Unit coverage and PostgreSQL cases now include normally parsed integers/decimals, equivalent scale and unchanged archived numbers, asserting stable rowVersion and custom-event count. Actual PostgreSQL execution remains pending.
+- **SV-BE-010 authoring defects repaired:** snapshot test calls the real proxied workspace.query, pauses after its actual count and commits a separate concurrent insertion, then asserts returned count/page/groups. Plan test captures actual application typed page/group SQL and arguments, executes EXPLAIN ANALYZE/BUFFERS JSON and asserts row, buffer and elapsed bounds over the representative fixture. Migration negative cases use fresh valid property tuples and assert SQLState plus exact named CHECK/FK, including wrong-option ownership. These now verify the intended boundaries rather than database behavior alone or masked duplicate errors; execution remains required.
+- **SV-BE-009 output semantics repaired:** actual normalized `backend/build/api-spec/openapi3.yaml` inspected at 116,267 bytes. Optional request fields, create-versus-update rowVersion, nullable dashboard/groups, scalar unions and additionalProperties now match the reviewed requirements. OAS3 scalar union is one nullable string branch plus number and boolean branches, so null matches exactly one branch. Expanded OpenApiContractTest checks these semantics.
+- Generation wiring: openapi3 finalizes openapiContractTest; contract test depends on normalizeWorkspaceOpenApi; normalizer depends on raw openapi3. The existing Docker api-contract stage runs openapi3 and completes finalizers before copying the artifact. Helper uses the existing JVM YAML library and restricts transformations to schedule-workspace component names and exact description markers/counts. No dependency or Docker changes observed.
+- **Historical SV-BE-009 safeguard gap, now repaired as reconciled above:** the earlier normalizer permitted extra raw keys and duplicate normalized alternatives. This was reported while attempt3 remained active and corrected before the CI checkpoint.
+- Reused parent/executor targeted evidence: numeric6, RESTDocs1, normalizer2 and clean generation/contract PASS. Full local clean test/compileIntegrationTestJava/openapi3/bootJar was still running when review resumed. These numbers are provided evidence, not reviewer reruns. Real PostgreSQL/Docker CI and exact stable SHA remain pending; no compilation-only acceptance.
+
+## Earlier source-precheck evidence retained below
+
+## Findings requiring action during the active attempt
+
+### SV-BE-012 — HIGH — NUMBER no-op comparison uses JSON representation identity
+
+- Evidence: `backend/src/main/java/com/aierp/schedule/ScheduleWorkspaceService.java:44,71`. Existing NUMBER values become `DecimalNode(BigDecimal)`; `applyValues` compares that node directly to the incoming JsonNode before archive validation.
+- Independent dependency inspection: `javap -c tools.jackson.databind.node.DecimalNode` from the actual cached Jackson **3.1.5** JAR shows `equals` accepts only DecimalNode and delegates to scale-sensitive `BigDecimal.equals`. Normal HTTP JSON numbers can be IntNode/DoubleNode; even two DecimalNodes with equal numerical value but different scale compare unequal.
+- Trigger: save NUMBER `12.5`, then submit the unchanged JSON number again. Actual: treated as a change, advances schedule rowVersion and emits a custom-value event. If the property was archived, the unchanged assignment is rejected. Expected: same typed numeric value is a no-op, including the contract's preserved archived value case.
+- Existing PG no-op test (`ScheduleWorkspacePostgresIntegrationTest.java:23-25`) constructs the same BigDecimalNode `12.50` directly, bypassing normal wire deserialization and missing this defect.
+- Repair: validate incoming numeric type, compare canonical decimal values numerically (`compareTo == 0`), then apply archive/new-assignment rules. Add parsed-JSON or HTTP coverage for integer/decimal/exponent/scale-equivalent numbers, no revision/event change, and unchanged archived NUMBER preservation. Keep strings distinct from numbers.
+
+### SV-BE-009 — HIGH — generated schemas still contradict API r2
+
+- Populated 11-operation REST Docs and the actual 134,615-byte generated artifact are now present; the route-only/stale-document defect is repaired. There are **10 paths / 11 operations**, not the 9 paths stated in the executor result.
+- Remaining concrete mismatches in `backend/build/api-spec/openapi3.yaml`: query `from/page/size/to` incorrectly required at lines2041-2044; filter scalar `value` restricted to string at2092-2095; dashboard `viewId` lacks nullable:true at3333-3335; property creation incorrectly requires optional archived/options/position at3594-3599.
+- Causes: `ScheduleWorkspaceApiDocumentationTest.java` helpers use required descriptors for optional wire fields; a select-only filter sample infers STRING; dashboard/group nulls are not represented. Record create also documents schedule.rowVersion as mandatory through the shared write descriptor, although only updates require it. Properties PATCH similarly requires type/options/position/name instead of their partial-update semantics.
+- Repair descriptors/generated schemas to encode actual optional fields and explicit nulls, polymorphic Scalar, and create-versus-PATCH differences. Assert these semantics in OpenApiContractTest, not only operation existence/properties. Regenerate via the approved workflow and verify the consumed artifact. Do not hand-edit generated client files.
+
+### SV-BE-010 — HIGH — expanded integration coverage still has non-probative assertions
+
+- The suite now contains 11 workspace tests and expanded migration assertions, a substantial improvement. Atomic create/update rollback, typed SQL, option concurrency, permission revocation, dashboard persistence and event isolation have meaningful application calls.
+- **Snapshot test**, `ScheduleWorkspacePostgresIntegrationTest.java:55-57`: sets REPEATABLE_READ on an independent raw connection and runs its own count/page/group SQL; workspace.query is never invoked. Reflecting an annotation plus testing PostgreSQL isolation does not verify the application's proxied transaction and mixed JPA/JDBC response. Exercise the actual service query with a deterministic concurrency barrier after its first read and assert its returned total/records/groups.
+- **Query plans**, line46: EXPLAIN of a simplified fixed-field query is merely asserted nonempty. Every valid EXPLAIN satisfies this, and it captures none of the application's typed filter/group/select-order SQL. Capture actual representative application plans with an explicit acceptable plan/work bound and reproducible data, preserving evidence for review.
+- **Migration constraints**, `V9ScheduleWorkspaceMigrationIntegrationTest.java:27`: wrong-type/multiple-column/type-mismatch cases reuse already-populated project/schedule/property tuples and accept any SQLException. A missing intended check can still pass through duplicate-key rejection; the zero-column case also references a nonexistent property. Use otherwise-valid fresh rows and assert the specific intended constraint/SQLState; separately test wrong-option ownership with matching SINGLE_SELECT type.
+- **Wire no-op**: add the SV-BE-012 cases. A passing current suite cannot close a missing assertion.
+
+## Stable finding reconciliation
+
+| ID | Current disposition |
+| --- | --- |
+| SV-BE-001 | Source repaired: create scope helper requires writer before validation; update checks membership before view lookup and personal owner before version. New role/revocation tests authored; exact-source CI pending. |
+| SV-BE-002 | Previous strict filter DATE/status issues repaired with regex+LocalDate and enum validation. Tests cover malformed dates/status. Source DATE writes still use LocalDate.parse alone rather than the exact four-digit wire restriction; align with the shared strict validator while repairing validation. |
+| SV-BE-003 | Typed Timestamp/UUID binding retained; combined successful fixed/custom PostgreSQL query authored. |
+| SV-BE-004 | Provider-safe conditional repository version update with flush/clear/reload replaces manual @Version assignment. Concurrent one-success/one-stale and persisted/no-op checks authored. |
+| SV-BE-005 | Explicit native initial dashboard insert stores1; reload returns managed version and later updates use @Version. First/subsequent/stale/builtin/null/shared/archive tests authored. |
+| SV-BE-006 | Correct typed-column and definition-type constraints retained; targeted negative-test independence still part of SV-BE-010. |
+| SV-BE-007 | Source repaired with single `!` SQL escape and matching literal escaping; PostgreSQL literal %, _, ! and SQL-looking text cases authored. |
+| SV-BE-008 | Non-null Unassigned label retained. |
+| SV-BE-009 | Still open for schema semantics above, despite full populated route coverage. |
+| SV-BE-010 | Still open for application-level snapshot, meaningful plan evidence and unmasked constraint assertions above. |
+| SV-BE-011 | Remains resolved: implementation r1/API r2 and controlled build-path attribution accepted. |
+| SV-BE-012 | New concrete numeric no-op/archive bug, above. |
+
+## Deployment-input amendment and regression scope
+
+- `scripts/lib-deploy.sh:123-132` now explicitly allowlists V1,V2,V4,V5,V6,V7,V8,V9; count exactly8; checksum explicitly includes each filename. Required regular/nonempty file, symlink and unexpected-entry checks remain. No wildcard bypass or production deployment occurred in this review.
+- `scripts/tests/deployment_contract.py:497-540` adds missing-V9 rejection, moves content-checksum and post-build tamper fixtures to V9, and asserts tampered inputs never reach Flyway. Existing missing V7/V8 and unexpected/symlink cases remain. The production checksum still names V8; its separate checksum-content fixture was replaced by V9, not the production guard.
+- Bounded script/source diff is consistent with parent amendment. Reuse reported syntax/migration-contract success and parent run35618634717 deployment-contract PASS; final exact-source CI still required.
+- Existing schedule service diff only exposes batched summaries package-locally; repository adds scoped ID-list read; AuditEventConsumer adds WORKSPACE aggregate classification. No other legacy lifecycle implementation change observed.
+
+## Evidence and checks not run
+
+- Reused executor local evidence: 141 unit/REST Docs tests and 8 OpenAPI checks pass; integration compiles. Artifact inspected directly, including requiredness/nullability/scalar mismatches above.
+- Parent reports earlier fef6267 run35620478790: 42 integration tests, 41 passed, one TEXT property fixture failure; the new snapshot corrects options to null. Those results are historical, not certification of974e912 or subsequent repairs.
+- Reviewer performed source/artifact inspection and dependency bytecode reading only; no test reruns, PostgreSQL execution, CI polling, frontend/browser, provider calls, Git mutation, deployment or Notion writes. Pending current CI must be supplied by parent. New code/tests invalidate affected evidence and require relevant execution before final acceptance.

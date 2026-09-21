@@ -78,7 +78,16 @@ tasks.register('openapiContractTest', Test) {
     testClassesDirs = sourceSets.test.output.classesDirs
     classpath = sourceSets.test.runtimeClasspath
     include '**/OpenApiContractTest.class'
+    dependsOn tasks.named('normalizeWorkspaceOpenApi')
+}
+
+tasks.register('normalizeWorkspaceOpenApi', JavaExec) {
+    description = 'Normalizes generated workspace scalar unions that restdocs-api-spec cannot represent.'
+    group = 'verification'
     dependsOn tasks.named('openapi3')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.aierp.OpenApiWorkspaceSchemaNormalizer'
+    args file('build/api-spec/openapi3.yaml').absolutePath
 }
 
 tasks.register('integrationTest', Test) {
