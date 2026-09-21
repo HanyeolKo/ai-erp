@@ -1,0 +1,39 @@
+# Schedule views browser evidence
+
+- Parent-owned browser observations, 2026-09-21. Baseline base `49d79fe553bb4048a72671b503609e2d2c38ce58`; unchanged application source.
+- Existing synthetic API `scripts/ui-preview-server.mjs` with UI_PREVIEW_PORT8080, scenario populated; Vite127.0.0.1:5173. Fictional project p1 and schedules s1/s2, no live account/provider data.
+- CUA in-app browser: project selection→project overview→schedule route. Baseline screenshots `before-dashboard.png`, `before-calendar.png` at browser default1265x715; `before-mobile-390.png` at390x844; temporary viewport reset afterward.
+- Baseline DOM confirms existing page20 filter notice, month/week controls, fixed schedule rows and dashboard summaries; no properties/saved cards yet. Screenshots are partial viewport evidence, not whole-page/contrast or backend proof.
+- Local preview process sessions: original API17334 then7369, now96543 after restarting the final initial-attempt fixture; Vite71516. Parent-owned cleanup after verification. Changes to API fixture require process restart; Vite uses hot reload.
+- After implementation: required card/schema/view settings/same-record interactions, desktop/mobile320/390 and keyboard checks remain pending.
+
+## Initial attempt review, not final acceptance
+
+- Final initial-attempt source, before corrective attempt2, was inspected using CUA with a restarted synthetic server. Cards render the two same schedule IDs s1/s2; saved group Priority produces High and Normal headings and labelled color legends. Card status labels are Korean. New view remains selected after the latest save correction.
+- Reproduced failure: builtin Cards → View settings → choose SHARED, name `우선순위별 운영`, group/legend Priority and visible Priority → Save. Saved tab reads `우선순위별 운영 · 개인`; request is incorrectly forced personal. Independent reviewer confirms source cause.
+- Reproduced failure: Properties → rename Priority draft to `미저장 우선순위` → Close. Dialog closes with no discard confirmation (`getJsDialog` absent); reopen shows Priority. Draft silently lost.
+- Record edit links visibly omit the active saved-view context. New option persistence cannot be certified by this preview version because the synthetic property PATCH ignores options; independent source review distinguishes this fixture gap from real API behavior.
+- Screenshots `initial-cards-review.png` and `initial-mobile-review.png` document this intermediate state only. At390px DOM document/body width was390; at320px document width305, so this populated card state has no global horizontal overflow. This does not certify all forms/calendar/error states or contrast. Viewport reset afterward.
+- Earlier HMR snapshots exposed nested Shell/date controls, a hardcoded2090 date, route-not-found after Cards, and a hooks-order blank screen. Latest initial-attempt reload resolved those specific observations; they do not establish final feature acceptance.
+- Independent frontend full test run:20 failed/242passed,262total, exit1. Reviewer owns exact failure analysis in `docs/planning/schedule-views-frontend-review.md`; this browser record does not relabel failures as expected.
+
+## Sol repair browser checkpoint, 2026-09-22
+
+- Restarted synthetic API in session89772 after stopping owned96543; Vite71516 remains. No live data involved. Frontend production freeze was coordinated with executor to avoid HMR invalidating steps.
+- Saved builtin Cards as `우선순위별 운영` SHARED with Priority group/independent legend/visible field. Returned shared tab remains selected; both s1/s2 render correct grouped cards and labels. The prior forced-PERSONAL defect is resolved in this observed fixture flow.
+- Dashboard selected that shared view. Inline editing s1 Priority High→Low saves; dashboard legend changes to Low/Normal; the same s1 detail shows Low and existing confirmation state remains visible. Detail return link restores the shared view ID. Synthetic behavior is not database/event isolation evidence.
+- Added a fourth option `검토 필요`, saved, renamed it to `검토 대기`, saved again, then closed/reopened Properties: the new label persisted. Existing cards still retain their prior option values. Server-issued ID/version correctness also has executor regression tests; browser does not inspect private state.
+- Native dirty-close confirm blocked all documented CDP interaction for original tab1, including dismiss/close. Created same-browser temporary tab2 and continued. Executor replaced workspace native confirms with existing app Dialogs. On tab2, edited Priority name to `미저장 우선순위`, Close→`변경사항 버리기` Dialog→`계속 편집` restored the exact draft. No data deletion or live mutation occurred.
+- At320px Properties and390px View settings scroll inside viewport; document widths305/375 respectively (scrollbar excluded), no global horizontal overflow observed. Shared scope is visibly immutable when editing saved shared view. Screenshots: `final-settings-mobile-390.png`, `final-cards-mobile-320.png`, `final-cards-desktop.png`; synthetic final-repair checkpoint, subject to focused remaining fixes.
+- Remaining parent findings returned during the same active execution: Escape from Properties closes but leaves focus on BODY instead of its trigger; Calendar grid context links repaired, duplicate agenda/list/create links still need equivalent context. Final focused keyboard/Calendar checks and independent task review remain pending.
+
+## Focused final check at frontend966e6f48e511026c0a71898997c080018d6271ff
+
+- After the final patch, Escape from the Properties name textbox closes it and DOM activeElement is BUTTON with text `속성`. Caller focus restored.
+- Week view changed via Previous period buttons to2026-09-08. All observed Calendar grid/result-list detail links and Create carry the same encoded `view=builtin-calendar&page=0&mode=week&date=2026-09-08`. Clicking result s1→detail→일정 목록 restores that exact context. Native date-input `fill` changed DOM input value without firing the React update through this browser tool; used actual period navigation, no application defect inferred from that tool-specific interaction.
+- Mobile320 Calendar and List document width305, no global overflow. Added screenshots `final-calendar-mobile-320.png` and `final-list-mobile-320.png`; viewport reset. No direct drag regression inferred from screenshots; existing pointer tests separately retained/passed.
+- Saved PERSONAL Cards filter title CONTAINS `존재하지않는일정-QA`: zero records, explicit `조건에 맞는 일정이 없습니다.`,0건 and disabled previous/next. Screenshot `final-empty-filter.png`. This differs correctly from a metadata/request error.
+- Executor final local evidence after current API generation:267/267 tests with four workers, typecheck/build and preview syntax exit0. Parent independent frontend re-review assigned against exact966e6f4. Browser-only checks above certify observed synthetic interactions, not PostgreSQL concurrency or production deployment.
+- Read-only fixture restarted as `viewer` (session89553): Calendar/Card records remain readable; Create absent, View settings/Properties disabled, Calendar time-change and card edit absent. `final-viewer-cards.png` is a transition capture and must not be used to claim fully loaded card geometry. This ordinary VIEWER case does not cover mid-session denial finding SV-FE-006.
+- Fixture restarted as `error` (session51680): reload presents `프로젝트를 불러오지 못했습니다.` alert and `다시 시도`, with protected records absent. `final-project-error.png`. This project-load503 case does not cover later query-page403.
+- Independent final reviewer returned FAIL with eight stable IDs; successful browser flows above are retained as bounded evidence, not whole-feature acceptance. Parent stopped further frontend execution at the configured attempt ceiling and asked for a task-specific exception; no merge/deployment.
