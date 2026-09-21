@@ -3,7 +3,14 @@
 - Task `schedule-views-delivery`; reviewer `/root/views_backend_review`, native Astra/high; 2026-09-22.
 - ACK implementation r1/API r2 and parent amendment authorizing exact V9 deployment-input allowlist/count/checksum plus regressions. Existing accepted UI prerequisite reused; frontend excluded.
 - Reviewed backend snapshot `974e912` against explicit base `49d79fe553bb4048a72671b503609e2d2c38ce58`, current source/tests/generated API, final executor result and prior r2 findings. Sol attempt3 is still active; this is early feedback, not a terminal executor handoff.
-- **Current source precheck: no unresolved source findings in the reviewed repairs. Final HIGH-risk verdict remains PENDING the frozen source SHA and real PostgreSQL/Docker CI.** The resumed-source assessment and safeguard reconciliation below supersede the original source findings; no final PASS or acceptance is claimed. Parent retains acceptance, Git and release ownership.
+- **Current source precheck: no unresolved source findings at `42ed0c199b028a23f9e610cee169d645a2e9dbe0`. Final HIGH-risk verdict remains PENDING exact-source PostgreSQL/Docker CI run `35628221032`.** The resumed-source assessment and subsequent reconciliations supersede the original source findings; no final PASS or acceptance is claimed. Parent retains acceptance, Git and release ownership.
+
+### Narrow real-CI fixture repair review at 42ed0c1
+
+- Independently inspected diff `fd40c89..42ed0c199b028a23f9e610cee169d645a2e9dbe0`. Only executable change is eight changed lines in `ScheduleWorkspacePostgresIntegrationTest.java`; three other changes are reporting documents. No production, migration, build/configuration, deployment-script or frontend changes in this delta.
+- EXPLAIN capture now uses Mockito `getRawArguments()[2]` / `[1]` for the original Object[] vararg array instead of an expanded individual UUID argument. It retains real JdbcTemplate calls and the original application SQL, 120-row assertion and EXPLAIN row/buffer/time bounds. Intended plan assertions are preserved.
+- Atomic-update fixture now locates the projection actually created by the legacy lifecycle and sets its baseline SYNCED/revision before invoking the operation, avoiding a duplicate insertion. It retains rollback title/participant/ACK assertions and legacy stale-write rejection, and strengthens both rollback and custom-only assertions to check projection status **and** business_revision. No behavior assertion was removed or weakened.
+- Parent evidence: prior real CI `35626604956` ran47 integration tests, with45 passing and the two described fixture failures. This historical run is not an exact-source pass. New run `35628221032` is pending; reviewer did not rerun tests or poll CI. Source check of this bounded repair has no findings; final verdict still requires current run evidence.
 
 ### Normalizer safeguard reconciliation for CI checkpoint
 
