@@ -3,7 +3,39 @@
 - Task `schedule-views-delivery`; reviewer `/root/views_backend_review`, native Astra/high; 2026-09-22.
 - ACK implementation r1/API r2 and parent amendment authorizing exact V9 deployment-input allowlist/count/checksum plus regressions. Existing accepted UI prerequisite reused; frontend excluded.
 - Reviewed backend snapshot `974e912` against explicit base `49d79fe553bb4048a72671b503609e2d2c38ce58`, current source/tests/generated API, final executor result and prior r2 findings. Sol attempt3 is still active; this is early feedback, not a terminal executor handoff.
-- **Current source precheck: bounded query repair over `b5ceac6` has no source-review findings; SV-BE-010 runtime performance remains OPEN until new exact-source PostgreSQL/Docker CI passes.** Earlier integration runs uncovered genuine query work above the required bound. Subsequent reconciliations supersede the original source findings; no final PASS or acceptance is claimed. Parent retains acceptance, Git and release ownership.
+- **Final independent BACKEND-scope verdict: PASS at `78821a726487b3f5bec38d2322acd73eaf620f12`, based on CI `35634074607` and the reviewed source.** SV-BE-001–012 are closed in the reviewed backend scope. Overall task, whole-CI and release verdicts are **not PASS**: frontend tests failed and frontend type/build plus Docker image build were skipped. Parent retains final task acceptance, Git and release ownership.
+
+## Exact-SHA backend disposition, 2026-09-22
+
+- Immutable source: `78821a726487b3f5bec38d2322acd73eaf620f12`; implementation r1/API r2, accepted UI prerequisite and parent-approved V9/OpenAPI/benchmark amendments unchanged. Parent supplied exact run/SHA linkage; inspected actual downloaded run status and reports.
+- [CI run35634074607](https://github.com/HanyeolKo/ai-erp/actions/runs/35634074607) status JSON confirms `./gradlew clean test integrationTest openapi3 bootJar` **success** and `pnpm api:generate` **success**. Deployment-contract and Caddy checks also succeeded. The workflow's overall conclusion is **failure**, caused by frontend:test; frontend:typecheck, frontend:build and docker build are explicitly skipped.
+- Independently read report counters: **146 unit/REST Docs tests, 8 OpenAPI contract tests, 47 PostgreSQL integration tests; zero failures and zero ignored tests in each suite**. This is actual PostgreSQL execution, not integration compilation. Boot JAR generation and normalized API generation completed in the successful backend Gradle step.
+- Actual current-statistics application plans pass unchanged limits: typed page **424 inclusive root blocks / 0.422ms / 100 rows**; typed group **106 blocks / 0.285ms / 1 row**. Limits remain5,000 blocks, under1,000ms and at most100/10 rows. Raw before-ANALYZE diagnostics are also retained: page5,606 blocks and group10,829. Performance evidence is bounded to the representative fixture with refreshed statistics; no general production-scale or stale-statistics guarantee is inferred.
+- Downloaded evidence root: `C:/Users/USER/AppData/Local/Temp/schedule-views-ci-35634074607-artifacts/`. Counter sources: `reports/tests/test/index.html`, `reports/tests/openapiContractTest/index.html`, `reports/tests/integrationTest/index.html`. Plan/SQL/bind source: `reports/tests/integrationTest/classes/com.aierp.ScheduleWorkspacePostgresIntegrationTest.html`. Generated artifact `api-spec/openapi3.yaml` is116,528 bytes. Workflow evidence: sibling `schedule-views-ci-35634074607-status.json`.
+
+| Backend criterion | Final evidence disposition |
+| --- | --- |
+| Contract, ownership, revisions and scope | PASS; detailed parent contract and amendments, native assigned executor escalation, independent Astra/high review; source scope and authorized build/script additions inspected. |
+| Permissions, typed values, archive/no-op and optimistic concurrency | PASS; reviewed repairs and executed unit/PostgreSQL cases close SV-BE-001–005/012. |
+| Additive migration/data preservation/constraints | PASS; actual PostgreSQL migration and independent named CHECK/FK cases close SV-BE-006; exact eight-file deployment-input contract passed. |
+| Query correctness, isolation, grouping and bounded plan evidence | PASS; actual application query/snapshot/typed SQL and measured plan cases close SV-BE-007/008/010 under the recorded statistics precondition. |
+| API generation/schema fidelity | PASS; exact normalized nullable scalar/map semantics and operation requiredness checks executed, API generation succeeded; SV-BE-009 closed. |
+| Verification attribution and preserved failure evidence | PASS; baseline output-path diagnosis and subsequent real failed/repaired runs retained; SV-BE-011 closed. |
+| Overall UI/task/release/Docker image | NOT ACCEPTED by this backend review; failed frontend gate and skipped later gates remain with the parent and frontend/release reviewers. |
+
+- Parent disposition: backend evidence may be accepted/reused for this exact SHA or demonstrably unchanged backend artifacts. Continue resolving the separate frontend/task gates before any merge/release readiness decision. The known frontend review findings and pending retry exception are not waived.
+- Reviewer reran no tests. Docker image execution/build, frontend interaction/browser and deployment were not verified here; full Docker stage is specifically **not run in this CI**. This PASS is backend-only and does not claim deployment, whole-CI success or release readiness.
+
+## Historical source and runtime reconciliation (superseded by final disposition above)
+
+### Benchmark-statistics fixture review at 78821a7
+
+- Narrow independent diff `e0e35c0..78821a7`: one integration-test line and two evidence-document lines changed. No production query, index, dependency, configuration or deployment change.
+- Parent reports real e0e35c0 CI `35632110988`: page6,307 root blocks/3.185ms and group11,933/5.384ms; both still exceed5,000 blocks. Plans use the project-leading index but show estimates1 versus actual120 and repeated range scans. Earlier failures remain preserved rather than relabeled as passes.
+- The repaired benchmark emits the actual captured page/group SQL, binds and EXPLAIN ANALYZE/BUFFERS JSON before statistics refresh, runs ANALYZE on project_schedule, schedule_property, schedule_property_option and schedule_property_value, then emits and gates the **same captured SQL and arguments** afterward. Fixture records, query results and predicates are unchanged.
+- Acceptance bounds remain execution under1,000ms, at most100 page rows/10 group rows, and at most5,000 inclusive root shared hit+read blocks. No planner forcing, cost adjustment, threshold increase or data reduction. The real application query still executes before measurement; current-statistics EXPLAIN executes its captured SQL afterward.
+- Rationale is supported by PostgreSQL's requirement for current relation statistics when assessing plans, with manual ANALYZE appropriate after substantial table-content changes: [PostgreSQL 17 EXPLAIN notes](https://www.postgresql.org/docs/17/sql-explain.html). This is an explicit benchmark precondition; it does not establish production statistics freshness or a performance pass by itself.
+- Source disposition: bounded fixture correction is consistent with the parent authorization and preserves intended assertions. Reused reported targeted unit/integration compilation success; no tests rerun. Final runtime verdict remains pending real CI of this exact SHA, including the emitted pre/post plans and unchanged bounds.
 
 ### Bounded query-performance repair over b5ceac6
 
