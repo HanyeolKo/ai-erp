@@ -47,3 +47,10 @@
 
 - Gradle test cleanup encountered OneDrive output-directory deletion failure after compilation. Parent authorizes backend implementer to create ignored `tmp/gradle-output.init.gradle` only, redirecting build output to a fresh path beneath the existing OS temporary directory via Gradle `-I`; no product build/config change or destructive cleanup.
 - This resolves execution environment only; tests/API documentation/query-plan/concurrency assertions remain executor-owned required scope. CI cannot substitute for writing missing tests. Record actual fresh output location and command results, and copy successfully generated OpenAPI output to the normal ignored API-spec path for frontend generation. Implementation contract remains r1; API contract r2.
+
+## V9 deployment-input scope amendment, 2026-09-22
+
+- PR18 CI35617903487 failed before Gradle: deployment-contract scenario4 rejects the new migration as `unexpected migration set`. Source diagnosis: `scripts/lib-deploy.sh` explicitly accepts/checksums seven files through V8. The new V9 is the eighth valid migration.
+- Parent authorizes backend final executor to additionally own ONLY the necessary V9 allowlist/count/checksum update in `scripts/lib-deploy.sh` and corresponding missing-V9/checksum/tamper regression coverage in `scripts/tests/deployment_contract.py`. This is required delivery compatibility, not a deployment-policy redesign. Preserve all previous filename, symlink, unexpected-file, checksum and pre-Flyway rejection safeguards; no wildcard bypass or weakened assertion.
+- Hypothesis: adding exact V9 identity to the existing safety contract and its regression fixtures restores valid deployment while rejecting missing/modified V9. Run shell syntax and deployment-contract checks where available, then the unchanged required CI chain. The independent backend reviewer must include this bounded script diff; release review must reference the eight-file checksum behavior.
+- No functional API/UI decision changes; implementation r1/APIr2 and accepted plans remain applicable. Root retains all Git/PR/deployment execution ownership.
