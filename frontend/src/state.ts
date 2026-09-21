@@ -214,6 +214,9 @@ export const keys = {
   mailSend: (id: string) => ["google-mail-send", id] as const,
   googleCalendars: ["google-calendars"] as const,
   projectCalendar: (p: string) => ["project-calendar", p] as const,
+  workspace: (p: string) => ["schedule-workspace", p] as const,
+  workspaceQuery: (p: string, viewId: string, page: number, signature: string) => ["schedule-workspace-query", p, viewId, page, signature] as const,
+  workspaceRecord: (p: string, s: string) => ["schedule-workspace-record", p, s] as const,
 };
 export const useMe = () => useQuery({ queryKey: keys.me, queryFn: api.me });
 export const useProject = (id: string) => {
@@ -259,6 +262,9 @@ export function refreshSchedule(qc: QueryClient, p: string, s?: string) {
       keys.projection(p),
       keys.connection,
       keys.notifications,
+      keys.workspace(p),
+      ["schedule-workspace-query", p],
+      ["schedule-workspace-record", p],
       ...(s ? [keys.detail(p, s)] : []),
     ].map((queryKey) => qc.invalidateQueries({ queryKey })),
   );

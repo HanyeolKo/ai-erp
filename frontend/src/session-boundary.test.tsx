@@ -80,7 +80,7 @@ test("late schedule save cannot navigate or repopulate the old workspace after a
   expect(screen.getByRole("link", { name: "Google로 로그인" })).toBeInTheDocument();
   expect(window.location.hash).toBe(expiredRoute);
   expect(screen.queryByRole("heading", { name: "일정 상세" })).not.toBeInTheDocument();
-  expect(server.calls.filter(call => call.method === "POST" && call.url === "/api/v1/projects/p1/schedules")).toHaveLength(1);
+  expect(server.calls.filter(call => call.method === "POST" && call.url === "/api/v1/projects/p1/schedule-workspace/records")).toHaveLength(1);
 });
 
 test("late invitation acceptance cannot restore private data after successful logout", async () => {

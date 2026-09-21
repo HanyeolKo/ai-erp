@@ -414,6 +414,9 @@ export function Dialog({
         if (typeof d.close === "function") d.close();
         else d.removeAttribute("open");
       }
+      requestAnimationFrame(() => {
+        if (caller.current?.isConnected) caller.current.focus();
+      });
     };
   }, [open]);
   useEffect(() => {

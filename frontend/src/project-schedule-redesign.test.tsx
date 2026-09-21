@@ -124,7 +124,7 @@ test("editor keeps basic, date/time, and participant sections with field focused
   http();
   const user = mount("/projects/p1/schedules/new");
   expect(await screen.findByRole("heading", { name: "일정 만들기" })).toBeInTheDocument();
-  expect(screen.getByRole("group", { name: "기본 정보" })).toBeInTheDocument();
+  expect(await screen.findByRole("group", { name: "기본 정보" })).toBeInTheDocument();
   expect(screen.getByRole("group", { name: "날짜와 시간" })).toBeInTheDocument();
   expect(screen.getByRole("group", { name: "참석자" })).toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "일정 저장" }));

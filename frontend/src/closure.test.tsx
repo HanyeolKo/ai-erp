@@ -13,8 +13,7 @@ test.each([
 ])("P03 civil-date request includes the entire day across skipped/repeated midnight: %s", async (zone, day, from, to) => {
   const server = http(); const user = mount("/projects/p1/schedules"); await screen.findByLabelText("날짜 이후"); await user.click(screen.getByText("상세 필터"));
   change("표시 시간대", zone); change("날짜 이후", day); change("날짜 이전", day);
-  const expected = "/api/v1/projects/p1/schedules?page=0&limit=20&from=" + encodeURIComponent(from) + "&to=" + encodeURIComponent(to);
-  await waitFor(() => expect(server.calls.some(c => c.url === expected)).toBe(true));
+  await waitFor(() => expect(server.calls.some(c => c.method === "POST" && c.url.endsWith("/schedule-workspace/query") && c.body.from === from && c.body.to === to && c.body.page === 0)).toBe(true));
   expect(screen.queryByRole("alert")).not.toBeInTheDocument();
 });
 test("P03 schedule browsing omits Calendar diagnostics and per-schedule projection requests", async () => {

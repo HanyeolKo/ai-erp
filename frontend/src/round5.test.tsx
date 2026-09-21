@@ -14,12 +14,12 @@ test("P03 dates request another period with inclusive local dates converted to e
   await screen.findAllByText("조건에 맞는 일정이 없습니다.", { selector: "p.schedule-empty" });
   setDate("날짜 이후", "2091-01-15"); setDate("날짜 이전", "2091-01-20");
   expect(await screen.findByRole("link", { name: /January planning/ })).toBeInTheDocument();
-  expect(server.calls.some(c => c.url === "/api/v1/projects/p1/schedules?page=0&limit=20&from=2091-01-14T15%3A00%3A00.000Z&to=2091-01-20T15%3A00%3A00.000Z")).toBe(true);
+  expect(server.calls.some(c => c.url.endsWith("/schedule-workspace/query") && c.body.from === "2091-01-14T15:00:00.000Z" && c.body.to === "2091-01-20T15:00:00.000Z" && c.body.page === 0)).toBe(true);
   expect(server.calls.some(c => c.url.includes("/calendar"))).toBe(false);
 });
 test("P03 incomplete and reversed date filters show field validation without issuing a schedule request", async () => {
   const server = http(); mount("/projects/p1/schedules"); await screen.findByRole("grid", { name: "월간 일정" });
-  const requests = () => server.calls.filter(c => c.url.includes("/schedules?")).length;
+  const requests = () => server.calls.filter(c => c.url.endsWith("/schedule-workspace/query")).length;
   const count = requests(); setDate("날짜 이후", "2091-01-20");
   expect(await screen.findByRole("alert")).toHaveTextContent("시작일과 종료일을 모두 입력하세요.");
   expect(screen.queryByText("조건에 맞는 일정이 없습니다.")).not.toBeInTheDocument();
@@ -29,21 +29,20 @@ test("P03 incomplete and reversed date filters show field validation without iss
   expect(requests()).toBe(count);
   expect(screen.queryByRole("link", { name: /Design review/ })).not.toBeInTheDocument();
 });
-test("P03 changing date range resets pagination and restores view range when cleared", async () => {
+test("P03 changing date range restores the calendar view range when cleared", async () => {
   const server = http();
   server.on("GET", "/api/v1/projects/p1/schedules", (_, url) => json(url.searchParams.get("page") === "0" && !url.searchParams.get("from")?.startsWith("2091") ? Array.from({ length: 20 }, (_, i) => ({ ...schedule, id: "s" + i })) : []));
-  const user = mount("/projects/p1/schedules"); await screen.findByRole("grid", { name: "월간 일정" }); expect(server.calls.some(c => c.url.includes("/calendar"))).toBe(false);
-  await user.click(screen.getByRole("button", { name: "다음 일정 페이지" })); await screen.findAllByText("조건에 맞는 일정이 없습니다.", { selector: "p.schedule-empty" });
+  mount("/projects/p1/schedules"); await screen.findByRole("grid", { name: "월간 일정" }); expect(server.calls.some(c => c.url.includes("/calendar"))).toBe(false);
   setDate("날짜 이후", "2091-01-15"); setDate("날짜 이전", "2091-01-20");
-  await waitFor(() => expect(server.calls.some(c => c.url.includes("page=0&limit=20&from=2091-01-14"))).toBe(true));
+  await waitFor(() => expect(server.calls.some(c => c.url.endsWith("/schedule-workspace/query") && c.body.page === 0 && c.body.from === "2091-01-14T15:00:00.000Z")).toBe(true));
   setDate("날짜 이후", ""); setDate("날짜 이전", "");
   expect(await within(screen.getByRole("region", { name: "일정 목록" })).findAllByRole("link", { name: /Design review/ })).toHaveLength(20);
-  expect(screen.getByRole("button", { name: "이전 일정 페이지" })).toBeDisabled();
+  expect(screen.queryByRole("button", { name: "이전 일정 페이지" })).not.toBeInTheDocument();
 });
 test("P03 date bounds use the selected timezone including daylight-saving offset changes", async () => {
   const server = http(); mount("/projects/p1/schedules"); await screen.findByLabelText("날짜 이후");
   setDate("표시 시간대", "America/New_York"); setDate("날짜 이후", "2026-03-08"); setDate("날짜 이전", "2026-03-08");
-  await waitFor(() => expect(server.calls.some(c => c.url.includes("from=2026-03-08T05%3A00%3A00.000Z&to=2026-03-09T04%3A00%3A00.000Z"))).toBe(true));
+  await waitFor(() => expect(server.calls.some(c => c.url.endsWith("/schedule-workspace/query") && c.body.from === "2026-03-08T05:00:00.000Z" && c.body.to === "2026-03-09T04:00:00.000Z")).toBe(true));
 });
 test("P03 renders creator independently and mine removes another creator's row", async () => {
   const server = http(); server.on("GET", "/api/v1/projects/p1/schedules", () => json([{ ...schedule, createdBy: "u2" }]));

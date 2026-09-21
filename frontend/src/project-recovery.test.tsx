@@ -38,7 +38,7 @@ test("project query retry stays disabled while one retry is in flight", async ()
 test("dashboard 403 overrides cached Manager capability and offers project selection", async () => {
   const server = http(); server.on("GET", "/api/v1/projects/p1/dashboard", () => json({ code: "FORBIDDEN" }, 403));
   mount("/projects/p1");
-  expect(await screen.findByRole("alert")).toHaveTextContent(/접근 권한/);
+  expect((await screen.findAllByRole("alert")).some(alert => /접근 권한/.test(alert.textContent ?? ""))).toBe(true);
   expect(screen.queryByRole("link", { name: "일정 만들기" })).not.toBeInTheDocument();
   expect(screen.queryByRole("link", { name: "구성원 초대" })).not.toBeInTheDocument();
   expect(screen.getByRole("link", { name: "AI ERP" })).toHaveAttribute("href", "#/");
@@ -58,7 +58,7 @@ test("background list 403 removes previously displayed schedule and create actio
   expect((await screen.findAllByRole("link", { name: "Design review" })).length).toBeGreaterThan(0);
   server.on("GET", "/api/v1/projects/p1/schedules", () => json({ code: "FORBIDDEN" }, 403));
   await act(async () => { vi.setSystemTime(new Date("2090-09-10T00:01:00Z")); focusManager.setFocused(false); focusManager.setFocused(true); });
-  expect(await screen.findByRole("alert")).toHaveTextContent(/접근 권한/);
+  expect((await screen.findAllByRole("alert")).some(alert => /접근 권한/.test(alert.textContent ?? ""))).toBe(true);
   expect(screen.queryByRole("link", { name: "Design review" })).not.toBeInTheDocument();
   expect(screen.queryByRole("link", { name: "일정 만들기" })).not.toBeInTheDocument();
 });
@@ -77,7 +77,7 @@ test("a failed retry cannot restore capabilities after a list access denial", as
   server.on("GET", "/api/v1/projects/p1/schedules", () => json([schedule]));
   await user.click(screen.getByRole("button", { name: "다시 시도" }));
   expect((await screen.findAllByRole("link", { name: "Design review" })).length).toBeGreaterThan(0);
-  expect(screen.getByRole("link", { name: "일정 만들기" })).toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: "일정 만들기" })).not.toBeInTheDocument();
 });
 
 test("save 403 preserves typed draft and blocks resubmission until access is checked", async () => {

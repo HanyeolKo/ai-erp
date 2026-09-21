@@ -122,6 +122,21 @@ export type MailSendReceipt = { requestId: string; status: "SENDING" | "SENT" | 
 export type GoogleCalendar = { id: string; name: string };
 export type GoogleCalendars = { calendars: GoogleCalendar[]; nextPageToken?: string | null };
 export type ProjectCalendar = { status: "NOT_BOUND" | "BOUND" | "REAUTH_REQUIRED"; calendarName?: string | null; ownerName?: string | null; isOwner: boolean; canManage: boolean; backfillPending: boolean };
+export type PropertyType = "TEXT" | "NUMBER" | "CHECKBOX" | "DATE" | "SINGLE_SELECT";
+export type PropertyOption = { id: string; label: string; color: "gray" | "blue" | "green" | "amber" | "red" | "purple" | "pink" | "teal"; archived: boolean };
+export type ScheduleProperty = { id: string; name: string; type: PropertyType; position: number; archived: boolean; rowVersion: number; options: PropertyOption[]; valueCount?: number };
+export type WorkspaceField = "title" | "startsAt" | "endsAt" | "status" | "createdBy" | `property:${string}`;
+export type WorkspaceFilter = { field: WorkspaceField; operator: "EQ" | "NE" | "CONTAINS" | "GT" | "GTE" | "LT" | "LTE" | "IS_EMPTY" | "IS_NOT_EMPTY"; value?: string | number | boolean | null };
+export type WorkspaceSort = { field: WorkspaceField; direction: "ASC" | "DESC" };
+export type WorkspaceConfig = { type: "CALENDAR" | "CARDS" | "LIST"; filters: WorkspaceFilter[]; sorts: WorkspaceSort[]; groupBy: string | null; legendBy: string | null; visibleFields: WorkspaceField[] };
+export type WorkspaceView = { id: string; name: string; scope: "BUILTIN" | "PERSONAL" | "SHARED"; ownerId: string | null; rowVersion: number; archived: boolean; config: WorkspaceConfig };
+export type ScheduleWorkspaceRecord = { schedule: Schedule; values: Record<string, string | number | boolean | null> };
+export type WorkspaceGroup = { optionId: string | null; label: string; color: PropertyOption["color"] | null; count: number };
+export type WorkspaceQueryResult = { records: ScheduleWorkspaceRecord[]; total: number; hasMore: boolean; page: number; size: number; groups: WorkspaceGroup[]; queriedAt: string };
+export type ScheduleWorkspace = { properties: ScheduleProperty[]; views: WorkspaceView[]; dashboardViewId: string | null; dashboardRowVersion: number };
+export type PropertyWrite = { name: string; type?: PropertyType; position?: number; archived?: boolean; rowVersion?: number; options?: Array<{ id?: string; label: string; color: PropertyOption["color"]; archived?: boolean }> };
+export type ViewWrite = { name: string; scope: "PERSONAL" | "SHARED"; config: WorkspaceConfig; rowVersion?: number; archived?: boolean };
+export type WorkspaceRecordWrite = { schedule: CreateBody | EditBody; values?: Record<string, string | number | boolean | null> };
 type RetryResult = ResponseOf<
   paths["/api/v1/projects/{projectId}/schedules/{id}/calendar/retry"]["post"]
 >;
@@ -326,4 +341,15 @@ export const api = {
     read<Projection>(`${item(p, s)}/calendar`),
   retryProjection: (p: string, s: string) =>
     mutate<RetryResult>(`${item(p, s)}/calendar/retry`),
+  workspace: (p: string) => read<ScheduleWorkspace>(`${base(p)}/schedule-workspace`),
+  workspacePropertyCreate: (p: string, body: PropertyWrite) => mutate<ScheduleProperty, PropertyWrite>(`${base(p)}/schedule-workspace/properties`, "POST", body),
+  workspacePropertyEdit: (p: string, propertyId: string, body: PropertyWrite) => mutate<ScheduleProperty, PropertyWrite>(`${base(p)}/schedule-workspace/properties/${segment(propertyId)}`, "PATCH", body),
+  workspaceViewCreate: (p: string, body: ViewWrite) => mutate<WorkspaceView, ViewWrite>(`${base(p)}/schedule-workspace/views`, "POST", body),
+  workspaceViewEdit: (p: string, viewId: string, body: ViewWrite) => mutate<WorkspaceView, ViewWrite>(`${base(p)}/schedule-workspace/views/${segment(viewId)}`, "PATCH", body),
+  workspaceDashboard: (p: string, body: { viewId: string | null; rowVersion: number }) => mutate<{ dashboardViewId: string | null; dashboardRowVersion: number }, typeof body>(`${base(p)}/schedule-workspace/dashboard`, "PATCH", body),
+  workspaceQuery: (p: string, body: { config: WorkspaceConfig; from?: string; to?: string; page?: number; size?: number }) => mutate<WorkspaceQueryResult, typeof body>(`${base(p)}/schedule-workspace/query`, "POST", body),
+  workspaceRecord: (p: string, s: string) => read<ScheduleWorkspaceRecord>(`${base(p)}/schedule-workspace/records/${segment(s)}`),
+  workspaceRecordCreate: (p: string, body: WorkspaceRecordWrite) => mutate<ScheduleWorkspaceRecord, WorkspaceRecordWrite>(`${base(p)}/schedule-workspace/records`, "POST", body),
+  workspaceRecordEdit: (p: string, s: string, body: WorkspaceRecordWrite) => mutate<ScheduleWorkspaceRecord, WorkspaceRecordWrite>(`${base(p)}/schedule-workspace/records/${segment(s)}`, "PATCH", body),
+  workspaceValuesEdit: (p: string, s: string, body: { rowVersion: number; values: Record<string, string | number | boolean | null> }) => mutate<ScheduleWorkspaceRecord, typeof body>(`${base(p)}/schedule-workspace/records/${segment(s)}/values`, "PATCH", body),
 };

@@ -16,7 +16,8 @@ import {
   Projects,
   Account,
 } from "./screens/Account";
-import { Dashboard, Schedules } from "./screens/Schedules";
+import { Dashboard } from "./screens/Schedules";
+import { ScheduleWorkspace } from "./screens/ScheduleWorkspace";
 import { ScheduleForm } from "./screens/ScheduleForm";
 import { Detail } from "./screens/Detail";
 import { Drive, GoogleWorkspace, Gmail } from "./screens/GoogleWorkspace";
@@ -58,20 +59,20 @@ function Routes() {
     observer.observe(document.body, { childList: true, subtree: true });
     return () => observer.disconnect();
   }, [path]);
-  const invite = path.match(/^\/invitations\/([A-Za-z0-9_-]+)$/);
-  const join = path.match(/^\/join\/([0-9A-HJKMNP-TV-Za-z]{16})$/i);
-  const project = path.match(/^\/projects\/([A-Za-z0-9_-]+)(?:\/(.*))?$/);
+  const invite = pathname.match(/^\/invitations\/([A-Za-z0-9_-]+)$/);
+  const join = pathname.match(/^\/join\/([0-9A-HJKMNP-TV-Za-z]{16})$/i);
+  const project = pathname.match(/^\/projects\/([A-Za-z0-9_-]+)(?:\/(.*))?$/);
   if (invite) return <Invite key={invite[1]} token={invite[1]} />;
   if (join)
     return (
       <JoinPreview key={join[1].toUpperCase()} code={join[1].toUpperCase()} />
     );
-  if (path === "/account") return <Account />;
+  if (pathname === "/account") return <Account />;
   if (pathname === "/account/google") return <GoogleWorkspace key={path} queryString={queryString} />;
-  if (path === "/account/drive") return <Drive />;
-  if (path === "/account/mail") return <Gmail />;
-  if (path === "/notifications") return <Notifications />;
-  if (path === "/calendar") return <Calendar />;
+  if (pathname === "/account/drive") return <Drive />;
+  if (pathname === "/account/mail") return <Gmail />;
+  if (pathname === "/notifications") return <Notifications />;
+  if (pathname === "/calendar") return <Calendar />;
   if (project) {
     const [, id, rest = ""] = project;
     if (rest === "") return <Dashboard key={id} id={id} />;
@@ -79,7 +80,7 @@ function Routes() {
     if (rest === "members") return <Members key={id} id={id} />;
     if (rest === "files") return <ProjectFiles key={id} id={id} />;
     if (rest === "calendar") return <ProjectCalendarSettings key={id} id={id} />;
-    if (rest === "schedules") return <Schedules key={id} id={id} />;
+    if (rest === "schedules") return <ScheduleWorkspace key={id} id={id} />;
     if (rest === "schedules/new") return <ScheduleForm key={id} id={id} />;
     const edit = rest.match(/^schedules\/([A-Za-z0-9_-]+)\/edit$/);
     if (edit)
@@ -88,7 +89,7 @@ function Routes() {
     if (detail)
       return <Detail key={id + detail[1]} id={id} scheduleId={detail[1]} />;
   }
-  if (path === "/") return <Projects />;
+  if (pathname === "/") return <Projects />;
   return (
     <Shell>
       <h1>화면을 찾을 수 없습니다.</h1>
