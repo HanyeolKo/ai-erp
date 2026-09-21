@@ -95,6 +95,14 @@ class OpenApiContractTest {
             assertThat(schema.path("properties").propertyNames()).contains("code","traceId","fieldErrors");
         }
     }
+    @Test void scheduleWorkspacePublishesAllElevenTypedOperations() {
+        String w="/api/v1/projects/{projectId}/schedule-workspace";
+        for(var route:List.of(new Failure(w,"get","200"),new Failure(w+"/properties","post","200"),new Failure(w+"/properties/{id}","patch","200"),new Failure(w+"/views","post","200"),new Failure(w+"/views/{id}","patch","200"),new Failure(w+"/dashboard","patch","200"),new Failure(w+"/query","post","200"),new Failure(w+"/records/{id}","get","200"),new Failure(w+"/records","post","200"),new Failure(w+"/records/{id}","patch","200"),new Failure(w+"/records/{id}/values","patch","200"))) {
+            assertThat(operation(route.path,route.method).path("responses").has(route.status)).as(route.method+" "+route.path).isTrue();
+        }
+        var query=resolve(responseSchema(w+"/query","post"));assertThat(query.path("properties").propertyNames()).contains("records","groups","total","hasMore","queriedAt");var record=resolve(query.path("properties").path("records").path("items"));assertThat(record.path("properties").path("values").path("type").asText()).isEqualTo("object");assertThat(record.path("properties").path("schedule").path("properties").propertyNames()).contains("id","status","rowVersion","businessRevision","participants","changes");
+        var workspace=resolve(responseSchema(w,"get"));var property=resolve(workspace.path("properties").path("properties").path("items"));assertThat(workspace.path("properties").propertyNames()).contains("properties","views","dashboardViewId","dashboardRowVersion");assertThat(property.path("properties").propertyNames()).contains("id","type","rowVersion","options");
+    }
     private record Failure(String path,String method,String status) {}
     private static void assertState(JsonNode example,String state,long revision) {
         assertThat(example.path("status").asText()).isEqualTo(state);assertThat(example.path("businessRevision").asLong()).isEqualTo(revision);
