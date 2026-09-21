@@ -1,0 +1,28 @@
+# Schedule dataset and configurable views delivery assignment
+
+- Task/increment: `schedule-views-delivery`; plan candidates r1 / assignment contract r1; decision owner `/root`.
+- User authorization: independently develop approximately three alternatives, cross-review and combine compatible ideas, implement the rational solution, open/merge PR and deploy. No repeat approval required for this scope.
+- Requirements: each project owns one schedule dataset; Calendar, editable dashboard Cards and List are peer ways to manage the same records. Users define properties/options and choose legends, filters, groups, sorts and displayed fields. Preserve current lifecycle, permissions, Google projection and existing data.
+- Source/base: `main` at `49d79fe553bb4048a72671b503609e2d2c38ce58`; previous untracked analysis documents are preserved. Accepted concept: `docs/ux/project-calendar-operating-ux-2026-09-21.md` r3; reader summary `docs/reports/product-reassessment-2026-09-21.md`.
+- Risk: high, due to persisted schema, ownership/permissions, migration, deployment. Independent Astra/high final and release reviews and relevant integration checks required.
+- Product candidate recipients: native `ai-erp-product-planner`, Sol/medium, separate bounded A/B/C tasks, at most two active workers and depth one. Each acknowledges before writing. Canonical role and `ai-erp-plan` apply; no redelegation.
+- Candidate A: schema-first reusable project property and saved-view model, bounded initial types and reliable queries. Own `docs/planning/schedule-views-option-a.md` only.
+- Candidate B: operational usability-first configurable dashboard and saved view templates over one dataset, smallest coherent end-to-end capability. Own `docs/planning/schedule-views-option-b.md` only.
+- Candidate C: migration and delivery-first compatible extension of existing schedule APIs; evaluate simplicity versus extensibility. Own `docs/planning/schedule-views-option-c.md` only.
+- Candidates may explore competing architectures, but screen decisions wait for UI specialist after accepted increment review. Avoid arbitrary scope expansion and do not omit user-defined classification, editable Cards or saved views to make a candidate artificially cheaper.
+- Output: concise INCREMENT-PLAN-shaped English product plan (<=100 lines), business/data/API/permissions/FE/BE/release effects, scope/deferred scope, concrete acceptance, tradeoffs and integration needs; return <=250 words.
+- Comparison criteria: requirement coverage 30%, workflow usability 25%, data/permission consistency 20%, implementation/operational cost 15%, migration/reversibility 10%. Any violation of required scope or permission/data integrity is disqualifying regardless of score. Scores require evidence and are judgments, not measured performance.
+- Context manifest/budget: this assignment, existing r3 UI concept, relevant fixed schedule/API/FE/migration sources; selective <=12k-token input target per worker. Minimal forks; reuse only same bounded scope. Provider token/cache usage unavailable (null); no escalation authorized.
+- External mode for planning/local implementation: `offline-contract-only`; no new provider activation required, existing integrations preserved. Parent separately discovers live GitHub/deployment readiness before release; unknown readiness cannot be called ready. Never read or print secret values.
+- Checks: read-only source analysis and document consistency now. UI specialist then visual specialist and independent ui-plan-review before UI code. Exact implementation contracts follow accepted comparison.
+- Exclusions: full Notion clone, formulas/relations/automations, changed Google sync direction, destructive data conversion, unrelated old audit fixes, secrets or unapproved infrastructure redesign.
+- Reviewer: parent-dispatched independent `ai-erp-reviewer` Astra/high for candidate comparison/accepted increment and later task/release review. Plans may critique other candidates only after their own independent output.
+- Stop/return: missing scope/data facts, incompatible requirements or required external setup; report concrete alternatives to parent. No implementation, git changes, release or self-approval by planners.
+- Parent ready-to-dispatch: ready for candidates. Release mode: execution authorized after accepted implementation and release evidence.
+
+## Selection assignment addendum — contract r2
+
+- Parent `/root` authorized native product-planner `/root/views_plan_c` (Sol/medium) to consolidate independent A/B/C and their cross-reviews into sole new artifact `docs/planning/schedule-views-selected-plan.md`, selected plan r1. Actual followup dispatch and ACK received before the write; no code/UI changes.
+- Parent hybrid proposal: normalized definitions/options/typed values, validated JSON view configuration, virtual defaults for all project readers, simple SQL offset/count paging, bounded shared dashboard view selection, additive legacy-compatible migration, schedule rowVersion conflict boundary with no custom-only businessRevision/Google effects or SCHEDULE-prefixed audit.
+- Independent reviewer `/root/views_increment_review` (native Astra/high) receives candidate plans and selected plan r1 under this r2 assignment. This supersedes r1 only for consolidation/selection, preserves candidate ownership/r1 evidence, context/output/permissions/external-mode constraints. Parent adoption follows review.
+- Detailed interfaces are frozen separately in `docs/planning/schedule-views-api-contract.md` r1 before implementation. UI and visual specialist plans and independent gate still required. No worker implementation authorized by this addendum.
