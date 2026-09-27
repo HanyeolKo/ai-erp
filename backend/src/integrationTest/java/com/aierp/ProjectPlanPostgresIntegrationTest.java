@@ -128,10 +128,15 @@ class ProjectPlanPostgresIntegrationTest {
         service.updateTarget(project,new TargetWrite(LocalDate.of(2026,10,1),LocalDate.of(2026,10,10),0L,"A"),user);
         var item=service.create(project,write(null,PlanItemKind.TASK,"Snapshot A",PlanItemState.READY,LocalDate.of(2026,10,3),LocalDate.of(2026,10,5),List.of()),user);
         var entered=new CountDownLatch(1);var release=new CountDownLatch(1);
-        org.mockito.Mockito.doAnswer(invocation->{var result=invocation.callRealMethod();if(Thread.currentThread().getName().equals("project-plan-snapshot-reader")){entered.countDown();if(!release.await(15,TimeUnit.SECONDS))throw new AssertionError("snapshot barrier timeout");}return result;}).when(planRepository).findById(project);
-        try(var executor=Executors.newSingleThreadExecutor()) {
-            var reader=executor.submit(()->{Thread.currentThread().setName("project-plan-snapshot-reader");return service.snapshot(project,user,null,null,false,null,false,null,null,null,null,null);});
-            assertThat(entered.await(15,TimeUnit.SECONDS)).isTrue();
+        var delegate=org.mockito.Mockito.mockingDetails(planRepository).getMockCreationSettings().getDefaultAnswer();
+        org.mockito.Mockito.doAnswer(invocation->{var result=delegate.answer(invocation);if(Thread.currentThread().getName().equals("project-plan-snapshot-reader")){entered.countDown();if(!release.await(15,TimeUnit.SECONDS))throw new AssertionError("snapshot barrier timeout");}return result;}).when(planRepository).findById(project);
+        ExecutorService executor=Executors.newSingleThreadExecutor();Future<Snapshot> reader=null;
+        try {
+            reader=executor.submit(()->{Thread.currentThread().setName("project-plan-snapshot-reader");return service.snapshot(project,user,null,null,false,null,false,null,null,null,null,null);});
+            if(!entered.await(15,TimeUnit.SECONDS)) {
+                try { reader.get(1,TimeUnit.SECONDS); } catch (ExecutionException failure) { throw new AssertionError("snapshot reader failed before barrier",failure.getCause()); }
+                throw new AssertionError("snapshot reader did not reach barrier");
+            }
             updatePlanAndItemAtomically(item.id());
             release.countDown();
             var snapshot=reader.get(15,TimeUnit.SECONDS);
@@ -140,7 +145,12 @@ class ProjectPlanPostgresIntegrationTest {
             var task=snapshot.items().stream().filter(row->row.id().equals(item.id())).findFirst().orElseThrow();
             assertThat(task.targetStart()).isEqualTo(LocalDate.of(2026,10,3));
             assertThat(task.targetEnd()).isEqualTo(LocalDate.of(2026,10,5));
-        } finally {release.countDown();org.mockito.Mockito.reset(planRepository);}
+        } finally {
+            release.countDown();
+            if(reader!=null&&!reader.isDone())reader.cancel(true);
+            executor.shutdownNow();assertThat(executor.awaitTermination(15,TimeUnit.SECONDS)).as("snapshot reader executor must terminate").isTrue();
+            org.mockito.Mockito.reset(planRepository);
+        }
         assertThat(jdbc.queryForObject("SELECT target_start FROM project.project_plan WHERE project_id=?",LocalDate.class,project)).isEqualTo(LocalDate.of(2026,11,1));
         assertThat(jdbc.queryForObject("SELECT target_start FROM project.plan_item WHERE id=?",LocalDate.class,item.id())).isEqualTo(LocalDate.of(2026,11,3));
         verifyNoInteractions(googleAuthorization,googleHttp);
