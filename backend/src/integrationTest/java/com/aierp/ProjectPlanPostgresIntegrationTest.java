@@ -6,6 +6,7 @@ import com.aierp.projectplan.*;
 import com.aierp.projectplan.api.ProjectPlanController.*;
 import java.time.*;
 import java.util.*;
+import java.util.concurrent.*;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -50,8 +51,26 @@ class ProjectPlanPostgresIntegrationTest {
         for(int i=0;i<21;i++)service.create(project,write(null,PlanItemKind.TASK,"Filter "+i,PlanItemState.READY,null,null,List.of()),user);
         assertThat(service.snapshot(project,user,"TASK",null,false,null,false,null,null,null,"Filter",null).matchedIds()).hasSize(21);
         assertThatThrownBy(()->service.updateTarget(project,new TargetWrite(LocalDate.of(2026,10,2),null,0L,"stale"),user)).isInstanceOf(org.springframework.orm.ObjectOptimisticLockingFailureException.class);
+        var invalidAssignee=new ItemWrite(null,PlanItemKind.TASK,"Invalid assignee",null,other,PlanItemState.READY,null,null,null,sort++,List.of(),null,List.of(),null,null);
+        assertThatThrownBy(()->service.create(project,invalidAssignee,user)).isInstanceOf(com.aierp.platform.web.ValidationFailure.class).hasMessageContaining("Assignee");
         jdbc.update("UPDATE project.project_member SET role='VIEWER' WHERE project_id=? AND user_account_id=?",project,user);assertThatThrownBy(()->service.create(project,write(null,PlanItemKind.TASK,"Denied",PlanItemState.READY,null,null,List.of()),user)).isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
         assertThatThrownBy(()->service.snapshot(project,other,null,null,false,null,false,null,null,null,null,null)).isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+        verifyNoInteractions(googleAuthorization,googleHttp);
+    }
+
+    @Test void concurrentItemWritesWithSameVersionHaveOneWinnerAndOneHistoryRow() throws Exception {
+        var item=service.create(project,write(null,PlanItemKind.TASK,"Concurrent",PlanItemState.READY,null,null,List.of()),user);
+        var revision=item.rowVersion();
+        var gate=new CountDownLatch(1);
+        try(var executor=Executors.newFixedThreadPool(2)) {
+            Callable<Boolean> update=()->{gate.await();try {
+                service.update(project,item.id(),writeUpdate(item,List.of(),revision),user);return true;
+            } catch (org.springframework.orm.ObjectOptimisticLockingFailureException conflict) {return false;}};
+            var first=executor.submit(update);var second=executor.submit(update);gate.countDown();
+            assertThat(List.of(first.get(15,TimeUnit.SECONDS),second.get(15,TimeUnit.SECONDS))).containsExactlyInAnyOrder(true,false);
+        }
+        assertThat(jdbc.queryForObject("SELECT row_version FROM project.plan_item WHERE id=?",Long.class,item.id())).isEqualTo(revision+1);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM project.plan_item_history WHERE item_id=?",Integer.class,item.id())).isEqualTo(2);
         verifyNoInteractions(googleAuthorization,googleHttp);
     }
     private ItemWrite write(UUID parent,PlanItemKind kind,String title,PlanItemState state,LocalDate start,LocalDate end,List<UUID> deps){return new ItemWrite(parent,kind,title,null,null,state,start,end,null,sort++,List.of(),null,deps,UUID.randomUUID(),null);}

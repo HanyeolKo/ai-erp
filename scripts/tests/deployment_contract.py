@@ -498,6 +498,8 @@ def migration_guard_checks(root):
             (files / 'V7__add_project_share_invitations.sql').unlink()
         elif kind == 'missing-v8':
             (files / 'V8__add_google_workspace_integrations.sql').unlink()
+        elif kind == 'missing-v9':
+            (files / 'V9__create_project_plan.sql').unlink()
         elif kind == 'extra':
             (files / 'V99__unexpected.sql').write_text('-- unexpected migration\n', encoding='utf-8')
         elif kind == 'symlink':
@@ -506,11 +508,11 @@ def migration_guard_checks(root):
             target.rename(original)
             target.symlink_to(original)
         result = child.run('preflight', C, success=False)
-        expected = 'symbolic links are forbidden in deployment paths' if kind == 'symlink' else ('required migration file missing' if kind in ('missing', 'missing-v8') else 'unexpected migration set')
+        expected = 'symbolic links are forbidden in deployment paths' if kind == 'symlink' else ('required migration file missing' if kind in ('missing', 'missing-v8', 'missing-v9') else 'unexpected migration set')
         check(expected in result.stderr, kind + ' migration input must be rejected')
         child.clean()
 
-    for kind in ('missing', 'missing-v8', 'extra'):
+    for kind in ('missing', 'missing-v8', 'missing-v9', 'extra'):
         preflight_mutation(kind)
     if os.name != 'nt':
         preflight_mutation('symlink')
@@ -520,6 +522,11 @@ def migration_guard_checks(root):
     tampered.write_text(tampered.read_text(encoding='utf-8') + '\n-- tampered checksum fixture\n', encoding='utf-8')
     after = migration_checksum(checkout)
     check(after != before, 'V8 migration content must participate in migration checksum')
+    tampered_v9 = checkout / migration / 'V9__create_project_plan.sql'
+    before_v9 = migration_checksum(checkout)
+    tampered_v9.write_text(tampered_v9.read_text(encoding='utf-8') + '\n-- tampered V9 checksum fixture\n', encoding='utf-8')
+    after_v9 = migration_checksum(checkout)
+    check(after_v9 != before_v9, 'V9 migration content must participate in migration checksum')
 
     child = clone(h, 'migration-tampered-after-build')
     child_checkout = child.root / 'checkout'
@@ -539,6 +546,24 @@ exec "{posix(sys.executable)}" "{posix(runtime)}" docker "$@"''')
     check(not any(call['event'] == 'migrate' for call in child.calls()),
           'tampered migration set must never reach Flyway')
     child.clean()
+
+    child_v9 = clone(h, 'migration-v9-tampered-after-build')
+    child_v9_checkout = child_v9.root / 'checkout'
+    shutil.copytree(checkout, child_v9_checkout)
+    child_v9.env['AI_ERP_PROJECT_DIR'] = posix(child_v9_checkout)
+    v9 = child_v9_checkout / migration / 'V9__create_project_plan.sql'
+    child_v9.wrapper('docker', f'''if [[ "${{1:-}}" == build ]]; then
+  "{posix(sys.executable)}" "{posix(runtime)}" docker "$@"
+  printf '\\n-- V9 tampered after build\\n' >> "{posix(v9)}"
+  exit 0
+fi
+exec "{posix(sys.executable)}" "{posix(runtime)}" docker "$@"''')
+    result_v9 = child_v9.run('deploy', C, success=False)
+    check('migration inputs changed after build' in result_v9.stderr,
+          'V9 tampering after checksum capture must abort deployment: ' + result_v9.stderr + result_v9.stdout)
+    check(not any(call['event'] == 'migrate' for call in child_v9.calls()),
+          'tampered V9 migration must never reach Flyway')
+    child_v9.clean()
     h.clean()
 
 def unsafe_delete_check(h):

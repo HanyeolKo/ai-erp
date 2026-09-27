@@ -80,6 +80,14 @@ class ProjectPlanServiceTest {
         assertThat(summary.forecastEnd()).isEqualTo(LocalDate.of(2026,10,10));
     }
 
+    @Test void emptyProjectHasNoProgressDenominator(){
+        when(plans.findById(project)).thenReturn(Optional.empty());
+        var summary=service.snapshot(project,user,null,null,false,null,false,null,null,null,null,null).summary();
+        assertThat(summary.taskCount()).isZero();
+        assertThat(summary.progressPercent()).isNull();
+        assertThat(summary.forecastState()).isEqualTo(ForecastState.EMPTY);
+    }
+
     @Test void dateFilterMatchesTargetPeriodOrDeadlineAndStateOverridesCancellationDefault(){
         var period=item(PlanItemKind.TASK,PlanItemState.READY,LocalDate.of(2026,10,5),LocalDate.of(2026,10,6));
         var deadline=item(PlanItemKind.TASK,PlanItemState.READY,null,null);deadline.deadline=LocalDate.of(2026,10,7);
