@@ -183,9 +183,11 @@ function Milestones({ items, allItems, byId, onOpen }: { items: PlanItem[]; allI
 function MonthCalendar({ projectId, snapshot, query, onOpen }: { projectId: string; snapshot: PlanSnapshot; query: URLSearchParams; onOpen: (item: PlanItem) => void }) {
   const localMonth = () => { const now = new Date(); return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`; };
   const requestedMonth = query.get("month") ?? ""; const month = /^\d{4}-(0[1-9]|1[0-2])$/.test(requestedMonth) ? requestedMonth : localMonth();
-  const selectedPlanTypes = query.get("types")?.split(",").filter((value): value is PlanKind => kinds.includes(value as PlanKind)) ?? defaultTypes.calendar;
+  const selectedPlanTypes = (query.get("types") ?? query.get("kind"))?.split(",").filter((value): value is PlanKind => kinds.includes(value as PlanKind)) ?? defaultTypes.calendar;
   const inferredType = selectedPlanTypes.length === 1 ? selectedPlanTypes[0] : selectedPlanTypes.length === kinds.length ? "ALL" : "TASK_MILESTONE";
-  const type = query.get("calendarKind") || inferredType;
+  const requestedType = query.get("calendarKind");
+  const requestedMatches = requestedType === "ALL" ? selectedPlanTypes.length === kinds.length : requestedType === "TASK_MILESTONE" ? selectedPlanTypes.length === 2 && selectedPlanTypes.includes("TASK") && selectedPlanTypes.includes("MILESTONE") : !!requestedType && selectedPlanTypes.length === 1 && selectedPlanTypes[0] === requestedType;
+  const type = requestedMatches ? requestedType! : inferredType;
   const [overflow, setOverflow] = useState<{ date: string; entries: PlanItem[] } | null>(null);
   const [year, monthNumber] = month.split("-").map(Number); const first = new Date(Date.UTC(year, monthNumber - 1, 1)); const offset = (first.getUTCDay() + 6) % 7; const days = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
   const appointmentVisible = query.get("types")?.split(",").includes("APPOINTMENT") ?? false;
@@ -243,8 +245,3 @@ export function ProjectPlan({ id }: { id: string }) {
     {editor !== undefined && <ItemEditor projectId={id} item={editor} items={items} canEdit={!!canEdit} initialKind={editorKind} initialParentId={createParentId} initialDraft={editorDraft} recoveryMessage={editorRecovery} onClose={() => { setEditor(undefined); setEditorDraft(undefined); setEditorRecovery(undefined); }} onSaved={() => { setEditor(undefined); setEditorDraft(undefined); setEditorRecovery(undefined); }} onForbidden={() => void deny()} />}<DetailDialog projectId={id} item={detail} items={items} members={members.data ?? []} canEdit={!!canEdit} onClose={() => setDetail(null)} onEdit={() => { setEditorDraft(undefined); setEditorRecovery(undefined); setEditorKind(detail?.kind ?? "TASK"); setEditor(detail); setDetail(null); }} onNavigate={(next) => setDetail(next)} />
   </div></Shell>;
 }
-
-
-
-
-
