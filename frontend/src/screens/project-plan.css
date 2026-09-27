@@ -1,0 +1,118 @@
+.plan-screen { min-width: 0; }
+.plan-view-nav { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 20px; border-bottom: 1px solid var(--divider); }
+.plan-view-nav a { min-height: 44px; padding: 8px 12px; color: var(--text-secondary); text-decoration: none; }
+.plan-view-nav a[aria-current="page"] { border-bottom: 3px solid var(--navy); color: var(--navy); font-weight: 800; }
+.plan-filters { display: grid; grid-template-columns: minmax(180px, 2fr) repeat(4, minmax(120px, 1fr)) auto auto auto; align-items: end; gap: 8px; margin-bottom: 16px; padding: 12px; border: 1px solid var(--divider); background: var(--surface); }
+.plan-filters label { margin: 0; font-size: 13px; }
+.plan-filters input, .plan-filters select { width: 100%; }
+.plan-filters .check-label { display: flex; align-items: center; min-height: 44px; gap: 6px; white-space: nowrap; }
+.plan-filters .check-label input { width: 18px; min-height: 18px; margin: 0; }
+.plan-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--divider); border-bottom: 1px solid var(--divider); background: var(--surface); }
+.plan-summary > div { display: flex; min-height: 108px; flex-direction: column; justify-content: center; gap: 2px; padding: 12px 16px; border-right: 1px solid var(--divider); }
+.plan-summary > div:last-child { border-right: 0; }
+.plan-summary span, .plan-summary small { color: var(--text-secondary); font-size: 13px; }
+.plan-summary strong { color: var(--navy); font-size: 20px; overflow-wrap: anywhere; }
+.plan-snapshot-meta, .plan-live { color: var(--text-secondary); font-size: 13px; }
+.plan-live { padding: 10px 12px; border-left: 4px solid var(--success); background: var(--success-soft); }
+.plan-content { min-width: 0; margin-top: 16px; }
+.plan-target { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; padding: 12px 16px; border: 1px solid var(--divider); background: var(--surface); }
+.plan-target > div { display: flex; min-width: 0; flex-direction: column; }
+.plan-target span, .plan-target small { color: var(--text-secondary); font-size: 13px; }
+.plan-target strong { font-size: 16px; }
+.plan-target form { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; width: 100%; }
+.plan-target form label { margin: 0; }
+.plan-link-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.plan-link-list button { min-height: 32px; padding: 3px 8px; border-color: var(--divider); color: var(--accent); font-size: 13px; }
+.plan-badge { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 5px; color: var(--text-secondary); font-size: 12px; font-weight: 800; }
+.plan-badge span:first-child { color: var(--navy); }
+.plan-badge span:last-child { padding: 2px 6px; border-radius: 4px; background: var(--accent-soft); }
+.plan-row { display: grid; grid-template-columns: minmax(240px, 2fr) minmax(100px, 1fr) 130px minmax(150px, 1fr) minmax(90px, .7fr) auto; align-items: center; gap: 10px; min-height: 68px; padding: 10px 12px; border-bottom: 1px solid var(--divider); background: var(--surface); }
+.plan-row-main { display: flex; min-width: 0; flex-direction: column; gap: 2px; }
+.plan-title { justify-content: flex-start; min-height: 32px; padding: 2px 0; border: 0; background: transparent; color: var(--text); text-align: left; font-weight: 800; }
+.plan-title:hover { background: var(--accent-soft); }
+.plan-path, .plan-row-meta, .plan-assignee, .plan-dates { min-width: 0; color: var(--text-secondary); font-size: 13px; overflow-wrap: anywhere; }
+.plan-dates { display: flex; flex-wrap: wrap; gap: 4px; }
+.plan-dates small { width: 100%; }
+.plan-tree { border-top: 1px solid var(--divider); }
+.plan-tree-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 10px 12px; border-bottom: 1px solid var(--divider); background: var(--surface-subtle); }
+.plan-tree-toolbar label { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 13px; }
+.plan-tree-toolbar input { width: 18px; min-height: 18px; margin: 0; }
+.plan-tree-node > .plan-row { padding-left: calc(12px + var(--depth) * 16px); border-left: calc(var(--depth) * 1px) solid var(--accent-soft); }
+.plan-tree-tools { display: flex; gap: 6px; padding: 4px 12px 0 calc(12px + var(--depth) * 16px); }
+.plan-tree-tools button { min-height: 32px; padding: 3px 8px; font-size: 12px; }
+.plan-table { min-width: 0; overflow: hidden; border-top: 1px solid var(--divider); }
+.plan-list-controls { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; margin-bottom: 10px; }
+.plan-list-controls label { margin: 0; color: var(--text-secondary); font-size: 13px; }
+.plan-list-controls select { width: auto; min-width: 120px; margin-top: 0; }
+.plan-semantic-table-wrap { overflow-x: auto; border-top: 1px solid var(--divider); background: var(--surface); }
+.plan-semantic-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.plan-semantic-table th, .plan-semantic-table td { min-width: 110px; padding: 12px; border-bottom: 1px solid var(--divider); text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+.plan-semantic-table th { background: var(--surface-subtle); color: var(--text-secondary); font-size: 13px; }
+.plan-semantic-table td:first-child { min-width: 190px; }
+.plan-semantic-table select { width: 100%; min-width: 120px; margin: 0; }
+.plan-table-head { display: grid; grid-template-columns: minmax(240px, 2fr) minmax(100px, 1fr) 130px minmax(150px, 1fr) minmax(90px, .7fr) auto; gap: 10px; padding: 10px 12px; background: var(--surface-subtle); color: var(--text-secondary); font-size: 13px; font-weight: 800; }
+.plan-roadmap { overflow: hidden; border-top: 1px solid var(--divider); background: var(--surface); }
+.plan-legend { display: flex; flex-wrap: wrap; gap: 16px; padding: 10px 12px; border-bottom: 1px solid var(--divider); color: var(--text-secondary); font-size: 13px; }
+.plan-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.plan-legend i { display: inline-block; width: 18px; height: 10px; }
+.legend-target { background: var(--navy); }
+.legend-forecast { border-bottom: 2px dashed var(--accent); }
+.plan-axis { display: flex; justify-content: space-between; padding: 8px 12px; color: var(--text-secondary); font-size: 13px; }
+.roadmap-row { display: grid; grid-template-columns: minmax(220px, .8fr) minmax(180px, .7fr) minmax(300px, 2fr); min-height: 68px; border-top: 1px solid var(--divider); }
+.roadmap-label { display: flex; min-width: 0; flex-direction: column; justify-content: center; gap: 2px; padding: 8px 12px; }
+.roadmap-label button { justify-content: flex-start; min-height: 32px; padding: 0; border: 0; background: transparent; color: var(--text); text-align: left; font-weight: 800; }
+.roadmap-track { position: relative; min-width: 0; min-height: 68px; background: repeating-linear-gradient(90deg, transparent 0, transparent calc(25% - 1px), var(--surface-subtle) 25%); }
+.roadmap-info { display: flex; min-width: 0; flex-direction: column; justify-content: center; gap: 4px; padding: 8px; color: var(--text-secondary); font-size: 12px; overflow-wrap: anywhere; }
+.roadmap-info b { color: var(--text); }
+.roadmap-target { position: absolute; top: 24px; min-width: 8px; height: 18px; border-radius: 4px; background: var(--navy); }
+.roadmap-forecast { position: absolute; top: 47px; min-width: 8px; height: 0; border-top: 3px dashed var(--accent); }
+.roadmap-undated { display: block; padding: 24px 8px; color: var(--text-secondary); font-size: 12px; }
+.plan-group-row th { padding: 9px 12px; border-bottom: 1px solid var(--divider); background: var(--accent-soft); color: var(--text); text-align: left; }
+.plan-group-row small { color: var(--text-secondary); font-weight: 400; }
+.plan-semantic-table input[type="date"] { min-width: 132px; }
+.plan-semantic-table td label { display: block; margin: 0 0 4px; font-size: 12px; color: var(--text-secondary); }
+.calendar-more { border-left-color: var(--navy) !important; background: var(--surface) !important; font-weight: 800 !important; }
+.calendar-appointment { display: block; min-height: 36px; margin-top: 4px; padding: 5px 6px; border: 1px dashed var(--divider); border-left: 3px solid var(--focus); border-radius: 4px; background: var(--surface); color: var(--text); text-decoration: none; font-size: 12px; font-weight: 600; }
+.calendar-appointment span { display: block; color: var(--text-secondary); font-size: 11px; }
+.appointment-overlay-status { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; padding: 8px 12px; border-left: 4px solid var(--focus); background: var(--surface-subtle); }
+.appointment-overlay-status p { margin: 0; }
+.plan-breadcrumb { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 8px 0 0; color: var(--text-secondary); }
+.calendar-overflow { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.calendar-overflow li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px; border-bottom: 1px solid var(--divider); }
+.calendar-overflow li button { min-height: 44px; text-align: left; }
+.calendar-overflow li span { color: var(--text-secondary); font-size: 13px; }
+.plan-board { display: grid; grid-template-columns: repeat(5, minmax(220px, 1fr)); gap: 8px; overflow-x: auto; }
+.plan-board > section { min-height: 240px; padding: 8px; background: var(--surface-subtle); }
+.plan-board h2 { display: flex; justify-content: space-between; margin: 0 0 8px; padding: 4px; font-size: 16px; }
+.plan-board h2 small { color: var(--text-secondary); }
+.plan-card { display: flex; min-width: 0; flex-direction: column; gap: 7px; margin-bottom: 8px; padding: 12px; border: 1px solid var(--divider); background: var(--surface); }
+.plan-card > button:first-child { justify-content: flex-start; min-height: 36px; padding: 0; border: 0; background: transparent; text-align: left; font-weight: 800; }
+.plan-card select { width: 100%; }
+.plan-milestones .plan-row { grid-template-columns: minmax(180px, 2fr) repeat(4, minmax(80px, 1fr)) auto; }
+.plan-calendar { min-width: 0; }
+.calendar-weekdays { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border: 1px solid var(--divider); border-bottom: 0; background: var(--surface-subtle); color: var(--text-secondary); font-size: 13px; font-weight: 800; text-align: center; }
+.calendar-weekdays span { padding: 8px 4px; }
+.calendar-toolbar { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; margin-bottom: 12px; }
+.calendar-toolbar label { margin: 0; font-size: 13px; }
+.calendar-toolbar input, .calendar-toolbar select { width: auto; margin-top: 0; }
+.plan-month-grid { overflow: hidden; }
+.plan-month-grid > div { min-height: 130px; }
+.plan-month-grid > div.is-outside { background: var(--surface-subtle); }
+.plan-month-grid time { display: block; margin-bottom: 5px; color: var(--text-secondary); font-weight: 800; }
+.plan-month-grid button { display: block; width: 100%; min-height: 36px; margin-top: 4px; padding: 5px 6px; border: 1px solid var(--divider); border-left: 3px solid var(--accent); border-radius: 4px; background: var(--accent-soft); text-align: left; font-size: 12px; font-weight: 600; }
+.plan-month-grid button span { display: block; color: var(--text-secondary); font-size: 11px; }
+.plan-form-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.plan-form-grid label { margin-top: 0; }
+.plan-detail dl { display: grid; grid-template-columns: minmax(90px, .4fr) minmax(0, 1fr); gap: 8px 12px; margin: 20px 0; }
+.plan-detail dt { color: var(--text-secondary); font-weight: 800; }
+.plan-detail dd { margin: 0; overflow-wrap: anywhere; }
+.plan-warning, .plan-conflict { padding: 10px 12px; border-left: 4px solid var(--focus); background: #fff8e8; }
+.plan-conflict { display: grid; gap: 8px; }
+.plan-history { margin: 16px 0 0; padding-left: 20px; }
+.plan-history li { display: grid; grid-template-columns: auto auto; gap: 4px 10px; padding: 8px 0; border-bottom: 1px solid var(--divider); }
+.plan-history li span { grid-column: 1 / -1; color: var(--text-secondary); }
+.plan-history pre { grid-column: 1 / -1; max-width: 100%; margin: 0; padding: 8px; overflow: auto; background: var(--surface-subtle); font-size: 12px; white-space: pre-wrap; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+@media (max-width: 980px) { .plan-filters { grid-template-columns: repeat(3, minmax(140px, 1fr)); } .plan-filters > :first-child { grid-column: 1 / -1; } .plan-board { grid-template-columns: repeat(5, minmax(240px, 1fr)); } }
+@media (max-width: 767px) { .plan-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } .plan-summary > div:nth-child(2) { border-right: 0; } .plan-filters { grid-template-columns: 1fr; padding: 8px; } .plan-filters > :first-child { grid-column: auto; } .plan-filters button { width: 100%; } .plan-table-head { display: none; } .plan-row, .plan-milestones .plan-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(110px, .8fr); gap: 8px; padding: 12px; } .plan-row > *:nth-child(n+3) { grid-column: 1 / -1; } .plan-row select { width: 100%; } .roadmap-row { display: block; } .roadmap-info { display: grid; grid-template-columns: 1fr 1fr; padding: 8px 12px; } .roadmap-track { min-height: 20px; background: none; } .roadmap-target, .roadmap-forecast { display: none; } .plan-board { grid-template-columns: 1fr; overflow: visible; } .plan-board > section { min-height: 0; } .plan-form-grid { grid-template-columns: 1fr; } .calendar-weekdays { display: none; } .plan-month-grid { display: block; } .plan-month-grid > div { min-height: 0; padding: 10px; border-width: 0 0 1px; } .plan-month-grid > div.is-outside { display: none; } .plan-month-grid button { display: inline-block; width: auto; max-width: 100%; margin-right: 4px; } .calendar-overflow li { align-items: flex-start; flex-direction: column; } }
+@media (max-width: 767px) { .plan-semantic-table, .plan-semantic-table tbody, .plan-semantic-table tr, .plan-semantic-table td { display: block; width: 100%; } .plan-semantic-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); } .plan-semantic-table tr { margin-bottom: 10px; border: 1px solid var(--divider); } .plan-semantic-table td { display: grid; grid-template-columns: minmax(120px, .6fr) minmax(0, 1fr); min-width: 0; border-bottom: 0; padding: 8px 12px; } .plan-semantic-table td::before { content: attr(data-label); color: var(--text-secondary); font-weight: 800; } .plan-semantic-table td:first-child { min-width: 0; } .plan-semantic-table td select { min-width: 0; } }

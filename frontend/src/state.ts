@@ -214,6 +214,7 @@ export const keys = {
   mailSend: (id: string) => ["google-mail-send", id] as const,
   googleCalendars: ["google-calendars"] as const,
   projectCalendar: (p: string) => ["project-calendar", p] as const,
+  plan: (p: string, query = "") => ["project-plan", p, query] as const,
 };
 export const useMe = () => useQuery({ queryKey: keys.me, queryFn: api.me });
 export const useProject = (id: string) => {

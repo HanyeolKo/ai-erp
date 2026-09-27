@@ -122,6 +122,84 @@ export type MailSendReceipt = { requestId: string; status: "SENDING" | "SENT" | 
 export type GoogleCalendar = { id: string; name: string };
 export type GoogleCalendars = { calendars: GoogleCalendar[]; nextPageToken?: string | null };
 export type ProjectCalendar = { status: "NOT_BOUND" | "BOUND" | "REAUTH_REQUIRED"; calendarName?: string | null; ownerName?: string | null; isOwner: boolean; canManage: boolean; backfillPending: boolean };
+export type PlanKind = "EPIC" | "TOPIC" | "TASK" | "MILESTONE";
+export type PlanState = "BACKLOG" | "READY" | "IN_PROGRESS" | "BLOCKED" | "DONE" | "CANCELLED";
+export type ForecastState = "EMPTY" | "UNDATED" | "INCOMPLETE" | "COMPLETE";
+export type PlanSummary = {
+  taskCount: number;
+  doneCount: number;
+  blockedCount: number;
+  overdueCount: number;
+  unplannedCount: number;
+  unassignedCount: number;
+  progressPercent: number | null;
+  forecastStart: string | null;
+  forecastEnd: string | null;
+  forecastState: ForecastState;
+  outsideTarget: boolean;
+};
+export type PlanItem = {
+  id: string;
+  projectId: string;
+  parentId: string | null;
+  kind: PlanKind;
+  title: string;
+  description: string | null;
+  assigneeId: string | null;
+  assigneeName?: string | null;
+  state: PlanState;
+  targetStart: string | null;
+  targetEnd: string | null;
+  deadline: string | null;
+  sortOrder: number;
+  labels: string[];
+  rowVersion: number;
+  createdBy?: string;
+  updatedAt?: string;
+  predecessorIds: string[];
+  successorIds: string[];
+  blockerIds: string[];
+  summary: PlanSummary;
+};
+export type PlanSnapshot = {
+  projectId: string;
+  rowVersion: number;
+  targetStart: string | null;
+  targetEnd: string | null;
+  asOfDate: string;
+  items: PlanItem[];
+  matchedIds: string[];
+  summary: PlanSummary;
+  complete: boolean;
+  totalCount: number;
+};
+export type PlanItemWrite = {
+  requestId?: string;
+  rowVersion?: number;
+  parentId: string | null;
+  kind: PlanKind;
+  title: string;
+  description: string;
+  assigneeId: string | null;
+  state: PlanState;
+  targetStart: string | null;
+  targetEnd: string | null;
+  deadline: string | null;
+  sortOrder: number;
+  labels: string[];
+  predecessorIds: string[];
+  reason?: string;
+};
+export type PlanHistoryEntry = {
+  id: string;
+  actorId: string;
+  occurredAt: string;
+  version: number;
+  reason?: string | null;
+  before: Partial<PlanItem> | null;
+  after: Partial<PlanItem> | null;
+};
+export type PlanHistory = { entries: PlanHistoryEntry[]; hasNext: boolean };
 type RetryResult = ResponseOf<
   paths["/api/v1/projects/{projectId}/schedules/{id}/calendar/retry"]["post"]
 >;
@@ -326,4 +404,14 @@ export const api = {
     read<Projection>(`${item(p, s)}/calendar`),
   retryProjection: (p: string, s: string) =>
     mutate<RetryResult>(`${item(p, s)}/calendar/retry`),
+  plan: (p: string, query = "") =>
+    read<PlanSnapshot>(`${base(p)}/plan${query ? `?${query}` : ""}`),
+  savePlan: (p: string, body: { rowVersion: number; targetStart: string | null; targetEnd: string | null; reason?: string }) =>
+    mutate<PlanSnapshot, typeof body>(`${base(p)}/plan`, "PATCH", body),
+  createPlanItem: (p: string, body: PlanItemWrite) =>
+    mutate<PlanItem, PlanItemWrite>(`${base(p)}/plan/items`, "POST", body),
+  updatePlanItem: (p: string, id: string, body: PlanItemWrite) =>
+    mutate<PlanItem, PlanItemWrite>(`${base(p)}/plan/items/${segment(id)}`, "PATCH", body),
+  planHistory: (p: string, id: string, page = 0, limit = 50) =>
+    read<PlanHistory>(`${base(p)}/plan/items/${segment(id)}/history?page=${page}&limit=${limit}`),
 };

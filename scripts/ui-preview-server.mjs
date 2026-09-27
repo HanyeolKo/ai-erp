@@ -138,6 +138,39 @@ const baseMailDetails = {
     "mail-2": { id: "mail-2", subject: "프로젝트 브리핑", from: "manager@example.com", to: ["partner@example.com"], cc: [], date: "2026-09-08T08:00:00.000Z", bodyText: "프로젝트 진행 현황을 공유합니다.", truncated: false },
 };
 
+const planSummary = (items, targetStart = null, targetEnd = null) => {
+    const tasks = items.filter((item) => item.kind === "TASK" && item.state !== "CANCELLED");
+    const done = tasks.filter((item) => item.state === "DONE");
+    const blocked = tasks.filter((item) => item.state === "BLOCKED" || item.blockerIds?.length);
+    const starts = tasks.map((item) => item.targetStart).filter(Boolean).sort();
+    const ends = tasks.map((item) => item.targetEnd).filter(Boolean).sort();
+    const forecastState = tasks.length === 0 ? "EMPTY" : starts.length === 0 && ends.length === 0 ? "UNDATED" : tasks.some((item) => !item.targetStart || !item.targetEnd) ? "INCOMPLETE" : "COMPLETE";
+    const forecastStart = forecastState === "EMPTY" || forecastState === "UNDATED" ? null : starts[0] ?? null;
+    const forecastEnd = forecastState === "EMPTY" || forecastState === "UNDATED" ? null : ends.at(-1) ?? null;
+    return { taskCount: tasks.length, doneCount: done.length, blockedCount: blocked.length, overdueCount: tasks.filter((item) => item.state !== "DONE" && (item.deadline || item.targetEnd) < "2026-09-10").length, unplannedCount: tasks.filter((item) => item.state !== "DONE" && (!item.targetStart || !item.targetEnd)).length, unassignedCount: tasks.filter((item) => item.state !== "DONE" && !item.assigneeId).length, progressPercent: tasks.length ? Math.round(done.length / tasks.length * 100) : null, forecastStart, forecastEnd, forecastState, outsideTarget: !!((targetStart && forecastStart && forecastStart < targetStart) || (targetEnd && forecastEnd && forecastEnd > targetEnd)) };
+};
+const makePlanFixture = () => {
+    const items = [
+        { id: "epic-1", parentId: null, kind: "EPIC", title: "운영 안정화", description: "9월 운영 기반을 정리한다.", assigneeId: "u1", state: "IN_PROGRESS", targetStart: "2026-09-01", targetEnd: "2026-10-31", deadline: null, sortOrder: 1, labels: ["운영"] },
+        { id: "topic-1", parentId: "epic-1", kind: "TOPIC", title: "데이터 품질", description: null, assigneeId: "u2", state: "IN_PROGRESS", targetStart: "2026-09-02", targetEnd: "2026-09-30", deadline: null, sortOrder: 1, labels: ["품질"] },
+        { id: "topic-2", parentId: "epic-1", kind: "TOPIC", title: "고객 대응", description: null, assigneeId: "u1", state: "READY", targetStart: "2026-09-15", targetEnd: "2026-10-10", deadline: null, sortOrder: 2, labels: ["고객"] },
+        { id: "milestone-1", parentId: "epic-1", kind: "MILESTONE", title: "베타 검토", description: "검토 결과를 확정한다.", assigneeId: "u1", state: "READY", targetStart: null, targetEnd: "2026-09-30", deadline: "2026-09-30", sortOrder: 3, labels: [] },
+    ];
+    for (let index = 1; index <= 64; index++) {
+        const id = `task-${index}`;
+        const parentId = index <= 12 ? "topic-1" : index <= 20 ? "topic-2" : null;
+        const done = index === 1 || index === 2 || index === 3;
+        const cancelled = index === 4;
+        const partial = index === 7 || index === 18 || index === 23;
+        items.push({ id, parentId, kind: "TASK", title: `실행 작업 ${index}`, description: index === 7 ? null : `fixture 작업 ${index}`, assigneeId: index % 5 === 0 ? null : index % 2 ? "u1" : "u2", state: cancelled ? "CANCELLED" : done ? "DONE" : index === 8 ? "BLOCKED" : index % 3 === 0 ? "IN_PROGRESS" : "READY", targetStart: partial ? null : `2026-09-${String((index % 20) + 1).padStart(2, "0")}`, targetEnd: partial ? null : `2026-09-${String(Math.min(28, (index % 20) + 5)).padStart(2, "0")}`, deadline: index % 4 === 0 ? "2026-09-25" : null, sortOrder: index, labels: index % 2 ? ["핵심"] : ["후속"], predecessorIds: index === 2 || index === 8 ? ["task-1"] : [] });
+    }
+    const byId = new Map(items.map((item) => [item.id, item]));
+    items.forEach((item) => { item.projectId = projectId; item.rowVersion = 1; item.createdBy = "u1"; item.updatedAt = "2026-09-10T00:00:00Z"; item.predecessorIds = item.predecessorIds ?? []; item.successorIds = []; item.blockerIds = []; });
+    byId.get("task-1").successorIds = ["task-2", "task-8"]; byId.get("task-8").blockerIds = ["task-1"]; byId.get("milestone-1").successorIds = ["task-5", "task-6"];
+    items.forEach((item) => { item.summary = item.kind === "TASK" ? planSummary([item], item.targetStart, item.targetEnd) : planSummary(items.filter((candidate) => { let current = candidate; while (current?.parentId) { if (current.parentId === item.id) return true; current = byId.get(current.parentId); } return false; }), item.targetStart, item.targetEnd); });
+    return items;
+};
+
 const makeState = () => {
     const role = scenario === "viewer" ? "VIEWER" : "MANAGER";
     const loginReady = scenario !== "unconfigured";
@@ -161,6 +194,10 @@ const makeState = () => {
         creationOptions: [{ id: groupId, name: "서울 운영 그룹", canCreate: scenario !== "viewer", reason: scenario === "viewer" ? "프로젝트 생성 권한이 없습니다." : null }],
         projectFilesByProject: { [projectId]: scenario === "empty" ? [] : baseProjectFiles.map((file) => ({ ...file })) },
         projectCalendars: { [projectId]: { status: "NOT_BOUND", calendarName: null, ownerName: null, isOwner: scenario !== "viewer", canManage: scenario !== "viewer", backfillPending: false } },
+        planByProject: { [projectId]: makePlanFixture() },
+        planVersions: { [projectId]: 1 },
+        planTargets: { [projectId]: { targetStart: "2026-09-01", targetEnd: "2026-10-31" } },
+        planHistory: {},
         shareInvitation: { state: "NOT_CREATED", code: null, expiresAt: null },
         sendReceipts: new Map(),
         sendReceiptReads: new Map(),
@@ -208,6 +245,28 @@ const stateProjectRole = (project) => scenario === "viewer" ? "VIEWER" : "MANAGE
 const getProject = (id) => state.projects.find((project) => project.id === id);
 const getSchedules = (id) => state.schedulesByProject[id] ?? [];
 const getMembers = (id) => state.membersByProject[id] ?? [];
+const getPlan = (id) => state.planByProject[id] ?? [];
+const planSnapshot = (id, url) => {
+    const all = getPlan(id);
+    const q = url.searchParams;
+    const kindsFilter = (q.get("kind") ?? "").split(",").filter(Boolean);
+    const query = (q.get("q") ?? "").trim().toLowerCase();
+    const stateFilter = q.get("state");
+    const from = q.get("from"); const to = q.get("to");
+    const matches = all.filter((item) => {
+        if (kindsFilter.length && !kindsFilter.includes(item.kind)) return false;
+        if (stateFilter && item.state !== stateFilter) return false;
+        if (q.get("includeCancelled") !== "true" && !stateFilter && item.state === "CANCELLED") return false;
+        if (q.get("unassigned") === "true" && item.assigneeId) return false;
+        if (q.get("assigneeId") && item.assigneeId !== q.get("assigneeId")) return false;
+        if (query && !`${item.title} ${item.description ?? ""}`.toLowerCase().includes(query)) return false;
+        if (q.get("label") && !item.labels.includes(q.get("label"))) return false;
+        if (q.get("scopeId")) { let current = item; let inside = item.id === q.get("scopeId"); while (current?.parentId) { current = all.find((candidate) => candidate.id === current.parentId); if (current?.id === q.get("scopeId")) inside = true; } if (!inside) return false; }
+        if (from || to) { const start = item.targetStart || item.targetEnd; const end = item.targetEnd || item.targetStart; const overlaps = !!start && !!end && (!from || end >= from) && (!to || start <= to); const deadline = !!item.deadline && (!from || item.deadline >= from) && (!to || item.deadline <= to); if (!overlaps && !deadline) return false; }
+        return true;
+    });
+    return { projectId: id, rowVersion: state.planVersions[id] ?? 0, targetStart: state.planTargets[id]?.targetStart ?? null, targetEnd: state.planTargets[id]?.targetEnd ?? null, asOfDate: "2026-09-10", items: all, matchedIds: matches.map((item) => item.id), summary: planSummary(all), complete: true, totalCount: all.length };
+};
 const getProjection = (id, sid) => {
     if (id !== projectId)
         return undefined;
@@ -358,6 +417,33 @@ const routeRequest = async (request, body) => {
     }
     if (method === "GET" && path === `/api/v1/projects/${projectId}/dashboard`)
         return ok(dashboard(projectId));
+    if (path === `/api/v1/projects/${projectId}/plan` && method === "GET")
+        return ok(planSnapshot(projectId, url));
+    if (path === `/api/v1/projects/${projectId}/plan` && method === "PATCH") {
+        if (scenario === "viewer") return problem("FORBIDDEN", 403);
+        if (body?.rowVersion !== (state.planVersions[projectId] ?? 0)) return problem("CONFLICT", 409);
+        state.planTargets[projectId] = { targetStart: body?.targetStart ?? null, targetEnd: body?.targetEnd ?? null }; state.planVersions[projectId] = (state.planVersions[projectId] ?? 0) + 1;
+        return ok(planSnapshot(projectId, url));
+    }
+    if (path === `/api/v1/projects/${projectId}/plan/items` && method === "POST") {
+        if (scenario === "viewer") return problem("FORBIDDEN", 403);
+        const normalized = JSON.stringify({ ...body, requestId: undefined }); const prior = createAttempts.get(body?.requestId);
+        if (prior && prior.normalized !== normalized) return problem("REQUEST_ID_REUSED", 409);
+        if (prior) return ok(prior.item);
+        const item = { ...body, id: `fixture-${Date.now()}`, projectId, description: body?.description ?? null, rowVersion: 1, createdBy: userId, updatedAt: nowIso(), predecessorIds: body?.predecessorIds ?? [], successorIds: [], blockerIds: [], summary: planSummary([]) };
+        if (body?.requestId) createAttempts.set(body.requestId, { normalized, item });
+        state.planByProject[projectId].push(item); return ok(item);
+    }
+    if (path.startsWith(`/api/v1/projects/${projectId}/plan/items/`) && path.endsWith("/history") && method === "GET") {
+        const itemId = path.split("/").at(-2); return ok({ entries: state.planHistory[itemId] ?? [], hasNext: false, page: Number(url.searchParams.get("page") ?? 0), limit: Number(url.searchParams.get("limit") ?? 50) });
+    }
+    if (path.startsWith(`/api/v1/projects/${projectId}/plan/items/`) && method === "PATCH") {
+        if (scenario === "viewer") return problem("FORBIDDEN", 403);
+        const itemId = path.split("/").at(-1); const item = state.planByProject[projectId].find((candidate) => candidate.id === itemId);
+        if (!item) return notFound(path);
+        if (body?.rowVersion !== item.rowVersion) return problem("CONFLICT", 409);
+        const before = { ...item }; Object.assign(item, body); item.description = body?.description ?? null; item.rowVersion += 1; item.updatedAt = nowIso(); const entry = { id: `history-${Date.now()}`, actorId: userId, occurredAt: nowIso(), version: item.rowVersion, reason: body?.reason ?? null, before, after: { ...item } }; state.planHistory[itemId] = [...(state.planHistory[itemId] ?? []), entry]; return ok(item);
+    }
     if (method === "GET" && path === `/api/v1/projects/${projectId}/schedules`)
         return ok(getSchedules(projectId).slice());
     if (method === "GET" && path === `/api/v1/projects/${projectId}/schedules/${url.pathname.split("/").at(-1)}`)

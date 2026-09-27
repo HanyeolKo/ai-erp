@@ -160,6 +160,14 @@ export function Shell({
                 개요
               </Link>
               <Link
+                to={`/projects/${project.id}/plan`}
+                aria-current={
+                  current.startsWith(`/projects/${project.id}/plan`) ? "page" : undefined
+                }
+              >
+                계획
+              </Link>
+              <Link
                 to={`/projects/${project.id}/schedules`}
                 aria-current={
                   current === `/projects/${project.id}/schedules`
@@ -414,6 +422,9 @@ export function Dialog({
         if (typeof d.close === "function") d.close();
         else d.removeAttribute("open");
       }
+      const returnTarget = caller.current;
+      if (returnTarget?.isConnected)
+        requestAnimationFrame(() => returnTarget.focus());
     };
   }, [open]);
   useEffect(() => {

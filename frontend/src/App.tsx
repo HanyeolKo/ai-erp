@@ -21,6 +21,7 @@ import { ScheduleForm } from "./screens/ScheduleForm";
 import { Detail } from "./screens/Detail";
 import { Drive, GoogleWorkspace, Gmail } from "./screens/GoogleWorkspace";
 import { ProjectCalendarSettings, ProjectFiles } from "./screens/ProjectFiles";
+import { ProjectPlan } from "./screens/ProjectPlan";
 import { Link, Shell } from "./ui";
 import { ApiError } from "./api/client";
 import { keys, resetAccessState, SESSION_EXPIRED_EVENT } from "./state";
@@ -35,15 +36,15 @@ function Routes() {
     () => window.location.hash.replace(/^#/, "") || "/",
   );
   const [pathname, queryString = ""] = path.split("?", 2);
-  const previousPath = useRef(path);
+  const previousPath = useRef(pathname);
   useEffect(() => {
     const change = () => setPath(window.location.hash.replace(/^#/, "") || "/");
     window.addEventListener("hashchange", change);
     return () => window.removeEventListener("hashchange", change);
   }, []);
   useEffect(() => {
-    if (previousPath.current === path) return;
-    previousPath.current = path;
+    if (previousPath.current === pathname) return;
+    previousPath.current = pathname;
     const focusHeading = () => {
       const heading = document.querySelector<HTMLElement>("main h1");
       if (!heading) return false;
@@ -57,10 +58,10 @@ function Routes() {
     });
     observer.observe(document.body, { childList: true, subtree: true });
     return () => observer.disconnect();
-  }, [path]);
+  }, [pathname]);
   const invite = path.match(/^\/invitations\/([A-Za-z0-9_-]+)$/);
   const join = path.match(/^\/join\/([0-9A-HJKMNP-TV-Za-z]{16})$/i);
-  const project = path.match(/^\/projects\/([A-Za-z0-9_-]+)(?:\/(.*))?$/);
+  const project = pathname.match(/^\/projects\/([A-Za-z0-9_-]+)(?:\/(.*))?$/);
   if (invite) return <Invite key={invite[1]} token={invite[1]} />;
   if (join)
     return (
@@ -80,6 +81,7 @@ function Routes() {
     if (rest === "files") return <ProjectFiles key={id} id={id} />;
     if (rest === "calendar") return <ProjectCalendarSettings key={id} id={id} />;
     if (rest === "schedules") return <Schedules key={id} id={id} />;
+    if (rest === "plan") return <ProjectPlan key={id} id={id} />;
     if (rest === "schedules/new") return <ScheduleForm key={id} id={id} />;
     const edit = rest.match(/^schedules\/([A-Za-z0-9_-]+)\/edit$/);
     if (edit)
