@@ -29,7 +29,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 class ProjectPlanPostgresIntegrationTest {
     @Container static final PostgreSQLContainer<?> POSTGRES=new PostgreSQLContainer<>("postgres:18.6");
     @Container static final GenericContainer<?> REDIS=new GenericContainer<>(DockerImageName.parse("redis:8.2.9")).withExposedPorts(6379);
-    @DynamicPropertySource static void properties(DynamicPropertyRegistry registry){registry.add("spring.datasource.url",POSTGRES::getJdbcUrl);registry.add("spring.datasource.username",POSTGRES::getUsername);registry.add("spring.datasource.password",POSTGRES::getPassword);registry.add("spring.data.redis.url",()->"redis://%s:%d".formatted(REDIS.getHost(),REDIS.getMappedPort(6379)));}
+    @DynamicPropertySource static void properties(DynamicPropertyRegistry registry){registry.add("spring.datasource.url",POSTGRES::getJdbcUrl);registry.add("spring.datasource.username",POSTGRES::getUsername);registry.add("spring.datasource.password",POSTGRES::getPassword);registry.add("spring.data.redis.url",()->"redis://%s:%d".formatted(REDIS.getHost(),REDIS.getMappedPort(6379)));registry.add("spring.flyway.locations",()->"classpath:db/migration,classpath:db/integration-migration");}
     @Autowired JdbcTemplate jdbc; @Autowired ProjectPlanService service;
     @MockitoBean GoogleAuthorizationService googleAuthorization; @MockitoBean GoogleHttpClient googleHttp;
     @MockitoSpyBean ProjectPlanRepository planRepository;
@@ -94,20 +94,34 @@ class ProjectPlanPostgresIntegrationTest {
 
     @Test void projectLockMakesCommittedRoleRevocationWinBeforePlanWrite() throws Exception {
         service.create(project,write(null,PlanItemKind.TASK,"Before revocation",PlanItemState.READY,null,null,List.of()),user);
-        jdbc.update("UPDATE project.project_member SET role='VIEWER' WHERE project_id=? AND user_account_id=?",project,user);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM project.plan_item WHERE project_id=?",Integer.class,project)).isEqualTo(1);
-        jdbc.update("UPDATE project.project_member SET role='MEMBER' WHERE project_id=? AND user_account_id=?",project,user);
-        try(var connection=jdbc.getDataSource().getConnection();var lock=connection.prepareStatement("SELECT id FROM project.project WHERE id=? FOR UPDATE")) {
-            connection.setAutoCommit(false);lock.setObject(1,project);try(var rows=lock.executeQuery()){assertThat(rows.next()).isTrue();}
-            try(var executor=Executors.newSingleThreadExecutor()) {
-                var pending=executor.submit(()->{try {service.create(project,write(null,PlanItemKind.TASK,"After revocation",PlanItemState.READY,null,null,List.of()),user);return null;}catch(Throwable failure){return failure;}});
-                jdbc.update("UPDATE project.project_member SET role='VIEWER' WHERE project_id=? AND user_account_id=?",project,user);
-                connection.commit();
-                assertThat(pending.get(15,TimeUnit.SECONDS)).isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
-            }
+        ExecutorService executor=Executors.newSingleThreadExecutor();Future<Object> pending=null;Connection connection=null;boolean committed=false;
+        try {
+            connection=jdbc.getDataSource().getConnection();connection.setAutoCommit(false);
+            long lockerPid;try(var pid=connection.createStatement().executeQuery("SELECT pg_backend_pid()")){assertThat(pid.next()).isTrue();lockerPid=pid.getLong(1);}
+            try(var lock=connection.prepareStatement("SELECT id FROM project.project WHERE id=? FOR UPDATE")){lock.setObject(1,project);try(var rows=lock.executeQuery()){assertThat(rows.next()).isTrue();}}
+            pending=executor.submit(()->{try {service.create(project,write(null,PlanItemKind.TASK,"After revocation",PlanItemState.READY,null,null,List.of()),user);return null;}catch(Throwable failure){return failure;}});
+            assertThat(awaitWriterBlockedBy(lockerPid,Duration.ofSeconds(15))).as("plan writer must be observed waiting on the project row lock").isTrue();
+            try(var revoke=connection.prepareStatement("UPDATE project.project_member SET role='VIEWER' WHERE project_id=? AND user_account_id=?")){revoke.setObject(1,project);revoke.setObject(2,user);assertThat(revoke.executeUpdate()).isEqualTo(1);}
+            connection.commit();committed=true;
+            assertThat(pending.get(15,TimeUnit.SECONDS)).isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+        } finally {
+            if(connection!=null){if(!committed)try{connection.rollback();}catch(SQLException ignored){}try{connection.close();}catch(SQLException ignored){}}
+            if(pending!=null&&!pending.isDone())pending.cancel(true);
+            executor.shutdownNow();assertThat(executor.awaitTermination(15,TimeUnit.SECONDS)).as("plan writer executor must terminate").isTrue();
         }
         assertThat(jdbc.queryForObject("SELECT count(*) FROM project.plan_item WHERE project_id=?",Integer.class,project)).isEqualTo(1);
         verifyNoInteractions(googleAuthorization,googleHttp);
+    }
+
+    private boolean awaitWriterBlockedBy(long lockerPid,Duration timeout) {
+        long deadline=System.nanoTime()+timeout.toNanos();
+        while(System.nanoTime()<deadline){
+            var blocked=jdbc.queryForList("SELECT a.pid FROM pg_stat_activity a WHERE a.pid<>pg_backend_pid() AND a.wait_event_type='Lock' AND ? = ANY(pg_blocking_pids(a.pid)) LIMIT 1",Integer.class,lockerPid);
+            if(!blocked.isEmpty())return true;
+            Thread.onSpinWait();
+        }
+        return false;
     }
 
     @Test void repeatableReadSnapshotDoesNotMixPlanAndItemVersions() throws Exception {
