@@ -31,6 +31,17 @@ public class ProjectAccess {
         if (role.equals("VIEWER") || (role.equals("MEMBER") && creator != null && !creator.equals(userId)))
             throw new AccessDeniedException("SCHEDULE_WRITE_DENIED");
     }
+    /** Planning is a collaborative project resource: active MANAGER and MEMBER may write. */
+    public void requirePlanWriter(UUID projectId, UUID userId) {
+        String current = role(projectId,userId);
+        if (current.equals("VIEWER")) throw new AccessDeniedException("PROJECT_PLAN_WRITE_DENIED");
+    }
+    /** Assignees are checked through the project module so planning never reads membership tables directly. */
+    public void requirePlanAssignee(UUID projectId, UUID assigneeId) {
+        if (assigneeId != null && members.findByProjectIdAndUserAccountId(projectId,assigneeId)
+                .filter(m -> m.role != ProjectRole.VIEWER).isEmpty())
+            throw new com.aierp.platform.web.ValidationFailure("assigneeId","Assignee must be an active project MANAGER or MEMBER");
+    }
     public long memberCount(UUID projectId) { return members.countByProjectId(projectId); }
     /** Resolves current active MANAGER/MEMBER eligibility in one module-owned batch. */
     public Set<UUID> eligibleAcknowledgers(UUID projectId, Collection<UUID> userIds) {
