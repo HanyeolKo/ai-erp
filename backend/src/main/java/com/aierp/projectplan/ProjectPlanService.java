@@ -58,15 +58,16 @@ public class ProjectPlanService {
 
     @Transactional public ItemResponse create(UUID projectId,ItemWrite input,UUID user) {
         access.lockProject(projectId);access.requirePlanWriter(projectId,user);validateInput(input,false);
-        var all=items.findByProjectIdOrderBySortOrderAscIdAsc(projectId); validateHierarchy(input.kind(),input.parentId(),null,all,projectId);
-        access.requirePlanAssignee(projectId,input.assigneeId());
         var predecessorIds=normalizeDependencies(input.predecessorIds());
-        validateDependencies(projectId,null,input.kind(),predecessorIds,all);
         if(input.requestId()!=null) {
             String hash=hash(payload(input,predecessorIds)); var prior=requests.findByProjectIdAndActorIdAndRequestId(projectId,user,input.requestId());
             if(prior.isPresent()) { if(!hash.equals(prior.get().payloadHash)) throw new IllegalStateException("PLAN_CREATION_PAYLOAD_MISMATCH");
-                var existing=items.findByIdAndProjectId(prior.get().itemId,projectId).orElseThrow(NoSuchElementException::new); return response(existing,new Graph(items.findByProjectIdOrderBySortOrderAscIdAsc(projectId),dependencies.findByItemIdIn(all.stream().map(i->i.id).toList())),all,LocalDate.now(ZoneOffset.UTC),null,null); }
+                var all=items.findByProjectIdOrderBySortOrderAscIdAsc(projectId);var existing=items.findByIdAndProjectId(prior.get().itemId,projectId).orElseThrow(NoSuchElementException::new);
+                return response(existing,new Graph(all,dependencies.findByItemIdIn(all.stream().map(i->i.id).toList())),all,LocalDate.now(ZoneOffset.UTC),null,null); }
         }
+        var all=items.findByProjectIdOrderBySortOrderAscIdAsc(projectId); validateHierarchy(input.kind(),input.parentId(),null,all,projectId);
+        access.requirePlanAssignee(projectId,input.assigneeId());
+        validateDependencies(projectId,null,input.kind(),predecessorIds,all);
         var item=new PlanItemEntity();item.id=UUID.randomUUID();item.projectId=projectId;apply(item,input);item.createdBy=user;item.rowVersion=0;item.updatedAt=Instant.now();items.saveAndFlush(item);
         replaceDependencies(item.id,predecessorIds);recordHistory(item,user,input.reason(),null,values(item,predecessorIds));
         if(input.requestId()!=null) { var request=new PlanItemCreationRequestEntity();request.projectId=projectId;request.actorId=user;request.requestId=input.requestId();request.payloadHash=hash(payload(input,predecessorIds));request.itemId=item.id;request.createdAt=Instant.now();requests.save(request); }

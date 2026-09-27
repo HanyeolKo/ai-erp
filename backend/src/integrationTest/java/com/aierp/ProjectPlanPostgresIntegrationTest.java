@@ -4,6 +4,7 @@ import com.aierp.googleworkspace.GoogleHttpClient;
 import com.aierp.identity.api.GoogleAuthorizationService;
 import com.aierp.projectplan.*;
 import com.aierp.projectplan.api.ProjectPlanController.*;
+import java.sql.*;
 import java.time.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -14,6 +15,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -30,8 +32,9 @@ class ProjectPlanPostgresIntegrationTest {
     @DynamicPropertySource static void properties(DynamicPropertyRegistry registry){registry.add("spring.datasource.url",POSTGRES::getJdbcUrl);registry.add("spring.datasource.username",POSTGRES::getUsername);registry.add("spring.datasource.password",POSTGRES::getPassword);registry.add("spring.data.redis.url",()->"redis://%s:%d".formatted(REDIS.getHost(),REDIS.getMappedPort(6379)));}
     @Autowired JdbcTemplate jdbc; @Autowired ProjectPlanService service;
     @MockitoBean GoogleAuthorizationService googleAuthorization; @MockitoBean GoogleHttpClient googleHttp;
-    UUID project,user,other; int sort;
-    @BeforeEach void fixture(){user=UUID.randomUUID();other=UUID.randomUUID();project=UUID.randomUUID();var group=UUID.randomUUID();sort=0;jdbc.update("INSERT INTO identity.user_account(id,email,display_name) VALUES (?,?,?)",user,user+"@example.test","Plan User");jdbc.update("INSERT INTO identity.user_account(id,email,display_name) VALUES (?,?,?)",other,other+"@example.test","Other User");jdbc.update("INSERT INTO \"group\".erp_group(id,name) VALUES (?,?)",group,"Plan Group");jdbc.update("INSERT INTO \"group\".group_member(group_id,user_account_id) VALUES (?,?)",group,user);jdbc.update("INSERT INTO project.project(id,group_id,name) VALUES (?,?,?)",project,group,"Plan Project");jdbc.update("INSERT INTO project.project_member(project_id,user_account_id,role) VALUES (?,?,'MEMBER')",project,user);}
+    @MockitoSpyBean ProjectPlanRepository planRepository;
+    UUID project,user,other,assignee; int sort;
+    @BeforeEach void fixture(){user=UUID.randomUUID();other=UUID.randomUUID();assignee=UUID.randomUUID();project=UUID.randomUUID();var group=UUID.randomUUID();sort=0;jdbc.update("INSERT INTO identity.user_account(id,email,display_name) VALUES (?,?,?)",user,user+"@example.test","Plan User");jdbc.update("INSERT INTO identity.user_account(id,email,display_name) VALUES (?,?,?)",other,other+"@example.test","Other User");jdbc.update("INSERT INTO identity.user_account(id,email,display_name) VALUES (?,?,?)",assignee,assignee+"@example.test","Plan Assignee");jdbc.update("INSERT INTO \"group\".erp_group(id,name) VALUES (?,?)",group,"Plan Group");jdbc.update("INSERT INTO \"group\".group_member(group_id,user_account_id) VALUES (?,?)",group,user);jdbc.update("INSERT INTO project.project(id,group_id,name) VALUES (?,?,?)",project,group,"Plan Project");jdbc.update("INSERT INTO project.project_member(project_id,user_account_id,role) VALUES (?,?,'MEMBER')",project,user);jdbc.update("INSERT INTO project.project_member(project_id,user_account_id,role) VALUES (?,?,'MEMBER')",project,assignee);}
 
     @Test void persistsNestedForecastDependencyHistoryFullFiltersAndVersionConflicts(){
         var target=service.updateTarget(project,new TargetWrite(LocalDate.of(2026,10,1),LocalDate.of(2026,10,31),0L,"initial"),user);assertThat(target.rowVersion()).isEqualTo(1);
@@ -72,6 +75,70 @@ class ProjectPlanPostgresIntegrationTest {
         assertThat(jdbc.queryForObject("SELECT row_version FROM project.plan_item WHERE id=?",Long.class,item.id())).isEqualTo(revision+1);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM project.plan_item_history WHERE item_id=?",Integer.class,item.id())).isEqualTo(2);
         verifyNoInteractions(googleAuthorization,googleHttp);
+    }
+
+    @Test void idempotentReplaySkipsCurrentAssigneeValidationButNewRequestDoesNot(){
+        var requestId=UUID.randomUUID();
+        var input=new ItemWrite(null,PlanItemKind.TASK,"Assigned replay",null,assignee,PlanItemState.READY,null,null,null,sort++,List.of(),null,List.of(),requestId,null);
+        var first=service.create(project,input,user);
+        jdbc.update("UPDATE project.project_member SET role='VIEWER' WHERE project_id=? AND user_account_id=?",project,assignee);
+        var replay=service.create(project,input,user);
+        assertThat(replay.id()).isEqualTo(first.id());
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM project.plan_item_history WHERE item_id=?",Integer.class,first.id())).isEqualTo(1);
+        var changed=new ItemWrite(null,PlanItemKind.TASK,"Changed replay",null,assignee,PlanItemState.READY,null,null,null,input.sortOrder(),List.of(),null,List.of(),requestId,null);
+        assertThatThrownBy(()->service.create(project,changed,user)).isInstanceOf(IllegalStateException.class).hasMessage("PLAN_CREATION_PAYLOAD_MISMATCH");
+        var newRequest=new ItemWrite(null,PlanItemKind.TASK,"New request",null,assignee,PlanItemState.READY,null,null,null,sort++,List.of(),null,List.of(),UUID.randomUUID(),null);
+        assertThatThrownBy(()->service.create(project,newRequest,user)).isInstanceOf(com.aierp.platform.web.ValidationFailure.class).hasMessageContaining("Assignee");
+        verifyNoInteractions(googleAuthorization,googleHttp);
+    }
+
+    @Test void projectLockMakesCommittedRoleRevocationWinBeforePlanWrite() throws Exception {
+        service.create(project,write(null,PlanItemKind.TASK,"Before revocation",PlanItemState.READY,null,null,List.of()),user);
+        jdbc.update("UPDATE project.project_member SET role='VIEWER' WHERE project_id=? AND user_account_id=?",project,user);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM project.plan_item WHERE project_id=?",Integer.class,project)).isEqualTo(1);
+        jdbc.update("UPDATE project.project_member SET role='MEMBER' WHERE project_id=? AND user_account_id=?",project,user);
+        try(var connection=jdbc.getDataSource().getConnection();var lock=connection.prepareStatement("SELECT id FROM project.project WHERE id=? FOR UPDATE")) {
+            connection.setAutoCommit(false);lock.setObject(1,project);try(var rows=lock.executeQuery()){assertThat(rows.next()).isTrue();}
+            try(var executor=Executors.newSingleThreadExecutor()) {
+                var pending=executor.submit(()->{try {service.create(project,write(null,PlanItemKind.TASK,"After revocation",PlanItemState.READY,null,null,List.of()),user);return null;}catch(Throwable failure){return failure;}});
+                jdbc.update("UPDATE project.project_member SET role='VIEWER' WHERE project_id=? AND user_account_id=?",project,user);
+                connection.commit();
+                assertThat(pending.get(15,TimeUnit.SECONDS)).isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+            }
+        }
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM project.plan_item WHERE project_id=?",Integer.class,project)).isEqualTo(1);
+        verifyNoInteractions(googleAuthorization,googleHttp);
+    }
+
+    @Test void repeatableReadSnapshotDoesNotMixPlanAndItemVersions() throws Exception {
+        service.updateTarget(project,new TargetWrite(LocalDate.of(2026,10,1),LocalDate.of(2026,10,10),0L,"A"),user);
+        var item=service.create(project,write(null,PlanItemKind.TASK,"Snapshot A",PlanItemState.READY,LocalDate.of(2026,10,3),LocalDate.of(2026,10,5),List.of()),user);
+        var entered=new CountDownLatch(1);var release=new CountDownLatch(1);
+        org.mockito.Mockito.doAnswer(invocation->{var result=invocation.callRealMethod();if(Thread.currentThread().getName().equals("project-plan-snapshot-reader")){entered.countDown();if(!release.await(15,TimeUnit.SECONDS))throw new AssertionError("snapshot barrier timeout");}return result;}).when(planRepository).findById(project);
+        try(var executor=Executors.newSingleThreadExecutor()) {
+            var reader=executor.submit(()->{Thread.currentThread().setName("project-plan-snapshot-reader");return service.snapshot(project,user,null,null,false,null,false,null,null,null,null,null);});
+            assertThat(entered.await(15,TimeUnit.SECONDS)).isTrue();
+            updatePlanAndItemAtomically(item.id());
+            release.countDown();
+            var snapshot=reader.get(15,TimeUnit.SECONDS);
+            assertThat(snapshot.targetStart()).isEqualTo(LocalDate.of(2026,10,1));
+            assertThat(snapshot.targetEnd()).isEqualTo(LocalDate.of(2026,10,10));
+            var task=snapshot.items().stream().filter(row->row.id().equals(item.id())).findFirst().orElseThrow();
+            assertThat(task.targetStart()).isEqualTo(LocalDate.of(2026,10,3));
+            assertThat(task.targetEnd()).isEqualTo(LocalDate.of(2026,10,5));
+        } finally {release.countDown();org.mockito.Mockito.reset(planRepository);}
+        assertThat(jdbc.queryForObject("SELECT target_start FROM project.project_plan WHERE project_id=?",LocalDate.class,project)).isEqualTo(LocalDate.of(2026,11,1));
+        assertThat(jdbc.queryForObject("SELECT target_start FROM project.plan_item WHERE id=?",LocalDate.class,item.id())).isEqualTo(LocalDate.of(2026,11,3));
+        verifyNoInteractions(googleAuthorization,googleHttp);
+    }
+
+    private void updatePlanAndItemAtomically(UUID itemId) throws Exception {
+        try(var connection=jdbc.getDataSource().getConnection();var plan=connection.prepareStatement("UPDATE project.project_plan SET target_start=?,target_end=?,row_version=row_version+1 WHERE project_id=?");var item=connection.prepareStatement("UPDATE project.plan_item SET target_start=?,target_end=?,row_version=row_version+1 WHERE id=?")) {
+            connection.setAutoCommit(false);
+            plan.setObject(1,LocalDate.of(2026,11,1));plan.setObject(2,LocalDate.of(2026,11,10));plan.setObject(3,project);plan.executeUpdate();
+            item.setObject(1,LocalDate.of(2026,11,3));item.setObject(2,LocalDate.of(2026,11,5));item.setObject(3,itemId);item.executeUpdate();
+            connection.commit();
+        }
     }
     private ItemWrite write(UUID parent,PlanItemKind kind,String title,PlanItemState state,LocalDate start,LocalDate end,List<UUID> deps){return new ItemWrite(parent,kind,title,null,null,state,start,end,null,sort++,List.of(),null,deps,UUID.randomUUID(),null);}
     private ItemWrite writeUpdate(ItemResponse current,List<UUID> deps,long version){return new ItemWrite(current.parentId(),current.kind(),current.title(),current.description(),current.assigneeId(),current.state(),current.targetStart(),current.targetEnd(),current.deadline(),current.sortOrder(),current.labels(),version,deps,null,"dependency change");}
