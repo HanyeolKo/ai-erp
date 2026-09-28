@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { api, ApiError, type Project } from "./api/client";
 import {
@@ -398,7 +398,16 @@ export function Dialog({
   const caller = useRef<HTMLElement | null>(null);
   const wasOpen = useRef(false);
   const suppressClose = useRef(false);
-  useEffect(() => {
+  const restoreVersion = useRef(0);
+  const restoreCaller = (dialog: HTMLDialogElement) => {
+    const returnTarget = caller.current;
+    const version = ++restoreVersion.current;
+    queueMicrotask(() => {
+      const active = document.activeElement;
+      if (version === restoreVersion.current && returnTarget?.isConnected && (active === document.body || dialog.contains(active))) returnTarget.focus();
+    });
+  };
+  useLayoutEffect(() => {
     const d = ref.current;
     if (!d) return;
     if (open && !wasOpen.current) {
@@ -406,14 +415,15 @@ export function Dialog({
       caller.current = active instanceof HTMLElement ? active : null;
     }
     if (open && !d.open) {
+      restoreVersion.current += 1;
       if (typeof d.showModal === "function") d.showModal();
       else d.setAttribute("open", "");
-      requestAnimationFrame(() => d.querySelector<HTMLElement>("h2")?.focus());
+      d.querySelector<HTMLElement>("h2")?.focus();
     } else if (!open && d.open) {
       suppressClose.current = true;
       if (typeof d.close === "function") d.close();
       else d.removeAttribute("open");
-      requestAnimationFrame(() => caller.current?.focus());
+      restoreCaller(d);
     }
     wasOpen.current = open;
     return () => {
@@ -422,9 +432,7 @@ export function Dialog({
         if (typeof d.close === "function") d.close();
         else d.removeAttribute("open");
       }
-      const returnTarget = caller.current;
-      if (returnTarget?.isConnected)
-        requestAnimationFrame(() => returnTarget.focus());
+      restoreCaller(d);
     };
   }, [open]);
   useEffect(() => {
