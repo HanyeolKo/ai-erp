@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type MouseEventHandler, type ReactNode } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { api, ApiError, type Project } from "./api/client";
 import {
@@ -30,6 +30,9 @@ export function Link({
   children: ReactNode;
   className?: string;
   "aria-current"?: "page";
+  onClick?: MouseEventHandler<HTMLAnchorElement>;
+  target?: string;
+  rel?: string;
 }) {
   return (
     <a className={className} href={`#${to}`} {...props}>
@@ -39,9 +42,11 @@ export function Link({
 }
 export function Shell({
   project,
+  workspace = false,
   children,
 }: {
   project?: Project;
+  workspace?: boolean;
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
@@ -80,7 +85,7 @@ export function Shell({
   }, [open]);
   return (
     <main
-      className={project ? "app-shell has-project" : "app-shell lobby-shell"}
+      className={`${project ? "app-shell has-project" : "app-shell lobby-shell"}${workspace ? " workspace-shell" : ""}`}
     >
       <button
         className="skip-link"
@@ -139,7 +144,7 @@ export function Shell({
           </div>
         )}
       </header>
-      <div className={project ? "workspace" : "lobby-workspace"}>
+      <div className={project || workspace ? "workspace" : "lobby-workspace"}>
         {project && (
           <aside
             id="project-nav"

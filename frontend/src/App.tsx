@@ -82,10 +82,10 @@ function Routes() {
     if (rest === "calendar") return <ProjectCalendarSettings key={id} id={id} />;
     if (rest === "schedules") return <Schedules key={id} id={id} />;
     if (rest === "plan") return <ProjectPlan key={id} id={id} />;
-    if (rest === "schedules/new") return <ScheduleForm key={id} id={id} />;
+    if (rest === "schedules/new") return <ScheduleForm key={id} id={id} queryString={queryString} />;
     const edit = rest.match(/^schedules\/([A-Za-z0-9_-]+)\/edit$/);
     if (edit)
-      return <ScheduleForm key={id + edit[1]} id={id} scheduleId={edit[1]} />;
+      return <ScheduleForm key={id + edit[1]} id={id} scheduleId={edit[1]} queryString={queryString} />;
     const detail = rest.match(/^schedules\/([A-Za-z0-9_-]+)$/);
     if (detail)
       return <Detail key={id + detail[1]} id={id} scheduleId={detail[1]} />;

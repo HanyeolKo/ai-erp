@@ -9,8 +9,9 @@
 .schedule-heading,
 .schedule-period-summary,
 .section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; }
-.schedule-heading { margin-bottom: 32px; }
-.schedule-heading .lead { max-width: 640px; }
+.schedule-heading { margin-bottom: 10px; }
+.schedule-heading .lead { max-width: 640px; font-size: 14px; line-height: 1.45; }
+.schedule-listing > .schedule-heading .lead { display: none; }
 .schedule-actions,
 .schedule-detail-actions,
 .schedule-form-actions { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -34,16 +35,22 @@
 .schedule-list li a { min-width: min(260px, 100%); font-weight: 800; }
 .schedule-list li > div { display: flex; gap: 8px; min-width: 0; color: var(--schedule-muted); overflow-wrap: anywhere; }
 .schedule-empty { color: var(--schedule-muted); overflow-wrap: anywhere; }
-.schedule-period { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; padding: 20px 0; border-top: 1px solid var(--schedule-line); border-bottom: 1px solid var(--schedule-line); }
+.schedule-period { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; padding: 8px 0; border-top: 1px solid var(--schedule-line); border-bottom: 1px solid var(--schedule-line); }
 .schedule-view-toggle,
 .schedule-period-controls,
 .schedule-pagination { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.schedule-view-toggle button { display: inline-flex; align-items: center; min-height: 40px; white-space: nowrap; }
 .schedule-view-toggle button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent); color: var(--surface); }
+.schedule-view-toggle svg { width: 18px; height: 18px; }
+.schedule-view-toggle .schedule-view-icon { flex: 0 0 18px; }
+.schedule-period-controls > button { min-width: 40px; padding: 8px 10px; }
+.schedule-period-controls > button svg { width: 18px; height: 18px; }
+.schedule-period-controls .schedule-today { min-width: auto; }
 .schedule-period-controls label { margin: 0; }
 .schedule-period-controls input { width: 150px; }
 .schedule-period-controls label:last-child input { width: 190px; }
-.schedule-filters { margin-top: 24px; border-bottom: 1px solid var(--schedule-line); }
-.schedule-filters summary { width: fit-content; padding: 8px 0 12px; color: var(--accent); cursor: pointer; font-weight: 800; }
+.schedule-filters { margin-top: 8px; border-bottom: 1px solid var(--schedule-line); }
+.schedule-filters summary { width: fit-content; padding: 6px 0 8px; color: var(--accent); cursor: pointer; font-weight: 800; }
 .schedule-filters summary span { margin-left: 8px; color: var(--schedule-muted); font-size: 13px; font-weight: 400; }
 .schedule-filter-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 16px; padding: 4px 0 20px; }
 .schedule-filter-grid label { margin: 10px 0 0; }
@@ -52,10 +59,12 @@
 .schedule-filter-grid .schedule-check { align-self: end; display: flex; align-items: center; gap: 8px; }
 .schedule-filter-grid .schedule-check input { width: auto; margin: 0; }
 .schedule-inline-alert { margin: 16px 0; color: var(--danger); overflow-wrap: anywhere; }
-.schedule-period-summary { align-items: flex-end; margin: 32px 0 16px; }
-.schedule-period-summary h2 { margin: 2px 0 0; }
-.schedule-period-summary p { margin: 4px 0 0; }
-.schedule-calendar { margin-top: 24px; }
+.schedule-range-help { margin: 4px 0 0; font-size: 13px; line-height: 1.35; }
+.schedule-period-summary { align-items: center; margin: 6px 0 4px; }
+.schedule-listing .schedule-period-summary { display: none; }
+.schedule-period-summary h2 { margin: 0; font-size: 16px; line-height: 1.35; }
+.schedule-period-summary p { margin: 0; font-size: 13px; line-height: 1.35; }
+.schedule-calendar { margin-top: 12px; }
 .schedule-weekday-row { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; margin-bottom: 6px; }
 .schedule-weekday-row div { padding: 8px; color: var(--schedule-muted); font-size: 13px; font-weight: 800; text-align: center; }
 .schedule-calendar .month-grid,
@@ -69,6 +78,12 @@
 .schedule-calendar .month-grid > div > time,
 .schedule-calendar .week-grid > div > time { display: block; font-weight: 800; }
 .month-events { position: relative; display: flex; flex-direction: column; gap: 4px; min-width: 0; margin-top: 8px; }
+.calendar-create { display: inline-grid; width: 44px; min-width: 44px; min-height: 44px; margin-top: 8px; padding: 0; place-items: center; border-style: dashed; color: var(--accent); }
+.calendar-create svg { width: 20px; height: 20px; }
+.calendar-create--week { width: 44px; min-width: 44px; margin-top: 8px; }
+.week-slot-picker { display: block; margin-top: 8px; color: var(--schedule-muted); font-size: 12px; }
+.week-slot-picker span { display: block; margin-bottom: 4px; }
+.week-slot-picker select { width: 100%; min-height: 44px; font-size: 13px; }
 .month-event { display: block; min-width: 0; padding: 4px 6px; border-left: 3px solid var(--accent); border-radius: 4px; background: var(--schedule-soft); color: var(--schedule-ink); font-size: 13px; line-height: 1.5; text-decoration: none; overflow-wrap: anywhere; }
 .month-event span,
 .month-event strong { display: block; min-width: 0; overflow-wrap: anywhere; }
@@ -111,6 +126,9 @@
 .week-event small { display: block; margin-top: 4px; color: var(--schedule-muted); }
 .schedule-agenda { display: none; }
 .schedule-results { margin-top: 32px; }
+.schedule-row-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
+.schedule-row-actions .button { min-height: 40px; padding: 7px 10px; }
+.schedule-row-actions svg { width: 16px; height: 16px; }
 .schedule-pagination { justify-content: center; margin-top: 24px; }
 .schedule-pagination span { color: var(--schedule-muted); }
 .schedule-detail-summary { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); gap: 12px; margin: 24px 0 16px; }
@@ -167,15 +185,30 @@
 .schedule-member-option input { width: auto; margin: 0; }
 .schedule-form-note { margin: 8px 0 20px; }
 .schedule-form-feedback { margin: 18px 0; }
+.schedule-conflict-comparison { display: grid; gap: 8px; margin: 12px 0; }
+.schedule-conflict-comparison > div { padding: 12px; border: 1px solid var(--schedule-line); border-radius: var(--radius-control); }
+.schedule-conflict-comparison dt { font-weight: 800; }
+.schedule-conflict-comparison dd { margin: 4px 0 0; overflow-wrap: anywhere; }
+.schedule-conflict-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .schedule-form-actions { justify-content: flex-end; margin-top: 24px; }
+.schedule-secondary { margin: 0 0 24px; }
+.schedule-secondary > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; border-top: 1px solid var(--schedule-line); border-bottom: 1px solid var(--schedule-line); color: var(--accent); cursor: pointer; font-weight: 800; }
+.schedule-secondary > summary span { color: var(--schedule-muted); font-size: 13px; font-weight: 400; }
+.schedule-secondary .schedule-form-section { margin-top: 16px; }
+.schedule-member-pagination { display: flex; flex-wrap: wrap; gap: 8px; }
+.schedule-detail-disclosure { margin-top: 36px; border-top: 1px solid var(--schedule-line); }
+.schedule-detail-disclosure > summary { display: flex; align-items: center; gap: 8px; padding: 16px 0; color: var(--text); cursor: pointer; font-weight: 800; }
+.schedule-detail-disclosure > summary span { margin-left: auto; color: var(--schedule-muted); font-weight: 400; }
+.schedule-detail-disclosure .schedule-detail-section { margin-top: 0; }
+.schedule-own-ack { margin: 0 0 12px; }
 
 @media (max-width: 767px) {
   .schedule-heading,
   .schedule-period,
   .schedule-period-summary,
   .section-heading { display: block; }
-  .schedule-heading { margin-bottom: 24px; }
-  .schedule-actions { margin-top: 16px; }
+  .schedule-heading { margin-bottom: 4px; }
+  .schedule-actions { margin-top: 10px; }
   .schedule-actions .button { width: 100%; }
   .schedule-radar { grid-template-columns: 1fr; }
   .schedule-detail-summary { grid-template-columns: 1fr; }
@@ -191,19 +224,17 @@
   .schedule-form-section { padding: 16px; }
   .schedule-form-actions { justify-content: stretch; }
   .schedule-form-actions .button { flex: 1; }
-  .schedule-view-toggle { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .schedule-view-toggle { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .schedule-view-toggle button { min-height: 44px; }
-  .schedule-period-controls { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; align-items: end; gap: 8px; margin-top: 16px; }
-  .schedule-period-controls button { width: 44px; min-height: 44px; padding: 0 4px; overflow: hidden; text-indent: -9999px; white-space: nowrap; }
-  .schedule-period-controls button::after { display: block; text-indent: 0; font-size: 18px; }
-  .schedule-period-controls button[aria-label="이전 기간"]::after { content: "‹"; }
-  .schedule-period-controls button[aria-label="다음 기간"]::after { content: "›"; }
+  .schedule-view-toggle button { padding-inline: 8px; }
+  .schedule-period-controls { display: grid; grid-template-columns: 44px auto minmax(0, 1fr) 44px; align-items: end; gap: 8px; margin-top: 10px; }
+  .schedule-period-controls button { width: 44px; min-height: 44px; padding: 0 4px; overflow: hidden; white-space: nowrap; }
   .schedule-period-controls label,
   .schedule-period-controls input { width: 100%; }
   .schedule-filter-grid { grid-template-columns: 1fr; }
   .schedule-filters summary span { display: block; margin: 3px 0 0; }
   .schedule-calendar { display: none; }
-  .schedule-agenda { display: block; margin-top: 24px; }
+  .schedule-agenda { display: block; margin-top: 12px; }
   .schedule-agenda section + section { margin-top: 24px; }
   .schedule-agenda h3 { margin: 0; padding-bottom: 8px; border-bottom: 2px solid var(--schedule-ink); }
   .schedule-agenda .schedule-list { margin-top: 8px; }
@@ -217,7 +248,7 @@
   .schedule-results .schedule-list li { display: grid; grid-template-columns: 1fr auto; align-items: start; }
   .schedule-results .schedule-list li a,
   .schedule-results .schedule-list li > div { grid-column: 1 / -1; }
-  .schedule-results .schedule-list li button { display: none; }
+  .schedule-results .schedule-list li button { display: inline-flex; }
   .schedule-pagination { align-items: stretch; flex-direction: column; }
   .schedule-pagination button { width: 100%; }
   .day-events { height: 36rem; }

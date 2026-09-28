@@ -54,7 +54,7 @@ test("schedule 404 provides schedule-list recovery without claiming project dele
 });
 
 test("background list 403 removes previously displayed schedule and create action", async () => {
-  const server = http(); mount("/projects/p1/schedules");
+  const server = http(); const user = mount("/projects/p1/schedules"); await user.click(await screen.findByRole("button", { name: "목록 보기" }));
   expect((await screen.findAllByRole("link", { name: "Design review" })).length).toBeGreaterThan(0);
   server.on("GET", "/api/v1/projects/p1/schedules", () => json({ code: "FORBIDDEN" }, 403));
   await act(async () => { vi.setSystemTime(new Date("2090-09-10T00:01:00Z")); focusManager.setFocused(false); focusManager.setFocused(true); });
@@ -64,7 +64,7 @@ test("background list 403 removes previously displayed schedule and create actio
 });
 
 test("a failed retry cannot restore capabilities after a list access denial", async () => {
-  const server = http(); const user = mount("/projects/p1/schedules");
+  const server = http(); const user = mount("/projects/p1/schedules"); await user.click(await screen.findByRole("button", { name: "목록 보기" }));
   expect((await screen.findAllByRole("link", { name: "Design review" })).length).toBeGreaterThan(0);
   server.on("GET", "/api/v1/projects/p1/schedules", () => json({ code: "FORBIDDEN" }, 403));
   await act(async () => { vi.setSystemTime(new Date("2090-09-10T00:01:00Z")); focusManager.setFocused(false); focusManager.setFocused(true); });

@@ -242,6 +242,8 @@ test("late p1 response does not repaint a newly mounted p2 schedule route", asyn
   await screen.findByText("Design review 저장 중…");
   window.location.hash = "#/projects/p2/schedules";
   window.dispatchEvent(new HashChangeEvent("hashchange"));
+  await waitFor(() => expect(screen.getByRole("link", { name: "일정" })).toHaveAttribute("href", "#/projects/p2/schedules"));
+  await user.click(screen.getByRole("button", { name: "목록 보기" }));
   await screen.findByText("Reporting review");
   finish(json({ ...schedule, endsAt: "2090-09-10T02:30:00.000Z", rowVersion: 4 }));
   await waitFor(() => expect(screen.getByText("Reporting review")).toBeInTheDocument());

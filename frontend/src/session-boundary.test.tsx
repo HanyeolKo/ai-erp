@@ -61,6 +61,7 @@ test("late schedule save cannot navigate or repopulate the old workspace after a
   server.on("POST", "/api/v1/projects/p1/schedules", () => new Promise(resolve => { finishSave = resolve; }));
   server.on("GET", "/api/v1/notifications", () => json({ code: "UNAUTHENTICATED" }, 401));
   const { user } = mount("/projects/p1/schedules/new");
+  vi.spyOn(window, "confirm").mockReturnValue(true);
 
   await fillNewSchedule();
   await user.click(screen.getByRole("button", { name: "일정 저장" }));
@@ -120,6 +121,7 @@ test("a pending CSRF lookup issues no POST after another request expires the ses
   server.on("GET", "/api/v1/csrf", () => new Promise(resolve => { finishCsrf = resolve; }));
   server.on("GET", "/api/v1/notifications", () => json({ code: "UNAUTHENTICATED" }, 401));
   const { user } = mount("/projects/p1/schedules/new");
+  vi.spyOn(window, "confirm").mockReturnValue(true);
 
   await fillNewSchedule();
   await user.click(screen.getByRole("button", { name: "일정 저장" }));

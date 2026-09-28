@@ -79,7 +79,7 @@ test("detail translates lifecycle and Calendar states while keeping participant 
   server.on("GET", "/api/v1/calendar/connection", () => json({ status: "UNRECOGNIZED", configurationRequired: false }));
   mount("/projects/p1/schedules/s1");
   expect(await screen.findByRole("heading", { name: "Design review" })).toBeInTheDocument();
-  expect(screen.getByRole("heading", { name: "참여자 확인" })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "전체 참석자" })).toBeInTheDocument();
   expect(screen.getByText("나")).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "일정 취소" })).toBeEnabled();
   expect(screen.getByText(/일정 확정/)).toBeInTheDocument();

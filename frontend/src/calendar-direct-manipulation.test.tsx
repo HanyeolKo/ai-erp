@@ -12,7 +12,7 @@ test("calendar schedule rows expose a time-change action", async () => {
   http();
   window.location.hash = "#/projects/p1/schedules";
   render(<App />);
-  expect(await screen.findAllByRole("button", { name: "시간 변경: Design review" })).toHaveLength(2);
+  expect(await screen.findAllByRole("button", { name: "시간 변경: Design review" })).toHaveLength(1);
 });
 
 test("time-change dialog sends a time-only PATCH", async () => {

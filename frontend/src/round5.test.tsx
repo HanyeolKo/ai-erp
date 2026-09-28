@@ -47,7 +47,7 @@ test("P03 date bounds use the selected timezone including daylight-saving offset
 });
 test("P03 renders creator independently and mine removes another creator's row", async () => {
   const server = http(); server.on("GET", "/api/v1/projects/p1/schedules", () => json([{ ...schedule, createdBy: "u2" }]));
-  const user = mount("/projects/p1/schedules"); const links = await screen.findAllByRole("link", { name: /Design review/ });
+  const user = mount("/projects/p1/schedules"); await user.click(await screen.findByRole("button", { name: "목록 보기" })); const links = await screen.findAllByRole("link", { name: /Design review/ });
   const row = within(links[links.length - 1].closest("li")!);
   expect(row.getByText("확정")).toBeInTheDocument(); expect(row.getByText("확인 대기")).toBeInTheDocument();
   await user.click(screen.getByLabelText("내가 만든 일정")); expect(screen.queryByRole("link", { name: /Design review/ })).not.toBeInTheDocument();

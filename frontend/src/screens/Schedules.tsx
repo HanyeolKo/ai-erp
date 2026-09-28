@@ -3,7 +3,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ApiError, api, PAGE_SIZE, type Dashboard as DashboardData, type Schedules as Rows } from "../api/client";
 import { accessKey, accessRead, acknowledgement, capabilities, clearAccessDenial, isAccessError, keys, recordAccessDenial, refreshSchedule, useMe, useProject } from "../state";
 import { captureSession, isSessionContextActive } from "../session";
+import { useUnsavedChanges } from "../unsaved-changes";
 import { Dialog, Link, ProjectMissing, QueryState, Shell } from "../ui";
+import { Icon, StatusBadge } from "../workspace-ui";
 import { civilDateBoundary, dateInZone, displayTime, navigateDate, shiftDate, utcToLocalDateTime, localDateTimeToUtc, validZone, viewWindow } from "../time";
 import { applyMonthChange, applyWeekMove, applyWeekResize, editBody, eventDayMinute, eventSpan as directEventSpan, isValidChange, previewText, weekLaneLayout, type CalendarChange, type CalendarSchedule, type LocalPoint } from "./calendar-direct-manipulation";
 import "./schedules.css";
@@ -263,18 +265,25 @@ function CalendarEvent({ schedule, day, days, zone, view, projectId, disabled, r
 function ScheduleAgenda({ days, zone, rows, canEdit, locked, onEdit }: { days: string[]; zone: string; rows: ScheduleRow[]; canEdit: (schedule: CalendarSchedule) => boolean; locked: (id: string) => boolean; onEdit: (schedule: CalendarSchedule) => void }) {
     const groups = days.map(day => ({ day, events: sortEventsForDay(rows.filter(row => { const span = eventSpan(row.s, zone); return span.startDay <= day && span.endDay >= day; }), day, zone) })).filter(group => group.events.length);
     if (!groups.length) return <p className="schedule-empty">조건에 맞는 일정이 없습니다.</p>;
-    return <div className="schedule-agenda" aria-label="날짜별 일정">
+    return <div className="schedule-agenda" role="region" aria-label="일정 목록"><div aria-label="날짜별 일정">
         {groups.map(group => <section key={group.day} aria-labelledby={`agenda-${group.day}`}><h3 id={`agenda-${group.day}`}><time dateTime={group.day}>{group.day}</time></h3><ul className="schedule-list">
-            {group.events.map(({ s, ack }) => <li key={`${group.day}-${s.id}`}><Link to={`/projects/${s.projectId}/schedules/${s.id}`}><span>{eventDayLabel(s, group.day, zone)} · </span><strong>{s.title} · </strong><span>{statusLabel(s.status)}</span></Link><span>{ackLabel(ack)}</span>{canEdit(s) && <button type="button" aria-label={`시간 변경: ${s.title}`} disabled={locked(s.id)} onClick={() => onEdit(s)}>시간 변경</button>}</li>)}
+            {group.events.map(({ s, ack }) => <li key={`${group.day}-${s.id}`}><Link className="schedule-agenda-link" to={`/projects/${s.projectId}/schedules/${s.id}`}><span>{eventDayLabel(s, group.day, zone)}</span><strong>{s.title}</strong><span>{statusLabel(s.status)}</span></Link><span>{ackLabel(ack)}</span>{canEdit(s) && <><Link className="button button-secondary" to={`/projects/${s.projectId}/schedules/${s.id}/edit`}><Icon name="edit" />일정 편집</Link><button type="button" aria-label={`시간 변경: ${s.title}`} disabled={locked(s.id)} onClick={() => onEdit(s)}>시간 변경</button></>}</li>)}
         </ul></section>)}
-    </div>;
+    </div></div>;
+}
+
+function availableHalfHours(events: ScheduleRow[], day: string, zone: string) {
+    return Array.from({ length: 48 }, (_, index) => index * 30).filter(minute => events.every(({ s }) => {
+        const span = eventDayMinute(s, day, zone);
+        return span.end <= minute || span.start >= minute + 30;
+    }));
 }
 
 export function Schedules({ id }: { id: string }) {
     const project = useProject(id);
     const me = useMe();
     const queryClient = useQueryClient();
-    const [view, setView] = useState<"month" | "week">("month");
+    const [view, setView] = useState<"month" | "week" | "list">("month");
     const [anchor, setAnchor] = useState(() => dateInZone(new Date().toISOString(), "Asia/Seoul"));
     const [zoneInput, setZone] = useState("Asia/Seoul");
     const zone = validZone(zoneInput) ? zoneInput : "Asia/Seoul";
@@ -301,7 +310,10 @@ export function Schedules({ id }: { id: string }) {
     const [recoveringId, setRecoveringId] = useState<string | null>(null);
     const activeInteraction = useRef<string | null>(null);
     const dialogOriginal = useRef<{ startsAt: string; endsAt: string; startLocal: string; endLocal: string } | null>(null);
-    const range = useMemo(() => viewWindow(anchor, view, zone), [anchor, view, zone]);
+    const dialogDirty = !!dialogSchedule && (!!dialogOriginal.current && (dialogStart !== dialogOriginal.current.startLocal || dialogEnd !== dialogOriginal.current.endLocal));
+    const dialogGuard = useUnsavedChanges(dialogDirty);
+    const calendarView = view === "list" ? "month" : view;
+    const range = useMemo(() => viewWindow(anchor, calendarView, zone), [anchor, calendarView, zone]);
     const effectiveRange = useMemo(() => {
         if (!after && !before) return { from: range.from, to: range.to, error: "" };
         if (!after || !before) return { from: "", to: "", error: "시작일과 종료일을 모두 입력하세요." };
@@ -313,8 +325,10 @@ export function Schedules({ id }: { id: string }) {
     const rows = useMemo(() => effectiveRange.error || !project.isSuccess || !project.data || !list.isSuccess ? [] : list.data.map(row => overrides[row.id] ?? row), [effectiveRange.error, project.isSuccess, project.data, list.isSuccess, list.data, overrides]);
     const enriched = useMemo<ScheduleRow[]>(() => rows.map(schedule => ({ s: schedule, ack: acknowledgement(schedule, me.data!.id) })), [rows, me.data!.id]);
     const filtered = useMemo(() => enriched.filter(row => (!text || row.s.title.toLocaleLowerCase().includes(text.toLocaleLowerCase()) || row.s.description?.toLocaleLowerCase().includes(text.toLocaleLowerCase())) && (status === "ALL" || row.s.status === status) && (ack === "ALL" || row.ack === ack) && (!mine || row.s.createdBy === me.data!.id)), [enriched, text, status, ack, mine, me.data!.id]);
-    const eventsByDay = useMemo(() => new Map(range.days.map(day => [day, filtered.filter(row => overlapRow(row.s, day, zone))])), [filtered, range.days, zone]);
-    const weekLayouts = useMemo(() => weekLaneLayout(filtered.map(row => row.s), range.days, zone), [range.days, zone, filtered]);
+    const calendarRows = useMemo(() => after && before ? filtered.filter(row => range.days.some(day => overlapRow(row.s, day, zone))) : filtered, [after, before, filtered, range.days, zone]);
+    const outsideRows = useMemo(() => filtered.filter(row => !range.days.some(day => overlapRow(row.s, day, zone))), [filtered, range.days, zone]);
+    const eventsByDay = useMemo(() => new Map(range.days.map(day => [day, calendarRows.filter(row => overlapRow(row.s, day, zone))])), [calendarRows, range.days, zone]);
+    const weekLayouts = useMemo(() => weekLaneLayout(calendarRows.map(row => row.s), range.days, zone), [range.days, zone, calendarRows]);
     const reportPreview = useCallback((value: string | null, target?: DirectPreview | null) => {
         setPreview(previous => previous === value ? previous : value);
         setPreviewTarget(previous => previous && target && previous.id === target.id && previous.view === target.view && previous.day === target.day && previous.start === target.start && previous.end === target.end ? previous : (target ?? null));
@@ -324,10 +338,9 @@ export function Schedules({ id }: { id: string }) {
     useEffect(() => {
         if (priorContext.current === contextKey) return;
         priorContext.current = contextKey;
-        if (activeInteraction.current?.startsWith("drag:") || activeInteraction.current?.startsWith("dialog:")) { activeInteraction.current = null; setActiveToken(null); }
+        if (activeInteraction.current?.startsWith("drag:")) { activeInteraction.current = null; setActiveToken(null); }
         setPreview(null); setPreviewTarget(null); setDialogError(null);
-        if (dialogSchedule) { dialogOriginal.current = null; setDialogSchedule(null); }
-    }, [contextKey, dialogSchedule]);
+    }, [contextKey]);
     useEffect(() => {
         if (!list.isSuccess) return;
         setOverrides(previous => {
@@ -391,7 +404,7 @@ export function Schedules({ id }: { id: string }) {
         } finally { if (isSessionContextActive(context)) setPendingId(null); if (activeInteraction.current === writeToken) { activeInteraction.current = null; setActiveToken(null); } }
     };
     const retryRecovery = () => { if (recoverySchedule) void recover(recoverySchedule, captureSession(), "일정 상태를 다시 확인했습니다.", recoveryIntent ?? undefined); };
-    const closeDialog = () => { if (activeInteraction.current?.startsWith("dialog:")) { activeInteraction.current = null; setActiveToken(null); } dialogOriginal.current = null; setDialogSchedule(null); setDialogError(null); };
+    const closeDialog = () => { if (!dialogGuard.confirmDiscard()) return; if (activeInteraction.current?.startsWith("dialog:")) { activeInteraction.current = null; setActiveToken(null); } dialogOriginal.current = null; setDialogSchedule(null); setDialogError(null); };
     const openEdit = (schedule: CalendarSchedule) => {
         if (!canEdit(schedule) || locked(schedule.id) || activeInteraction.current) return;
         const startLocal = utcToLocalDateTime(schedule.startsAt, zone); const endLocal = utcToLocalDateTime(schedule.endsAt, zone);
@@ -409,7 +422,7 @@ export function Schedules({ id }: { id: string }) {
             };
             const change = { startsAt: toUtc(dialogStart, original?.startLocal, original?.startsAt), endsAt: toUtc(dialogEnd, original?.endLocal, original?.endsAt) };
             if (!isValidChange(change)) { setDialogError("종료 시간은 시작 시간보다 뒤여야 합니다."); return; }
-            setDialogError(null); setDialogSchedule(null); void saveChange(dialogSchedule, change, activeInteraction.current ?? undefined);
+            dialogGuard.markSaved(); setDialogError(null); setDialogSchedule(null); void saveChange(dialogSchedule, change, activeInteraction.current ?? undefined);
         } catch (error) { setDialogError(error instanceof Error ? error.message : "시간을 확인하세요."); }
     };
     if (!project.isSuccess) return <Shell><QueryState query={project} loadingMessage="프로젝트를 불러오는 중입니다." errorMessage="프로젝트를 불러오지 못했습니다." /></Shell>;
@@ -417,21 +430,37 @@ export function Schedules({ id }: { id: string }) {
     if (isAccessError(list.error)) return <Shell><h1>일정을 불러올 수 없습니다</h1><QueryState query={list} /></Shell>;
     const move = (value: string) => { if (/^\d{4}-\d{2}-\d{2}$/.test(value)) { setAnchor(value); setPage(0); } };
     const canCreate = list.isSuccess && capabilities(project.data, me.data!.id).create;
-    return <Shell project={project.data}>
+    const showResults = view === "list" || (!!after && !!before && outsideRows.length > 0);
+    const openCreate = (date?: string, minute?: number) => {
+        if (!canCreate) return;
+        const targetDate = date ?? anchor;
+        const isToday = targetDate === dateInZone(new Date().toISOString(), zone);
+        const now = new Date();
+        const nowLocal = utcToLocalDateTime(now.toISOString(), zone);
+        const nowParts = nowLocal.slice(11).split(":").map(Number);
+        const nextThirty = Math.ceil((nowParts[0] * 60 + nowParts[1] + (now.getSeconds() || now.getMilliseconds() ? 1 : 0)) / 30) * 30;
+        const chosenMinute = minute ?? (isToday ? nextThirty : 540);
+        const startDate = chosenMinute >= 1440 ? shiftDate(targetDate, 1) : targetDate;
+        const startMinute = chosenMinute % 1440;
+        const start = `${startDate}T${String(Math.floor(startMinute / 60)).padStart(2, "0")}:${String(startMinute % 60).padStart(2, "0")}`;
+        const params = `?date=${startDate}&start=${start}&zone=${encodeURIComponent(zone)}`;
+        window.location.hash = `#/projects/${id}/schedules/new${params}`;
+    };
+    return <Shell project={project.data} workspace>
         <div className="schedule-screen schedule-listing">
-            <header className="schedule-heading"><div><p className="eyebrow">{project.data.name}</p><h1>프로젝트 일정</h1><p className="lead">기간과 확인 상태를 살펴보고 일정 상세에서 필요한 작업을 처리하세요.</p></div><div className="schedule-actions">{canCreate && <Link className="button button-primary" to={`/projects/${id}/schedules/new`}>일정 만들기</Link>}</div></header>
-            <section className="schedule-period" aria-label="일정 기간 탐색"><div className="schedule-view-toggle" role="group" aria-label="일정 보기"><button type="button" aria-pressed={view === "month"} onClick={() => { setView("month"); setPage(0); }}>월간 보기</button><button type="button" aria-pressed={view === "week"} onClick={() => { setView("week"); setPage(0); }}>주간 보기</button></div><div className="schedule-period-controls"><button type="button" aria-label="이전 기간" onClick={() => move(navigateDate(anchor, view, -1))}>이전 기간</button><label>기준 날짜<input type="date" value={anchor} onChange={event => move(event.target.value)} /></label><button type="button" aria-label="다음 기간" onClick={() => move(navigateDate(anchor, view, 1))}>다음 기간</button></div></section>
+            <header className="schedule-heading"><div><p className="eyebrow">{project.data.name} · 시간과 참석자</p><h1>프로젝트 일정</h1><p className="lead">월간·주간·목록 중 한 가지 방식으로 일정을 확인하고, 필요한 작업을 바로 실행한다.</p></div><div className="schedule-actions">{canCreate && <Link className="button button-primary" to={`/projects/${id}/schedules/new`} onClick={event => { event.preventDefault(); openCreate(anchor); }}>일정 만들기</Link>}</div></header>
+            <section className="schedule-period" aria-label="일정 기간 탐색"><div className="schedule-view-toggle" role="group" aria-label="일정 보기"><button type="button" aria-label="월간 보기" aria-pressed={view === "month"} onClick={() => { setView("month"); setPage(0); }}><Icon name="calendar" className="schedule-view-icon" /><span>월간</span></button><button type="button" aria-label="주간 보기" aria-pressed={view === "week"} onClick={() => { setView("week"); setPage(0); }}><Icon name="board" className="schedule-view-icon" /><span>주간</span></button><button type="button" aria-label="목록 보기" aria-pressed={view === "list"} onClick={() => { setView("list"); setPage(0); }}><Icon name="list" className="schedule-view-icon" /><span>목록</span></button></div><div className="schedule-period-controls"><button type="button" aria-label="이전 기간" onClick={() => move(navigateDate(anchor, view === "list" ? "month" : view, -1))}><Icon name="chevron-left" /><span className="visually-hidden">이전 기간</span></button><button type="button" className="schedule-today" onClick={() => move(dateInZone(new Date().toISOString(), zone))}>오늘</button><label>기준 날짜<input type="date" value={anchor} onChange={event => move(event.target.value)} /></label><button type="button" aria-label="다음 기간" onClick={() => move(navigateDate(anchor, view === "list" ? "month" : view, 1))}><Icon name="chevron-right" /><span className="visually-hidden">다음 기간</span></button></div></section>
             {!validZone(zoneInput) && <p role="alert" id="schedule-zone-error" className="schedule-inline-alert">지원하지 않는 IANA 시간대입니다. Asia/Seoul로 표시합니다.</p>}
             <details className="schedule-filters"><summary>상세 필터 <span>검색·상태·확인·날짜 범위</span></summary><div className="schedule-filter-grid"><label>검색<input value={text} onChange={event => { setText(event.target.value); setPage(0); }} /></label><label>표시 시간대<input value={zoneInput} aria-invalid={!validZone(zoneInput)} aria-describedby={!validZone(zoneInput) ? "schedule-zone-error" : undefined} onChange={event => { setZone(event.target.value); setPage(0); }} /></label><label>날짜 이후<input type="date" value={after} aria-invalid={!!effectiveRange.error} aria-describedby={effectiveRange.error ? "schedule-range-error" : "schedule-range-help"} onChange={event => { setAfter(event.target.value); setPage(0); }} /></label><label>날짜 이전<input type="date" value={before} aria-invalid={!!effectiveRange.error} aria-describedby={effectiveRange.error ? "schedule-range-error" : "schedule-range-help"} onChange={event => { setBefore(event.target.value); setPage(0); }} /></label><label>상태<select value={status} onChange={event => setStatus(event.target.value)}>{filterOptions(["ALL", "DRAFT", "CONFIRMED", "CANCELLED"], statusLabels)}</select></label><label>확인 상태<select value={ack} onChange={event => setAck(event.target.value)}>{filterOptions(["ALL", "PENDING", "ACKNOWLEDGED", "NOT_REQUIRED"], ackLabels)}</select></label><label className="schedule-check"><input type="checkbox" checked={mine} onChange={event => setMine(event.target.checked)} />내가 만든 일정</label></div></details>
-            <p id="schedule-range-help" className="schedule-help">현재 페이지의 최대 {PAGE_SIZE}개 일정에 필터를 적용합니다. 날짜 범위는 양 끝 날짜를 포함합니다.</p>
+            <p id="schedule-range-help" className="schedule-help schedule-range-help visually-hidden">현재 페이지의 최대 {PAGE_SIZE}개 일정에 필터를 적용합니다. 날짜 범위는 양 끝 날짜를 포함합니다.</p>
             {effectiveRange.error ? <p role="alert" id="schedule-range-error" className="schedule-inline-alert">{effectiveRange.error}</p> : <QueryState query={list} />}
             {list.isSuccess && !effectiveRange.error && <>
-                <div className="schedule-period-summary"><div><p className="eyebrow">현재 범위</p><h2>{view === "month" ? "월간 일정" : "주간 일정"}</h2><p>{range.days[0]} ~ {range.days[range.days.length - 1]} · {zone}</p></div>{after && before && <p>조회 기간: {after} ~ {before} · 목록은 조회 기간 전체를 검색합니다.</p>}</div>
-                <p className="schedule-direct-preview" aria-live="polite">{preview ?? " "}</p>
+                <div className="schedule-period-summary"><div><p className="eyebrow">현재 범위</p><h2>{view === "month" ? "월간 일정" : view === "week" ? "주간 일정" : "검색 결과"}</h2><p>{view === "list" ? "페이지와 조건에 맞는 일정" : `${range.days[0]} ~ ${range.days[range.days.length - 1]} · ${zone}`}</p></div>{after && before && <p>조회 기간: {after} ~ {before} · 목록은 조회 기간 전체를 검색합니다.</p>}</div>
+                {preview && <p className="schedule-direct-preview" aria-live="polite">{preview}</p>}
                 {feedback && <div role={feedback.kind === "error" ? "alert" : undefined} className={`schedule-direct-feedback schedule-direct-feedback--${feedback.kind}`} aria-live="polite"><p>{feedback.text}</p>{recoverySchedule && feedback.kind === "error" && <><button type="button" disabled={recoveringId !== null} onClick={retryRecovery}>접근 상태 다시 확인</button><Link to={`/projects/${recoverySchedule.projectId}/schedules/${recoverySchedule.id}`}>일정 상세에서 수정</Link></>}</div>}
-                <ScheduleAgenda days={range.days} zone={zone} rows={filtered} canEdit={canEdit} locked={locked} onEdit={openEdit} />
-                <div className={`schedule-calendar ${view === "week" ? "schedule-calendar--week" : ""}`} style={view === "week" ? ({ "--calendar-content-width": `${Math.max(876, (Math.max(120, weekLayouts.globalLaneCount * 44) + 24) * 7 + 36)}px` } as React.CSSProperties) : undefined} aria-label={view === "month" ? "월간 일정" : "주간 일정"} role="grid"><div className="schedule-weekday-row">{weekdays.map(day => <div role="columnheader" key={day}>{day}</div>)}</div><div className={view === "month" ? "month-grid" : "week-grid"}>{range.days.map(day => { const events = eventsByDay.get(day) ?? []; const layout = view === "week" ? weekLayouts.byDay.find(item => item.day === day) : null; const ghost = previewTarget?.id && previewTarget.view === view && previewTarget.day === day; return <div role="gridcell" data-date={day} aria-label={day} key={day}><time dateTime={day}>{day.slice(5)}</time>{view === "month" ? <div className="month-events">{ghost && <div className="calendar-direct-ghost calendar-direct-ghost--month" aria-hidden="true"><span>미리 보기</span></div>}{sortEventsForDay(events, day, zone).map(row => <CalendarEvent key={row.s.id} schedule={row.s} day={day} days={range.days} zone={zone} view="month" projectId={id} activeInteraction={activeInteraction} onInteractionChange={setActiveToken} disabled={!canEdit(row.s) || directLocked(row.s.id)} onPreview={reportPreview} onCommit={saveChange} />)}</div> : <div className="day-events">{Array.from({ length: 24 }, (_, hour) => <span aria-hidden="true" className="hour-label" key={hour} style={{ top: `${hour / 24 * 100}%` }}>{String(hour).padStart(2, "0")}:00</span>)}{ghost && <div className="calendar-direct-ghost" aria-hidden="true" style={{ top: `${(previewTarget!.start / 1440) * 100}%`, height: `${Math.max(0, previewTarget!.end - previewTarget!.start) / 1440 * 100}%` }}><span>미리 보기</span></div>}{layout?.occurrences.map(({ schedule, start, end, lane }) => <div className="week-event" key={schedule.id} data-start-minute={start} data-duration-minute={Math.max(0, end - start)} style={{ top: `${start / 1440 * 100}%`, height: `${Math.max(0, end - start) / 1440 * 100}%`, left: `${lane / Math.max(1, weekLayouts.globalLaneCount) * 100}%`, width: `${100 / Math.max(1, weekLayouts.globalLaneCount)}%` }}><CalendarEvent schedule={schedule} day={day} days={range.days} zone={zone} view="week" projectId={id} activeInteraction={activeInteraction} onInteractionChange={setActiveToken} disabled={!canEdit(schedule) || directLocked(schedule.id)} resizeDisabled={(end - start) < 15} onPreview={reportPreview} onCommit={saveChange} /></div>)}</div>}</div>; })}</div></div>
-                <section className="schedule-results" aria-labelledby="schedule-results-title"><div className="section-heading"><div><p className="eyebrow">현재 페이지</p><h2 id="schedule-results-title">일정 목록</h2></div><span className="schedule-help">{filtered.length}건 표시</span></div>{!filtered.length && <p className="schedule-empty">조건에 맞는 일정이 없습니다.</p>}<ul className="schedule-list">{filtered.map(row => <li key={row.s.id}><Link to={`/projects/${id}/schedules/${row.s.id}`}>{row.s.title}</Link><div><time dateTime={row.s.startsAt}>{displayTime(row.s.startsAt, zone)}</time><span>~ {displayTime(row.s.endsAt, zone)}</span></div><span>{statusLabel(row.s.status)}</span><span>{ackLabel(row.ack)}</span>{canEdit(row.s) && <button type="button" aria-label={`시간 변경: ${row.s.title}`} disabled={locked(row.s.id)} onClick={() => openEdit(row.s)}>시간 변경</button>}</li>)}</ul></section>
+                {view !== "list" && <ScheduleAgenda days={range.days} zone={zone} rows={calendarRows} canEdit={canEdit} locked={locked} onEdit={openEdit} />}
+                {view !== "list" && <div className={`schedule-calendar ${view === "week" ? "schedule-calendar--week" : ""}`} style={view === "week" ? ({ "--calendar-content-width": `${Math.max(876, (Math.max(120, weekLayouts.globalLaneCount * 44) + 24) * 7 + 36)}px` } as React.CSSProperties) : undefined} aria-label={view === "month" ? "월간 일정" : "주간 일정"} role="grid"><div className="schedule-weekday-row">{weekdays.map(day => <div role="columnheader" key={day}>{day}</div>)}</div><div className={view === "month" ? "month-grid" : "week-grid"}>{range.days.map(day => { const events = eventsByDay.get(day) ?? []; const layout = view === "week" ? weekLayouts.byDay.find(item => item.day === day) : null; const ghost = previewTarget?.id && previewTarget.view === view && previewTarget.day === day; const createAtSlot = (event: React.MouseEvent<HTMLDivElement>) => { if (!canCreate || event.target !== event.currentTarget) return; const box = event.currentTarget.getBoundingClientRect(); const minute = Math.max(0, Math.min(1410, Math.round(((event.clientY - box.top) / box.height * 1440) / 30) * 30)); openCreate(day, minute); }; return <div role="gridcell" data-date={day} aria-label={day} key={day}><time dateTime={day}>{day.slice(5)}</time>{view === "month" ? <div className="month-events">{ghost && <div className="calendar-direct-ghost calendar-direct-ghost--month" aria-hidden="true"><span>미리 보기</span></div>}{sortEventsForDay(events, day, zone).map(row => <CalendarEvent key={row.s.id} schedule={row.s} day={day} days={range.days} zone={zone} view="month" projectId={id} activeInteraction={activeInteraction} onInteractionChange={setActiveToken} disabled={!canEdit(row.s) || directLocked(row.s.id)} onPreview={reportPreview} onCommit={saveChange} />)}{canCreate && <button className="calendar-create" type="button" aria-label="이 날짜에 일정 추가" title={`이 날짜에 일정 추가 (${day})`} onClick={() => openCreate(day)}><Icon name="plus" /></button>}</div> : <>{canCreate && <label className="week-slot-picker"><span>빈 시간</span><select aria-label={`${day} 일정 시작 시간`} value="" onChange={event => { if (event.target.value) openCreate(day, Number(event.target.value)); }}><option value="">시간 선택</option>{availableHalfHours(events, day, zone).map(minute => <option key={minute} value={minute}>{String(Math.floor(minute / 60)).padStart(2, "0")}:{String(minute % 60).padStart(2, "0")}</option>)}</select></label>}<div className="day-events" onClick={createAtSlot}>{Array.from({ length: 24 }, (_, hour) => <span aria-hidden="true" className="hour-label" key={hour} style={{ top: `${hour / 24 * 100}%` }}>{String(hour).padStart(2, "0")}:00</span>)}{ghost && <div className="calendar-direct-ghost" aria-hidden="true" style={{ top: `${(previewTarget!.start / 1440) * 100}%`, height: `${Math.max(0, previewTarget!.end - previewTarget!.start) / 1440 * 100}%` }}><span>미리 보기</span></div>}{layout?.occurrences.map(({ schedule, start, end, lane }) => <div className="week-event" key={schedule.id} data-start-minute={start} data-duration-minute={Math.max(0, end - start)} style={{ top: `${start / 1440 * 100}%`, height: `${Math.max(0, end - start) / 1440 * 100}%`, left: `${lane / Math.max(1, weekLayouts.globalLaneCount) * 100}%`, width: `${100 / Math.max(1, weekLayouts.globalLaneCount)}%` }}><CalendarEvent schedule={schedule} day={day} days={range.days} zone={zone} view="week" projectId={id} activeInteraction={activeInteraction} onInteractionChange={setActiveToken} disabled={!canEdit(schedule) || directLocked(schedule.id)} resizeDisabled={(end - start) < 15} onPreview={reportPreview} onCommit={saveChange} /></div>)}</div></>}</div>; })}</div></div>}
+                {showResults && <section className="schedule-results" role="region" aria-label="일정 목록" aria-labelledby="schedule-results-title"><div className="section-heading"><div><p className="eyebrow">{view === "list" ? "검색 결과" : "현재 달력 범위 밖 검색 결과"}</p><h2 id="schedule-results-title">일정 목록</h2></div><span className="schedule-help">{(view === "list" ? filtered : outsideRows).length}건 표시</span></div>{!(view === "list" ? filtered : outsideRows).length && <p className="schedule-empty">조건에 맞는 일정이 없습니다.</p>}<ul className="schedule-list">{(view === "list" ? filtered : outsideRows).map(row => <li key={row.s.id}><Link to={`/projects/${id}/schedules/${row.s.id}`}>{row.s.title}</Link><div><time dateTime={row.s.startsAt}>{displayTime(row.s.startsAt, zone)}</time><span>~ {displayTime(row.s.endsAt, zone)}</span></div><StatusBadge tone={row.s.status === "CONFIRMED" ? "green" : row.s.status === "CANCELLED" ? "red" : "neutral"} icon={row.s.status === "CONFIRMED" ? "check" : row.s.status === "CANCELLED" ? "cancel" : "draft"}>{statusLabel(row.s.status)}</StatusBadge><span>{ackLabel(row.ack)}</span><span>생성자 {row.s.createdBy}</span>{canEdit(row.s) && <div className="schedule-row-actions"><Link className="button button-secondary" to={`/projects/${id}/schedules/${row.s.id}/edit`}><Icon name="edit" />일정 편집</Link><button type="button" aria-label={`시간 변경: ${row.s.title}`} disabled={locked(row.s.id)} onClick={() => openEdit(row.s)}><Icon name="clock" />시간 변경</button></div>}</li>)}</ul></section>}
                 <nav className="schedule-pagination" aria-label="일정 페이지 이동"><span>현재 {page + 1}페이지</span><button type="button" disabled={!page || list.isFetching} onClick={() => setPage(page - 1)}>이전 일정 페이지</button><button type="button" disabled={rows.length < PAGE_SIZE || list.isFetching || page >= 10000} onClick={() => setPage(page + 1)}>다음 일정 페이지</button></nav>
             </>}
         </div>
