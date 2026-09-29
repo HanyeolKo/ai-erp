@@ -31,3 +31,8 @@
 - Release: accepted integrated implementation -> release-manager -> independent release-review -> authorized PR merge and main CI/Deploy Production workflow -> sameSHA observation -> close17/18/22 with replacement links. Parent user authorization persists; no additional ordinary approval required.
 - Parent ready-to-implement: READY. ui-plan r1, visual-plan r1, independent ui-review.md PASS and exact pattern adoption complete2026-09-29. Include1280px and200%zoom/contrast in browser matrix.
 
+
+## Parent execution allocation amendment2026-09-29
+- Native frontend spawn returned agent thread limit reached; no frontend worker exists. This is allocation availability, not capability failure or escalation; no model sweep or root execution permitted.
+- Parent authorizes /root/unified_backend (actual native implementer Luna/high) to execute frontend lane sequentially after freezing backend source and reporting backend result/API status to parent. Frontend ownership then transfers to the same implementer under the already-approved frontend contract; no other source worker may edit concurrently. Context remains this bounded integration; no scope/acceptance/design change.
+- Parent may commit/push frozen backend files and run integrated CI while executor works frontend. Parent owns browser page2 and synthetic server sessions; coordinate restart/handoff before using them. No backend changes after freeze without notifying parent.

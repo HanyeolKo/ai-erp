@@ -500,6 +500,8 @@ def migration_guard_checks(root):
             (files / 'V8__add_google_workspace_integrations.sql').unlink()
         elif kind == 'missing-v9':
             (files / 'V9__create_project_plan.sql').unlink()
+        elif kind == 'missing-v10':
+            (files / 'V10__add_schedule_workspace.sql').unlink()
         elif kind == 'extra':
             (files / 'V99__unexpected.sql').write_text('-- unexpected migration\n', encoding='utf-8')
         elif kind == 'symlink':
@@ -508,45 +510,67 @@ def migration_guard_checks(root):
             target.rename(original)
             target.symlink_to(original)
         result = child.run('preflight', C, success=False)
-        expected = 'symbolic links are forbidden in deployment paths' if kind == 'symlink' else ('required migration file missing' if kind in ('missing', 'missing-v8', 'missing-v9') else 'unexpected migration set')
+        expected = 'symbolic links are forbidden in deployment paths' if kind == 'symlink' else ('required migration file missing' if kind in ('missing', 'missing-v8', 'missing-v9', 'missing-v10') else 'unexpected migration set')
         check(expected in result.stderr, kind + ' migration input must be rejected')
         child.clean()
 
-    for kind in ('missing', 'missing-v8', 'missing-v9', 'extra'):
+    for kind in ('missing', 'missing-v8', 'missing-v9', 'missing-v10', 'extra'):
         preflight_mutation(kind)
     if os.name != 'nt':
         preflight_mutation('symlink')
 
     before = migration_checksum(checkout)
-    tampered = checkout / migration / 'V8__add_google_workspace_integrations.sql'
-    tampered.write_text(tampered.read_text(encoding='utf-8') + '\n-- tampered checksum fixture\n', encoding='utf-8')
-    after = migration_checksum(checkout)
-    check(after != before, 'V8 migration content must participate in migration checksum')
-    tampered_v9 = checkout / migration / 'V9__create_project_plan.sql'
+    tampered_v8 = checkout / migration / 'V8__add_google_workspace_integrations.sql'
+    before_v8 = migration_checksum(checkout)
+    tampered_v8.write_text(tampered_v8.read_text(encoding='utf-8') + '\n-- tampered V8 checksum fixture\n', encoding='utf-8')
+    after_v8 = migration_checksum(checkout)
+    check(after_v8 != before_v8, 'V8 migration content must participate in migration checksum')
+    tampered = checkout / migration / 'V9__create_project_plan.sql'
     before_v9 = migration_checksum(checkout)
-    tampered_v9.write_text(tampered_v9.read_text(encoding='utf-8') + '\n-- tampered V9 checksum fixture\n', encoding='utf-8')
+    tampered.write_text(tampered.read_text(encoding='utf-8') + '\n-- tampered V9 checksum fixture\n', encoding='utf-8')
     after_v9 = migration_checksum(checkout)
     check(after_v9 != before_v9, 'V9 migration content must participate in migration checksum')
+    tampered_v10 = checkout / migration / 'V10__add_schedule_workspace.sql'
+    before_v10 = migration_checksum(checkout)
+    tampered_v10.write_text(tampered_v10.read_text(encoding='utf-8') + '\n-- tampered V10 checksum fixture\n', encoding='utf-8')
+    after_v10 = migration_checksum(checkout)
+    check(after_v10 != before_v10, 'V10 migration content must participate in migration checksum')
 
     child = clone(h, 'migration-tampered-after-build')
     child_checkout = child.root / 'checkout'
     shutil.copytree(checkout, child_checkout)
     child.env['AI_ERP_PROJECT_DIR'] = posix(child_checkout)
     runtime = PROJECT / 'scripts/tests/fake-runtime.py'
-    v7 = child_checkout / migration / 'V8__add_google_workspace_integrations.sql'
+    v10 = child_checkout / migration / 'V10__add_schedule_workspace.sql'
     child.wrapper('docker', f'''if [[ "${{1:-}}" == build ]]; then
   "{posix(sys.executable)}" "{posix(runtime)}" docker "$@"
-  printf '\\n-- tampered after build\\n' >> "{posix(v7)}"
+  printf '\\n-- tampered V10 after build\\n' >> "{posix(v10)}"
   exit 0
 fi
 exec "{posix(sys.executable)}" "{posix(runtime)}" docker "$@"''')
     result = child.run('deploy', C, success=False)
     check('migration inputs changed after build' in result.stderr,
-          'V8 tampering after checksum capture must abort deployment')
+          'V10 tampering after checksum capture must abort deployment')
     check(not any(call['event'] == 'migrate' for call in child.calls()),
           'tampered migration set must never reach Flyway')
     child.clean()
-
+    child_v8 = clone(h, 'migration-v8-tampered-after-build')
+    child_v8_checkout = child_v8.root / 'checkout'
+    shutil.copytree(checkout, child_v8_checkout)
+    child_v8.env['AI_ERP_PROJECT_DIR'] = posix(child_v8_checkout)
+    v8 = child_v8_checkout / migration / 'V8__add_google_workspace_integrations.sql'
+    child_v8.wrapper('docker', f'''if [[ "${{1:-}}" == build ]]; then
+  "{posix(sys.executable)}" "{posix(runtime)}" docker "$@"
+  printf '\\n-- tampered V8 after build\\n' >> "{posix(v8)}"
+  exit 0
+fi
+exec "{posix(sys.executable)}" "{posix(runtime)}" docker "$@"''')
+    result_v8 = child_v8.run('deploy', C, success=False)
+    check('migration inputs changed after build' in result_v8.stderr,
+          'V8 tampering after checksum capture must abort deployment: ' + result_v8.stderr + result_v8.stdout)
+    check(not any(call['event'] == 'migrate' for call in child_v8.calls()),
+          'tampered V8 migration must never reach Flyway')
+    child_v8.clean()
     child_v9 = clone(h, 'migration-v9-tampered-after-build')
     child_v9_checkout = child_v9.root / 'checkout'
     shutil.copytree(checkout, child_v9_checkout)
@@ -554,7 +578,7 @@ exec "{posix(sys.executable)}" "{posix(runtime)}" docker "$@"''')
     v9 = child_v9_checkout / migration / 'V9__create_project_plan.sql'
     child_v9.wrapper('docker', f'''if [[ "${{1:-}}" == build ]]; then
   "{posix(sys.executable)}" "{posix(runtime)}" docker "$@"
-  printf '\\n-- V9 tampered after build\\n' >> "{posix(v9)}"
+  printf '\\n-- tampered V9 after build\\n' >> "{posix(v9)}"
   exit 0
 fi
 exec "{posix(sys.executable)}" "{posix(runtime)}" docker "$@"''')
