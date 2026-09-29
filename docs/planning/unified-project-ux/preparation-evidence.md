@@ -1,0 +1,6 @@
+# Verification preparation
+- 2026-09-29 source base8991a09 (docsHEADab76715): pnpm install --frozen-lockfile exit0; local JDK25 gradlew.bat test openapi3 --no-daemon exit0; pnpm api:generate exit0; pnpm frontend:typecheck exit0. These baseline checks prove environment readiness, not integrated feature correctness.
+- Synthetic preview API runs127.0.0.1:8080, Vite127.0.0.1:5175. Parent-owned sessions19425/87486. Chrome page2 isolatedContext unified-project-ux. No production data/provider calls.
+- Baseline1440px week screenshot inspected in tool transcript: overflow0; calendar width1152; week-grid height1280.1875. No new feature shown. Source CSS/pointer geometry unchanged must be compared after integration.
+- Chrome MCP filePath writes denied for both managed checkout and original workspace by tool configured-root policy; inline screenshot and read-only geometry result usable. No automatic approval rejection; safe inline alternative used.
+- Notion archive schema/state read: same-context frontend result page3d4a8ad6aa4a81058e99fcfa2eafae71 and verification page3d4a8ad6aa4a8123aa94efc4b7160916 have actual status null. Reading queue policy requires verified state; defer archive sync rather than guess unread or create duplicate. Local documents remain canonical. Query date2026-09-29.

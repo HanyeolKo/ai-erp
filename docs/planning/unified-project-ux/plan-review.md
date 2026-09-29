@@ -1,0 +1,8 @@
+# Increment review and parent acceptance
+- Task consolidate-pr-17-18-22; plan r1; assignment r1; base8991a09; docs HEADab767153.
+- Independent /root/unified_plan_review, native ai-erp-reviewer Astra/high: PASS on 2026-09-29. Actual tool return retained in conversation.
+- Assignment, scope, cross-layer API/data/permissions, acceptance AC1-10, role boundaries and stale-evidence rules: PASS. New plan defects:0. Prior8 frontend defects remain unresolved implementation requirements.
+- Parent root accepts plan r1 and authorizes UI/UX delta planning then visual reconciliation and independent UI review. No implementation authorized until that gate and complete parent contract.
+- Historical API r2 V9 reference is superseded by this integration plan V10; deployed project-plan V9 must remain byte-identical.
+- Reviewer read assignment, increment plan, retained API/prior reviews, PR22 backlog and rubric/policy; verified Git status. Did not run product tests, PostgreSQL, browser, CI or deployment; planning verdict only.
+- UI designer assignment r1: owns docs/planning/unified-project-ux/ui-plan.md, read-only production scope. Reconcile retained functional/visual plans with current main, popup and known8 defects; reference preserved API r2 under V10 override. Keep exact current plan6 views/calendar navigation/drag/time/unsaved-changes/Dialog focus behavior. Native Sol/medium, <=25k input and <=100line output, provider usage null, no delegation. Use required relevant pinned guidance; return bounded visual handoff excerpts. No new dependency/provider or PR22 feature expansion. Offline-contract-only Git refs ready. Missing external facts stop dependent work.
