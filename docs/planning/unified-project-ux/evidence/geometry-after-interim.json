@@ -1,0 +1,8 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "Script ran on page and returned:\n```json\n{\"hash\":\"#/projects/p1/schedules?view=builtin-calendar&mode=week&date=2026-09-10&page=0\",\"viewport\":1440,\"client\":1425,\"scroll\":1425,\"canvas\":[1152,1152,1152,1152,1152,1152,1152],\"events\":[{\"style\":\"top: 41.6667%; height: 4.16667%; left: 0%; width: 100%;\",\"text\":\"10:00–11:00 9월 운영 일정 확정확정\"},{\"style\":\"top: 41.6667%; height: 4.16667%; left: 0%; width: 100%;\",\"text\":\"10:00–11:00 9월 고객 동기화 점검초안\"}],\"today\":1,\"summary\":[32,32,32]}\n```"
+    }
+  ]
+}

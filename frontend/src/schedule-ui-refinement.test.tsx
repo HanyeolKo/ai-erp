@@ -16,7 +16,7 @@ test("schedule list switches to one primary representation with direct full edit
   await user.click(screen.getByRole("button", { name: "목록 보기" }));
   expect(screen.queryByRole("grid", { name: "월간 일정" })).not.toBeInTheDocument();
   const list = await screen.findByRole("region", { name: "일정 목록" });
-  expect(within(list).getByRole("link", { name: "일정 편집" })).toHaveAttribute("href", "#/projects/p1/schedules/s1/edit");
+  expect(within(list).getByRole("link", { name: "일정 편집" })).toHaveAttribute("href", "#/projects/p1/schedules/s1/edit?return=view%3Dbuiltin-list%26page%3D0");
   expect(within(list).getByRole("button", { name: "시간 변경: Design review" })).toBeEnabled();
 });
 

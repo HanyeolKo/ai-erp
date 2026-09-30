@@ -193,7 +193,7 @@ public class ScheduleService {
             }).toList(),
             history.stream().map(c->new Change(c.businessRevision,c.changeType,c.changedBy,c.createdAt)).toList());
     }
-    private List<ScheduleResponse> summaries(List<ScheduleEntity> selected) {
+    List<ScheduleResponse> summaries(List<ScheduleEntity> selected) {
         if(selected.isEmpty()) return List.of();
         var ids=selected.stream().map(s->s.id).toList();
         var ps=participants.findByScheduleIdIn(ids).stream().collect(Collectors.groupingBy(p->p.scheduleId));

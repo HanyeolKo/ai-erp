@@ -1,0 +1,85 @@
+{
+  "date": "2026-09-30",
+  "scope": "Popup slice only; uncommitted source above47dac12; overall frontend not accepted",
+  "keyboard": {
+    "hash": "#/projects/p1/schedules?view=builtin-calendar&mode=week&date=2026-09-10&page=0",
+    "open": false,
+    "focusTag": "BUTTON",
+    "focusLabel": "알림",
+    "triggerCount": 1
+  },
+  "mobile390": {
+    "viewport": 390,
+    "client": 390,
+    "scroll": 390,
+    "dialog": {
+      "x": 18,
+      "y": 245.59375,
+      "width": 354,
+      "height": 408.796875,
+      "top": 245.59375,
+      "right": 372,
+      "bottom": 654.390625,
+      "left": 18
+    },
+    "buttons": [
+      {
+        "label": "×",
+        "height": 44,
+        "width": 40
+      },
+      {
+        "label": "관련 일정 보기",
+        "height": 44,
+        "width": 320
+      },
+      {
+        "label": "이전",
+        "height": 44,
+        "width": 64
+      },
+      {
+        "label": "다음",
+        "height": 44,
+        "width": 64
+      },
+      {
+        "label": "모든 알림 보기",
+        "height": 44,
+        "width": 132.28125
+      }
+    ],
+    "hash": "#/projects/p1/schedules?view=builtin-calendar&mode=week&date=2026-09-10&page=0"
+  },
+  "mobile320": {
+    "viewport": 320,
+    "client": 320,
+    "scroll": 320,
+    "dialogWidth": 284,
+    "dialogRight": 302,
+    "colors": [
+      {
+        "label": "일정 확정",
+        "color": "rgb(0, 0, 0)",
+        "whiteContrast": 21
+      },
+      {
+        "label": "2026. 9. 9. 오전 9:00",
+        "color": "rgb(82, 96, 121)",
+        "whiteContrast": 6.35
+      },
+      {
+        "label": "관련 일정 보기",
+        "color": "rgb(36, 88, 166)",
+        "whiteContrast": 6.95
+      }
+    ],
+    "hash": "#/projects/p1/schedules?view=builtin-calendar&mode=week&date=2026-09-10&page=0"
+  },
+  "sourceHashes": {
+    "ui": "C0100EA3803BC8439292AB25428561BA87DB9A76E37CBA1E6918FB603E3E76C5",
+    "Notifications": "2C1ABD804785BFACD423F7EB9922A6E2D68D6EB5572E3DE1C335EC384766AD04",
+    "appCSS": "AD80CC13701357361CE155BB6BDCB057154226B78DD4D113BFF2A487232CC29F"
+  },
+  "limitation": "Mobile close width40px requires44px correction/recheck. Actual browser200%zoom not proven; deferred."
+}

@@ -63,7 +63,7 @@ test("weekly calendar preserves local clock placement and translated status", as
   http();
   const user = mount("/projects/p1/schedules");
   await screen.findByRole("heading", { name: "프로젝트 일정" });
-  fireEvent.change(screen.getByLabelText("기준 날짜"), { target: { value: "2090-09-10" } });
+  fireEvent.change(await screen.findByLabelText("기준 날짜"), { target: { value: "2090-09-10" } });
   await user.click(screen.getByRole("button", { name: "주간 보기" }));
   const grid = await screen.findByRole("grid", { name: "주간 일정" });
   const event = within(grid).getByRole("link", { name: /Design review/ }).closest("[data-start-minute]");
@@ -79,7 +79,7 @@ test("detail translates lifecycle and Calendar states while keeping participant 
   server.on("GET", "/api/v1/calendar/connection", () => json({ status: "UNRECOGNIZED", configurationRequired: false }));
   mount("/projects/p1/schedules/s1");
   expect(await screen.findByRole("heading", { name: "Design review" })).toBeInTheDocument();
-  expect(screen.getByRole("heading", { name: "전체 참석자" })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "참여자 확인" })).toBeInTheDocument();
   expect(screen.getByText("나")).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "일정 취소" })).toBeEnabled();
   expect(screen.getByText(/일정 확정/)).toBeInTheDocument();
@@ -124,8 +124,9 @@ test("editor keeps basic, date/time, and participant sections with field focused
   http();
   const user = mount("/projects/p1/schedules/new");
   expect(await screen.findByRole("heading", { name: "일정 만들기" })).toBeInTheDocument();
-  expect(screen.getByRole("group", { name: "기본 정보" })).toBeInTheDocument();
+  expect(await screen.findByRole("group", { name: "기본 정보" })).toBeInTheDocument();
   expect(screen.getByRole("group", { name: "날짜와 시간" })).toBeInTheDocument();
+  await user.click(screen.getByText(/세부 정보/, { selector: "summary" }));
   expect(screen.getByRole("group", { name: "참석자" })).toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "일정 저장" }));
   expect((await screen.findAllByRole("alert")).some(alert => alert.textContent?.includes("제목을 입력하세요."))).toBe(true);

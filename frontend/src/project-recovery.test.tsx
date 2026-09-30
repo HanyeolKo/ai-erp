@@ -55,28 +55,28 @@ test("schedule 404 provides schedule-list recovery without claiming project dele
 
 test("background list 403 removes previously displayed schedule and create action", async () => {
   const server = http(); const user = mount("/projects/p1/schedules"); await user.click(await screen.findByRole("button", { name: "목록 보기" }));
-  expect((await screen.findAllByRole("link", { name: "Design review" })).length).toBeGreaterThan(0);
+  expect(await screen.findByText("Design review")).toBeInTheDocument();
   server.on("GET", "/api/v1/projects/p1/schedules", () => json({ code: "FORBIDDEN" }, 403));
   await act(async () => { vi.setSystemTime(new Date("2090-09-10T00:01:00Z")); focusManager.setFocused(false); focusManager.setFocused(true); });
-  expect(await screen.findByRole("alert")).toHaveTextContent(/접근 권한/);
-  expect(screen.queryByRole("link", { name: "Design review" })).not.toBeInTheDocument();
+  expect(await screen.findByText(/일정 접근 권한을 다시 확인해야 합니다/)).toBeInTheDocument();
+  expect(screen.queryByText("Design review")).not.toBeInTheDocument();
   expect(screen.queryByRole("link", { name: "일정 만들기" })).not.toBeInTheDocument();
 });
 
 test("a failed retry cannot restore capabilities after a list access denial", async () => {
   const server = http(); const user = mount("/projects/p1/schedules"); await user.click(await screen.findByRole("button", { name: "목록 보기" }));
-  expect((await screen.findAllByRole("link", { name: "Design review" })).length).toBeGreaterThan(0);
+  expect(await screen.findByText("Design review")).toBeInTheDocument();
   server.on("GET", "/api/v1/projects/p1/schedules", () => json({ code: "FORBIDDEN" }, 403));
   await act(async () => { vi.setSystemTime(new Date("2090-09-10T00:01:00Z")); focusManager.setFocused(false); focusManager.setFocused(true); });
   await screen.findByText("FORBIDDEN");
   server.on("GET", "/api/v1/projects/p1/schedules", () => json({ code: "UPSTREAM_RETRY_FAILED" }, 500));
-  await user.click(screen.getByRole("button", { name: "다시 시도" }));
-  await screen.findByText("UPSTREAM_RETRY_FAILED");
-  expect(screen.queryByRole("link", { name: "Design review" })).not.toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "접근 상태 다시 확인" }));
+  await screen.findByText("접근 상태를 확인하지 못해 보호된 작업을 잠갔습니다.");
+  expect(screen.queryByText("Design review")).not.toBeInTheDocument();
   expect(screen.queryByRole("link", { name: "일정 만들기" })).not.toBeInTheDocument();
   server.on("GET", "/api/v1/projects/p1/schedules", () => json([schedule]));
-  await user.click(screen.getByRole("button", { name: "다시 시도" }));
-  expect((await screen.findAllByRole("link", { name: "Design review" })).length).toBeGreaterThan(0);
+  await user.click(screen.getByRole("button", { name: "접근 상태 다시 확인" }));
+  expect(await screen.findByText("Design review")).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "일정 만들기" })).toBeInTheDocument();
 });
 
@@ -110,7 +110,7 @@ test("protected query 401 removes the old workspace and stays signed out on rout
   const server = http(); const user = mount("/projects/p1/schedules/s1");
   await screen.findByRole("heading", { name: schedule.title });
   server.on("GET", "/api/v1/notifications", () => json({ code: "UNAUTHENTICATED" }, 401));
-  await user.click(screen.getByRole("link", { name: "알림" }));
+  await user.click(screen.getByRole("button", { name: "알림" }));
   expect(await screen.findByRole("link", { name: "Google로 로그인" })).toBeInTheDocument();
   await act(async () => { window.location.hash = "#/projects/p1/schedules/s1"; window.dispatchEvent(new HashChangeEvent("hashchange")); });
   expect(screen.queryByRole("heading", { name: schedule.title })).not.toBeInTheDocument();

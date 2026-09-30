@@ -1,0 +1,218 @@
+{
+  "source": "bd32ea71aefd0f3d5ea748eabbeb850dee530a10",
+  "date": "2026-09-30",
+  "environment": "immutable local production bundle5177, loopback synthetic fixtures only",
+  "scope": "reuse only unchanged r4/r5 components and styles; Calendar recovery r3 rejected",
+  "flows": [
+    {
+      "source": "bd32ea71aefd0f3d5ea748eabbeb850dee530a10",
+      "scope": "unchanged popup/property flow only; r3 task rejected for Calendar recovery",
+      "checks": {
+        "popupEscapePreservesCalendarURL": true,
+        "focusReturnsToNotificationTrigger": true,
+        "typesCreatedThroughUI": [
+          "NUMBER",
+          "CHECKBOX",
+          "DATE"
+        ],
+        "existingTypes": [
+          "TEXT",
+          "SINGLE_SELECT"
+        ],
+        "persistentNameTypeLabels": true,
+        "optionDirtyEscapeOpensDiscard": true,
+        "continueKeepsRename": "긴급 검토",
+        "savedOptionsOrder": [
+          "opt-normal",
+          "opt-high",
+          "opt-low"
+        ],
+        "savedOptionIdentityPreserved": true
+      },
+      "nonProductToolErrors": [
+        "stale UID after dialog remount retried using fresh snapshot; not claimed product failure"
+      ]
+    },
+    {
+      "source": "bd32ea7",
+      "scope": "saved views unchanged r4",
+      "managerBuiltinCreatesShared": true,
+      "groupLegendStablePropertyId": "prop-priority",
+      "visibleFieldsCount": 9,
+      "cardScheduleIds": [
+        "s1",
+        "s2"
+      ],
+      "pageReset": 0,
+      "hash": "view=view-munpgf9t&mode=week&date=2026-09-10&page=0"
+    },
+    {
+      "source": "bd32ea7",
+      "scope": "unchanged detail/property flow",
+      "detailDirtyNavigationNativeConfirm": true,
+      "dismissPreservesDraft": true,
+      "valuesSubmitted": {
+        "Notes": "공통 데이터 확인",
+        "예상 시간": 1.25,
+        "준비 완료": true,
+        "검토일": "2026-09-12"
+      }
+    },
+    {
+      "source": "bd32ea7",
+      "detailSavedDateConfirmed": "2026-09-12",
+      "dateInteraction": "native Date fill changed DOM without React event; actual save verified after input/change event on changed value",
+      "all5TypesInCards": true
+    },
+    {
+      "source": "bd32ea7",
+      "dashboardSharedViewSelected": "운영 카드 공유",
+      "dashboardScheduleIds": [
+        "s1",
+        "s2"
+      ],
+      "dashboardSharedTypedValues": true
+    },
+    {
+      "source": "bd32ea7",
+      "status": "FAIL assigned before r4 freeze",
+      "criterion": "SV009 UPUX004",
+      "legacyInput": "view=list&date=2026-09-10&page=2",
+      "actualHash": "view=builtin-list&date=2026-09-10&page=0",
+      "actualUIPage": 3,
+      "actualRows": 0,
+      "total": 2
+    }
+  ],
+  "responsive": [
+    {
+      "width": 1440,
+      "cards": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Script ran on page and returned:\n```json\n{\"hash\":\"#/projects/p1/schedules?view=builtin-cards&date=2026-09-10&page=0\",\"width\":1440,\"rootWidth\":1440,\"scrollWidth\":1440,\"overflow\":0,\"cardCols\":\"357.328px 357.328px 357.344px\",\"listDisplay\":null,\"rows\":2,\"buttons\":[{\"text\":\"캘린더\",\"h\":42,\"w\":75},{\"text\":\"카드\",\"h\":42,\"w\":60},{\"text\":\"목록\",\"h\":42,\"w\":60},{\"text\":\"운영 카드 공유 · 공유\",\"h\":42,\"w\":169.703125},{\"text\":\"보기 설정\",\"h\":42,\"w\":94.109375},{\"text\":\"속성\",\"h\":42,\"w\":60}]}\n```"
+          }
+        ]
+      },
+      "list": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Script ran on page and returned:\n```json\n{\"hash\":\"#/projects/p1/schedules?view=builtin-list&date=2026-09-10&page=0\",\"width\":1440,\"rootWidth\":1440,\"scrollWidth\":1440,\"overflow\":0,\"cardCols\":null,\"listDisplay\":\"table\",\"rows\":2,\"buttons\":[{\"text\":\"캘린더\",\"h\":42,\"w\":75},{\"text\":\"카드\",\"h\":42,\"w\":60},{\"text\":\"목록\",\"h\":42,\"w\":60},{\"text\":\"운영 카드 공유 · 공유\",\"h\":42,\"w\":169.703125},{\"text\":\"보기 설정\",\"h\":42,\"w\":94.109375},{\"text\":\"속성\",\"h\":42,\"w\":60}]}\n```"
+          }
+        ]
+      }
+    },
+    {
+      "width": 1280,
+      "cards": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Script ran on page and returned:\n```json\n{\"hash\":\"#/projects/p1/schedules?view=builtin-cards&date=2026-09-10&page=0\",\"width\":1280,\"rootWidth\":1280,\"scrollWidth\":1280,\"overflow\":0,\"cardCols\":\"307.203px 307.203px 307.219px\",\"listDisplay\":null,\"rows\":2,\"buttons\":[{\"text\":\"캘린더\",\"h\":42,\"w\":75},{\"text\":\"카드\",\"h\":42,\"w\":60},{\"text\":\"목록\",\"h\":42,\"w\":60},{\"text\":\"운영 카드 공유 · 공유\",\"h\":42,\"w\":169.703125},{\"text\":\"보기 설정\",\"h\":42,\"w\":94.109375},{\"text\":\"속성\",\"h\":42,\"w\":60}]}\n```"
+          }
+        ]
+      },
+      "list": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Script ran on page and returned:\n```json\n{\"hash\":\"#/projects/p1/schedules?view=builtin-list&date=2026-09-10&page=0\",\"width\":1280,\"rootWidth\":1280,\"scrollWidth\":1280,\"overflow\":0,\"cardCols\":null,\"listDisplay\":\"table\",\"rows\":2,\"buttons\":[{\"text\":\"캘린더\",\"h\":42,\"w\":75},{\"text\":\"카드\",\"h\":42,\"w\":60},{\"text\":\"목록\",\"h\":42,\"w\":60},{\"text\":\"운영 카드 공유 · 공유\",\"h\":42,\"w\":169.703125},{\"text\":\"보기 설정\",\"h\":42,\"w\":94.109375},{\"text\":\"속성\",\"h\":42,\"w\":60}]}\n```"
+          }
+        ]
+      }
+    },
+    {
+      "width": 768,
+      "cards": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Script ran on page and returned:\n```json\n{\"hash\":\"#/projects/p1/schedules?view=builtin-cards&date=2026-09-10&page=0\",\"width\":768,\"rootWidth\":768,\"scrollWidth\":768,\"overflow\":0,\"cardCols\":\"233.281px 233.281px\",\"listDisplay\":null,\"rows\":2,\"buttons\":[{\"text\":\"캘린더\",\"h\":42,\"w\":75},{\"text\":\"카드\",\"h\":42,\"w\":60},{\"text\":\"목록\",\"h\":42,\"w\":60},{\"text\":\"운영 카드 공유 · 공유\",\"h\":42,\"w\":169.703125},{\"text\":\"보기 설정\",\"h\":42,\"w\":94.109375},{\"text\":\"속성\",\"h\":42,\"w\":60}]}\n```"
+          }
+        ]
+      },
+      "list": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Script ran on page and returned:\n```json\n{\"hash\":\"#/projects/p1/schedules?view=builtin-list&date=2026-09-10&page=0\",\"width\":768,\"rootWidth\":768,\"scrollWidth\":768,\"overflow\":0,\"cardCols\":null,\"listDisplay\":\"table\",\"rows\":2,\"buttons\":[{\"text\":\"캘린더\",\"h\":42,\"w\":75},{\"text\":\"카드\",\"h\":42,\"w\":60},{\"text\":\"목록\",\"h\":42,\"w\":60},{\"text\":\"운영 카드 공유 · 공유\",\"h\":42,\"w\":169.703125},{\"text\":\"보기 설정\",\"h\":42,\"w\":94.109375},{\"text\":\"속성\",\"h\":42,\"w\":60}]}\n```"
+          }
+        ]
+      }
+    },
+    {
+      "width": 390,
+      "cards": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Script ran on page and returned:\n```json\n{\"hash\":\"#/projects/p1/schedules?view=builtin-cards&date=2026-09-10&page=0\",\"width\":390,\"rootWidth\":390,\"scrollWidth\":390,\"overflow\":0,\"cardCols\":\"358px\",\"listDisplay\":null,\"rows\":2,\"buttons\":[{\"text\":\"캘린더\",\"h\":44,\"w\":75},{\"text\":\"카드\",\"h\":44,\"w\":60},{\"text\":\"목록\",\"h\":44,\"w\":60},{\"text\":\"운영 카드 공유 · 공유\",\"h\":44,\"w\":169.703125},{\"text\":\"보기 설정\",\"h\":44,\"w\":94.109375},{\"text\":\"속성\",\"h\":44,\"w\":60}]}\n```"
+          }
+        ]
+      },
+      "list": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Script ran on page and returned:\n```json\n{\"hash\":\"#/projects/p1/schedules?view=builtin-list&date=2026-09-10&page=0\",\"width\":390,\"rootWidth\":390,\"scrollWidth\":390,\"overflow\":0,\"cardCols\":null,\"listDisplay\":\"block\",\"rows\":2,\"buttons\":[{\"text\":\"캘린더\",\"h\":44,\"w\":75},{\"text\":\"카드\",\"h\":44,\"w\":60},{\"text\":\"목록\",\"h\":44,\"w\":60},{\"text\":\"운영 카드 공유 · 공유\",\"h\":44,\"w\":169.703125},{\"text\":\"보기 설정\",\"h\":44,\"w\":94.109375},{\"text\":\"속성\",\"h\":44,\"w\":60}]}\n```"
+          }
+        ]
+      }
+    },
+    {
+      "width": 320,
+      "cards": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Script ran on page and returned:\n```json\n{\"hash\":\"#/projects/p1/schedules?view=builtin-cards&date=2026-09-10&page=0\",\"width\":320,\"rootWidth\":320,\"scrollWidth\":320,\"overflow\":0,\"cardCols\":\"288px\",\"listDisplay\":null,\"rows\":2,\"buttons\":[{\"text\":\"캘린더\",\"h\":44,\"w\":75},{\"text\":\"카드\",\"h\":44,\"w\":60},{\"text\":\"목록\",\"h\":44,\"w\":60},{\"text\":\"운영 카드 공유 · 공유\",\"h\":44,\"w\":169.703125},{\"text\":\"보기 설정\",\"h\":44,\"w\":94.109375},{\"text\":\"속성\",\"h\":44,\"w\":60}]}\n```"
+          }
+        ]
+      },
+      "list": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Script ran on page and returned:\n```json\n{\"hash\":\"#/projects/p1/schedules?view=builtin-list&date=2026-09-10&page=0\",\"width\":320,\"rootWidth\":320,\"scrollWidth\":320,\"overflow\":0,\"cardCols\":null,\"listDisplay\":\"block\",\"rows\":2,\"buttons\":[{\"text\":\"캘린더\",\"h\":44,\"w\":75},{\"text\":\"카드\",\"h\":44,\"w\":60},{\"text\":\"목록\",\"h\":44,\"w\":60},{\"text\":\"운영 카드 공유 · 공유\",\"h\":44,\"w\":169.703125},{\"text\":\"보기 설정\",\"h\":44,\"w\":94.109375},{\"text\":\"속성\",\"h\":44,\"w\":60}]}\n```"
+          }
+        ]
+      }
+    }
+  ],
+  "raw": {
+    "popupFocus": {
+      "content": [
+        {
+          "type": "text",
+          "text": "Script ran on page and returned:\n```json\n{\"hash\":\"#/projects/p1/schedules?view=builtin-calendar&mode=week&date=2026-09-10&page=0\",\"focus\":{\"tag\":\"BUTTON\",\"name\":\"알림\"},\"tracks\":[{\"class\":\"schedule-calendar schedule-calendar--week\",\"h\":1248.796875,\"style\":\"--calendar-content-width: 1044px;\"},{\"class\":\"schedule-weekday-row\",\"h\":36.796875,\"style\":null},{\"class\":\"week-grid\",\"h\":1206,\"style\":null},{\"class\":\"week-slot-picker\",\"h\":68.1875,\"style\":null},{\"class\":\"week-slot-picker\",\"h\":68.1875,\"style\":null},{\"class\":\"week-slot-picker\",\"h\":68.1875,\"style\":null},{\"class\":\"week-slot-picker\",\"h\":68.1875,\"style\":null},{\"class\":\"week-event\",\"h\":48,\"style\":\"top: 41.6667%; height: 4.16667%; left: 0%; width: 100%;\"},{\"class\":\"week-event-link\",\"h\":48,\"style\":null},{\"class\":\"week-slot-picker\",\"h\":68.1875,\"style\":null},{\"class\":\"week-event\",\"h\":48,\"style\":\"top: 41.6667%; height: 4.16667%; left: 0%; width: 100%;\"},{\"class\":\"week-event-link\",\"h\":48,\"style\":null},{\"class\":\"week-slot-picker\",\"h\":68.1875,\"style\":null},{\"class\":\"week-slot-picker\",\"h\":68.1875,\"style\":null}],\"readBody\":false}\n```"
+        }
+      ]
+    },
+    "typedCards": {
+      "content": [
+        {
+          "type": "text",
+          "text": "Script ran on page and returned:\n```json\n{\"hash\":\"#/projects/p1/schedules?view=view-munpgf9t&mode=week&date=2026-09-10&page=0\",\"text\":\"긴급 검토 (1) · Normal (1)\\n\\n긴급 검토\\n9월 운영 일정 확정\\n긴급 검토\\n시작\\n2026-09-10 10:00\\n종료\\n2026-09-10 11:00\\n상태\\n확정\\nPriority\\n긴급 검토\\nNotes\\n공통 데이터 확인\\n예상 시간\\n1.25\\n준비 완료\\n예\\n검토일\\n2026-09-12\\n수정\\nNormal\\n9월 고객 동기화 점검\\nNormal\\n시작\\n2026-09-11 10:00\\n종료\\n2026-09-11 11:00\\n상태\\n초안\\nPriority\\nNormal\\nNotes\\n설정 안 함\\n예상 시간\\n설정 안 함\\n준비 완료\\n설정 안 함\\n검토일\\n설정 안 함\\n수정\\n2건 · 1페이지\\n이전\\n다음\",\"overflow\":0}\n```"
+        }
+      ]
+    },
+    "dashboard": {
+      "content": [
+        {
+          "type": "text",
+          "text": "Script ran on page and returned:\n```json\n{\"text\":\"일정 보기\\n\\n선택한 일정 카드\\n카드\\n목록\\n운영 카드 공유\\n재설정\\n\\n대시보드 보기를 저장했습니다.\\n\\n긴급 검토 (1) · Normal (1)\\n\\n9월 운영 일정 확정\\n긴급 검토\\n시작\\n2026-09-10 10:00\\n종료\\n2026-09-10 11:00\\n상태\\n확정\\nPriority\\n긴급 검토\\nNotes\\n공통 데이터 확인\\n예상 시간\\n1.25\\n준비 완료\\n예\\n검토일\\n2026-09-12\\n속성 바로 수정\\n전체 수정\\n9월 고객 동기화 점검\\nNormal\\n시작\\n2026-09-11 10:00\\n종료\\n2026-09-11 11:00\\n상태\\n초안\\nPriority\\nNormal\\nNotes\\n설정 안 함\\n예상 시간\\n설정 안 함\\n준비 완료\\n설정 안 함\\n검토일\\n설정 안 함\\n속성 바로 수정\\n전체 수정\\n2건\\n이전\\n다음\",\"links\":[\"#/projects/p1/schedules/s1\",\"#/projects/p1/schedules/s1/edit\",\"#/projects/p1/schedules/s2\",\"#/projects/p1/schedules/s2/edit\"],\"overflow\":0}\n```"
+        }
+      ]
+    },
+    "legacyFailure": {
+      "content": [
+        {
+          "type": "text",
+          "text": "Script ran on page and returned:\n```json\n{\"hash\":\"#/projects/p1/schedules?view=builtin-list&date=2026-09-10&page=0\",\"footer\":\"2건 · 3페이지\\n이전\\n다음\",\"rows\":0}\n```"
+        }
+      ]
+    }
+  }
+}

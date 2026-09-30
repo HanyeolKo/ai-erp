@@ -1,0 +1,11 @@
+# Parent correction contract r5
+
+- Task consolidate-pr-17-18-22 / unified-project-ux, accepted plan/UI/visualr1 and implementation unchanged. High risk, root2026-09-30.
+- Source bd32ea7 plus frozen r4 changes documented frontend-correction-r4-result.md;328 tests/type/build/diff passed. Preserve that source and evidence.
+- Actual next attempt7 same Sol/medium ceiling. Parent explicit task-specific exception under existing human autonomous implementation/merge/closure/deployment and continuation plus developer persistence. No new numerical-counter permission, reviewer retry authorization, history reset or Astra execution. Parent self-review: initial URL normalization happened after state initialization and did not synchronize the mounted state; canonical address alone is insufficient.
+- Existing /root/unified_frontend_final_correction canonical implementer gpt-5.6-sol/medium, bounded reuse<=35k, return<=400words plus result, usage null, depth1/no delegation. ACK before edits. Not alone, preserve r4 fixes and other files.
+- Own frontend/** and frontend-correction-r5-result.md/raw logs only. No backend/dependencies/config/harness/browser/Git/PR/deploy/verdict.
+- Correct only existing SV-FE-009/UPUX-FE-004: initial legacy month/week/list URLs must atomically initialize canonical peer/mode/date/page0 and actual query/UI state. Browser reproduction fresh view=list&date=2026-09-10&page=2 becomes address builtin-list&page0 but footer3 and querypage2; correct querypage0/footer1/actual rows. Canonical nonlegacy page2 must continue to honor pagination. Preserve valid calendar zone/range/text/context and existing switch/filter reset.
+- Add focused regressions for legacy list/month/week nonzero initial page and retained nonlegacy page2; assert real request and visible state, not only address. Preserve328 previous meaningful tests.
+- Run focused affected tests then full suite once after final batch, typecheck/build/diff; durable commands/cwd/exits/counts, freeze/source hashes. Further unresolved failures return evidence to parent; no self-approved batches.
+- Parent final browser and exact final-SHA CI plus independent Astra/high task-review required; release-manager and independent release-review precede authorized merge/deploy/closure. Earlier bd32 CI36675943244 success is bounded historical evidence and cannot override source defects.

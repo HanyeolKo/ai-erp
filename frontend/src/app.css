@@ -197,8 +197,15 @@ input[readonly] { color: var(--text-secondary); }
 .preview-card dt { color: var(--text-secondary); font-weight: 700; }
 .preview-card dd { min-width: 0; margin: 0; overflow-wrap: anywhere; }
 .notification-list { list-style: none; padding: 0; margin: 20px 0; }
-.notification-list li { display: flex; justify-content: space-between; gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--divider); }
+.notification-content { min-width: 0; }
+.notification-content--compact { width: 100%; }
+.notification-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--divider); }
+.notification-main { min-width: 0; }
+.notification-actions { display: flex; min-width: 0; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px 16px; }
+.notification-actions > a { min-width: 0; overflow-wrap: anywhere; }
+.notification-actions > button { min-width: max-content; }
 .notification-list time { display: block; color: var(--text-secondary); font-size: 13px; }
+.notification-read { color: var(--text-secondary); white-space: nowrap; }
 .recovery-panel { margin-top: 32px; }
 .mobile-menu-button { display: none; }
 .schedule-list li { padding: 16px; border: 1px solid var(--divider); border-radius: var(--radius-surface); background: var(--surface); }
@@ -215,6 +222,7 @@ input[readonly] { color: var(--text-secondary); }
 .month-grid span,
 .week-grid a { display: block; font-size: 13px; line-height: 1.5; }
 @media (max-width: 767px) {
+  .icon-button { min-width: 44px; }
   .topbar { min-height: 112px; height: auto; align-items: stretch; flex-direction: column; gap: 0; padding: 0 16px; }
   .topbar-primary { min-height: 56px; flex: none; }
   .topbar-secondary { display: flex; min-height: 56px; align-items: center; gap: 8px; border-top: 1px solid var(--divider); }
@@ -223,7 +231,7 @@ input[readonly] { color: var(--text-secondary); }
   .account-menu { min-width: 0; max-width: 100%; white-space: normal; }
   .account-menu summary { display: flex; min-width: 0; max-width: 100%; min-height: 44px; align-items: center; white-space: normal; overflow-wrap: anywhere; }
   .account-menu-panel { width: min(280px, calc(100vw - 32px)); max-width: calc(100vw - 32px); }
-  .topbar-actions a:first-child { display: none; }
+  .notification-trigger { min-height: 44px; }
   .workspace { display: block; }
   .project-sidebar { display: none; position: static; z-index: 3; padding: 20px; box-shadow: 0 12px 24px #17243b22; }
   .project-sidebar.is-open { display: flex; }
@@ -245,6 +253,10 @@ input[readonly] { color: var(--text-secondary); }
   .modal-body { padding: 16px; }
   .modal-actions { justify-content: stretch; }
   .modal-actions .button { flex: 1 1 auto; }
+  .notification-list li { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .notification-actions { align-items: stretch; justify-content: stretch; }
+  .notification-actions > button,
+  .notification-actions > a { flex: 1 1 100%; min-height: 44px; }
   .radar { grid-template-columns: 1fr; }
   .month-grid,
   .week-grid { min-width: 700px; }

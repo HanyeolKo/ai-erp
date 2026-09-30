@@ -67,7 +67,7 @@ test("late schedule save cannot navigate or repopulate the old workspace after a
   await user.click(screen.getByRole("button", { name: "일정 저장" }));
   await waitFor(() => expect(finishSave).toBeTypeOf("function"));
 
-  await user.click(screen.getByRole("link", { name: "알림" }));
+  await user.click(screen.getByRole("button", { name: "알림" }));
   await screen.findByRole("link", { name: "Google로 로그인" });
   const expiredRoute = window.location.hash;
   await waitFor(() => expect(cleanup.retired).toHaveLength(1));
@@ -81,7 +81,7 @@ test("late schedule save cannot navigate or repopulate the old workspace after a
   expect(screen.getByRole("link", { name: "Google로 로그인" })).toBeInTheDocument();
   expect(window.location.hash).toBe(expiredRoute);
   expect(screen.queryByRole("heading", { name: "일정 상세" })).not.toBeInTheDocument();
-  expect(server.calls.filter(call => call.method === "POST" && call.url === "/api/v1/projects/p1/schedules")).toHaveLength(1);
+  expect(server.calls.filter(call => call.method === "POST" && call.url === "/api/v1/projects/p1/schedule-workspace/records")).toHaveLength(1);
 });
 
 test("late invitation acceptance cannot restore private data after successful logout", async () => {
@@ -126,12 +126,12 @@ test("a pending CSRF lookup issues no POST after another request expires the ses
   await fillNewSchedule();
   await user.click(screen.getByRole("button", { name: "일정 저장" }));
   await waitFor(() => expect(finishCsrf).toBeTypeOf("function"));
-  await user.click(screen.getByRole("link", { name: "알림" }));
+  await user.click(screen.getByRole("button", { name: "알림" }));
   await screen.findByRole("link", { name: "Google로 로그인" });
 
   await act(async () => finishCsrf(json({ headerName: "X-CSRF-TOKEN", token: "late-csrf" })));
   await waitFor(() => expect(server.calls.filter(call => call.method === "POST")).toHaveLength(0));
-  expect(window.location.hash).toBe("#/notifications");
+  expect(window.location.hash).toBe("#/projects/p1/schedules/new");
 });
 
 test("successful logout204 ends the session before another pending CSRF lookup can post", async () => {
@@ -167,7 +167,7 @@ test("a schedule success callback that is waiting for invalidation cannot naviga
   await user.click(screen.getByRole("button", { name: "일정 저장" }));
   await waitFor(() => expect(finishDetailRefresh).toBeTypeOf("function"));
   server.on("GET", "/api/v1/notifications", () => json({ code: "UNAUTHENTICATED" }, 401));
-  await user.click(screen.getByRole("link", { name: "알림" }));
+  await user.click(screen.getByRole("button", { name: "알림" }));
   await screen.findByRole("link", { name: "Google로 로그인" });
   const expiredRoute = window.location.hash;
 
@@ -184,7 +184,7 @@ test("a 401 hides protected UI before a stalled error body can resolve", async (
   const { user } = mount("/projects/p1");
   await screen.findByRole("heading", { name: "프로젝트 개요" });
 
-  await user.click(screen.getByRole("link", { name: "알림" }));
+  await user.click(screen.getByRole("button", { name: "알림" }));
   await waitFor(() => expect(screen.getByRole("link", { name: "Google로 로그인" })).toBeInTheDocument());
   expect(screen.queryByRole("navigation", { name: "주 메뉴" })).not.toBeInTheDocument();
   expect(screen.queryByRole("heading", { name: "프로젝트 개요" })).not.toBeInTheDocument();
