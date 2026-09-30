@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, test, vi } from "vitest";
 import App from "./App";
@@ -32,13 +32,13 @@ test("P03 incomplete and reversed date filters show field validation without iss
 test("P03 changing date range resets pagination and restores view range when cleared", async () => {
   const server = http();
   server.on("GET", "/api/v1/projects/p1/schedules", (_, url) => json(url.searchParams.get("page") === "0" && !url.searchParams.get("from")?.startsWith("2091") ? Array.from({ length: 20 }, (_, i) => ({ ...schedule, id: "s" + i })) : []));
-  const user = mount("/projects/p1/schedules?view=builtin-list&page=2"); await screen.findByRole("region", { name: "일정 목록" }); expect(server.calls.some(c => c.url.includes("/calendar"))).toBe(false);
-  await user.click(screen.getByRole("button", { name: "캘린더 보기" }));
-  await screen.findByRole("grid", { name: "월간 일정" });
-  expect(window.location.hash).toContain("view=builtin-calendar");
-  expect(window.location.hash).toContain("page=0");
+  mount("/projects/p1/schedules?view=builtin-calendar&page=2"); await screen.findByRole("grid", { name: "월간 일정" }); expect(server.calls.some(c => c.url.includes("/calendar"))).toBe(false);
+  await waitFor(() => expect(window.location.hash).toContain("page=0"));
+  setDate("날짜 이후", "2091-01-15"); setDate("날짜 이전", "2091-01-20");
+  await waitFor(() => expect(server.calls.some(c => c.method === "POST" && c.url.endsWith("/schedule-workspace/query") && c.body.page === 0 && c.body.from === "2091-01-14T15:00:00.000Z")).toBe(true));
+  setDate("날짜 이후", ""); setDate("날짜 이전", "");
+  expect((await screen.findAllByRole("link", { name: /Design review/ })).length).toBeGreaterThan(0);
   expect(window.location.hash).not.toContain("page=2");
-  expect(server.calls.some(c => c.method === "POST" && c.url.endsWith("/schedule-workspace/query") && c.body.page === 0)).toBe(true);
 });
 test("P03 date bounds use the selected timezone including daylight-saving offset changes", async () => {
   const server = http(); mount("/projects/p1/schedules"); await screen.findByLabelText("날짜 이후");
@@ -48,7 +48,8 @@ test("P03 date bounds use the selected timezone including daylight-saving offset
 test("P03 renders creator independently and mine removes another creator's row", async () => {
   const server = http(); server.on("GET", "/api/v1/projects/p1/schedules", () => json([{ ...schedule, createdBy: "u2" }]));
   const user = mount("/projects/p1/schedules"); await screen.findByRole("grid", { name: "월간 일정" }); const links = await screen.findAllByRole("link", { name: /Design review/ });
-  expect(links.length).toBeGreaterThan(0);
+  const row = within(links.find(link => link.closest("li"))!.closest("li")!);
+  expect(row.getByText("확정")).toBeInTheDocument(); expect(row.getByText("확인 대기")).toBeInTheDocument();
   await user.click(screen.getByText("상세 필터"));
   await user.click(screen.getByLabelText("내가 만든 일정")); expect(screen.queryByRole("link", { name: /Design review/ })).not.toBeInTheDocument();
   await user.click(screen.getByLabelText("내가 만든 일정")); expect(screen.getAllByRole("link", { name: /Design review/ }).length).toBeGreaterThan(0);

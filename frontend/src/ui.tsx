@@ -395,12 +395,14 @@ export function Dialog({
   children,
   onClose,
   labelledBy,
+  className,
 }: {
   open: boolean;
   title: string;
   children: ReactNode;
   onClose: () => void;
   labelledBy?: string;
+  className?: string;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const caller = useRef<HTMLElement | null>(null);
@@ -460,7 +462,7 @@ export function Dialog({
   return (
     <dialog
       ref={ref}
-      className="modal"
+      className={`modal${className ? ` ${className}` : ""}`}
       aria-labelledby={labelledBy}
       onClose={() => {
         if (suppressClose.current) {

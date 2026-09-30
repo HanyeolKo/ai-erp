@@ -27,5 +27,5 @@
 
 통합된 코드와 새 DB 변경을 검증하고 독립 구현·릴리스 검토를 통과한 뒤 PR #23을 병합한다. main의 CI와 배포 결과를 확인한 다음 #17·#18·#22를 #23으로 대체되었다는 링크와 함께 종료한다. 기존 PR의 검사 통과 기록을 통합 PR의 검사 결과로 대신하지 않는다.
 
-로컬 원문: C:/Users/USER/.codex/worktrees/unified-project-ux/AI ERP/docs/planning/unified-project-ux/reader-summary.md
-Notion 보관: 같은 맥락의 기존 구현·검증 문서에 실제 읽기 상태가 비어 있어 동기화를 보류했다. 상태를 추측하거나 중복 문서를 만들지 않았다. 확인일 2026-09-29.
+로컬 원문: D:/onedrive/Documents/ChatGPT/AI ERP/tmp/unified-project-ux-resume/docs/planning/unified-project-ux/reader-summary.md
+Notion 보관: 2026-09-30 현재 연결에서 기존 데이터베이스와 같은 맥락의 문서가 404로 조회되지 않았으며, 데이터베이스 이름 검색에서도 보관 대상을 확인하지 못했다. 읽기 상태를 검증할 수 없어 동기화를 보류했다. 새 데이터베이스나 중복 문서를 만들지 않았다.

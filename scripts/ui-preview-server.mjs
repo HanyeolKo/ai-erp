@@ -13,7 +13,7 @@ const toInt = (value, fallback) => {
 };
 const PORT = toInt(process.env.UI_PREVIEW_PORT, DEFAULT_PORT);
 const scenarioInput = String(process.env.UI_PREVIEW_SCENARIO ?? "populated").toLowerCase();
-const scenarios = ["populated", "empty", "error", "viewer", "login", "unconfigured", "google-partial", "unknown"];
+const scenarios = ["populated", "empty", "error", "viewer", "member", "workspace-denied", "workspace-conflict", "login", "unconfigured", "google-partial", "unknown"];
 const scenario = scenarios.includes(scenarioInput) ? scenarioInput : "populated";
 const displayName = String(process.env.UI_PREVIEW_DISPLAY_NAME ?? "김관리자").trim() || "김관리자";
 const accountEmail = String(process.env.UI_PREVIEW_EMAIL ?? "manager@example.com").trim() || "manager@example.com";
@@ -172,7 +172,7 @@ const makePlanFixture = () => {
 };
 
 const makeState = () => {
-    const role = scenario === "viewer" ? "VIEWER" : "MANAGER";
+    const role = scenario === "viewer" ? "VIEWER" : scenario === "member" ? "MEMBER" : "MANAGER";
     const loginReady = scenario !== "unconfigured";
     const loginUrl = scenario === "unconfigured" ? null : "/oauth2/authorization/google";
     const base = {
@@ -218,6 +218,17 @@ const makeState = () => {
     if (scenario === "google-partial") {
         base.googleConnection = { configurationRequired: false, accountEmail, drive: { status: "CONNECTED" }, gmail: { status: "PERMISSION_REQUIRED" }, calendar: { status: "REAUTH_REQUIRED" } };
     }
+    if (scenario === "member") {
+        base.scheduleWorkspaceByProject[projectId].views.push({
+            id: "view-shared-member",
+            name: "팀 공유 일정",
+            scope: "SHARED",
+            ownerId: "u2",
+            rowVersion: 2,
+            archived: false,
+            config: { type: "LIST", filters: [], sorts: [], groupBy: null, legendBy: null, visibleFields: ["title", "startsAt", "endsAt", "status"] },
+        });
+    }
     return base;
 };
 
@@ -247,7 +258,9 @@ const ensureRole = (project) => {
 state.projects = scenario === "empty" ? [] : [{ id: projectId, groupId, name: "서울 스프린트 운영", role: state.projectBaseRole }];
 state.projects = state.projects.map((project) => ensureRole(project));
 
-const stateProjectRole = (project) => scenario === "viewer" ? "VIEWER" : "MANAGER";
+const stateProjectRole = (project) => scenario === "viewer" ? "VIEWER" : scenario === "member" ? "MEMBER" : "MANAGER";
+const workspaceWriteDenied = () => scenario === "viewer" || scenario === "workspace-denied";
+let workspaceConflictPending = scenario === "workspace-conflict";
 
 const getProject = (id) => state.projects.find((project) => project.id === id);
 const getSchedules = (id) => state.schedulesByProject[id] ?? [];
@@ -491,37 +504,37 @@ const routeRequest = async (request, body) => {
     if (method === "POST" && path === `/api/v1/projects/${projectId}/schedule-workspace/query`)
         return ok(queryWorkspace(projectId, body));
     if (method === "PATCH" && path === `/api/v1/projects/${projectId}/schedule-workspace/dashboard`) {
-        if (scenario === "viewer") return problem("FORBIDDEN", 403);
+        if (workspaceWriteDenied()) return problem("FORBIDDEN", 403);
         const workspace = workspaceFor(projectId);
         if (Number(body?.rowVersion ?? -1) !== workspace.dashboardRowVersion) return problem("STALE_VERSION", 409);
         if (body?.viewId && ![...builtinWorkspaceViews(), ...workspace.views].some(view => view.id === body.viewId && !view.archived && (view.scope === "BUILTIN" || view.scope === "SHARED"))) return problem("INVALID_VIEW", 400);
         workspace.dashboardViewId = body?.viewId ?? null; workspace.dashboardRowVersion += 1; return ok({ dashboardViewId: workspace.dashboardViewId, dashboardRowVersion: workspace.dashboardRowVersion });
     }
     if (method === "POST" && path === `/api/v1/projects/${projectId}/schedule-workspace/properties`) {
-        if (scenario === "viewer") return problem("FORBIDDEN", 403);
+        if (workspaceWriteDenied()) return problem("FORBIDDEN", 403);
         const workspace = workspaceFor(projectId); if (workspace.properties.length >= 50) return problem("PROPERTY_CAP", 400); const property = { id: `prop-${Date.now().toString(36)}`, name: String(body?.name ?? "New property"), type: body?.type ?? "TEXT", position: body?.position ?? workspace.properties.length, archived: false, rowVersion: 1, options: body?.options ?? [] }; workspace.properties.push(property); return ok(property);
     }
     if (method === "PATCH" && path.startsWith(`/api/v1/projects/${projectId}/schedule-workspace/properties/`)) {
-        if (scenario === "viewer") return problem("FORBIDDEN", 403);
+        if (workspaceWriteDenied()) return problem("FORBIDDEN", 403);
         const propertyId = path.split("/").at(-1); const workspace = workspaceFor(projectId); const property = workspace.properties.find(item => item.id === propertyId); if (!property) return notFound(path); if (Number(body?.rowVersion ?? -1) !== property.rowVersion) return problem("STALE_VERSION", 409); Object.assign(property, { name: body?.name ?? property.name, position: body?.position ?? property.position, archived: body?.archived ?? property.archived }); if (Array.isArray(body?.options)) property.options = body.options.map((option, index) => ({ id: option.id ?? `option-${propertyId}-${index + 1}`, label: String(option.label ?? "새 옵션"), color: option.color ?? "gray", archived: Boolean(option.archived) })); property.rowVersion += 1; return ok({ ...property, options: property.options.map(option => ({ ...option })) });
     }
     if (method === "POST" && path === `/api/v1/projects/${projectId}/schedule-workspace/views`) {
-        const workspace = workspaceFor(projectId); const scope = body?.scope === "SHARED" ? "SHARED" : "PERSONAL"; if (scenario === "viewer" || (scope === "SHARED" && scenario === "viewer")) return problem("FORBIDDEN", 403); const view = { id: `view-${Date.now().toString(36)}`, name: String(body?.name ?? "Saved view"), scope, ownerId: userId, rowVersion: 1, archived: false, config: body?.config }; workspace.views.push(view); return ok(view);
+        const workspace = workspaceFor(projectId); const scope = body?.scope === "SHARED" ? "SHARED" : "PERSONAL"; if (workspaceWriteDenied()) return problem("FORBIDDEN", 403); const view = { id: `view-${Date.now().toString(36)}`, name: String(body?.name ?? "Saved view"), scope, ownerId: userId, rowVersion: 1, archived: false, config: body?.config }; workspace.views.push(view); return ok(view);
     }
     if (method === "PATCH" && path.startsWith(`/api/v1/projects/${projectId}/schedule-workspace/views/`)) {
-        const viewId = path.split("/").at(-1); const view = workspaceFor(projectId).views.find(item => item.id === viewId); if (!view) return notFound(path); if (view.scope === "SHARED" && scenario === "viewer") return problem("FORBIDDEN", 403); if (Number(body?.rowVersion ?? -1) !== view.rowVersion) return problem("STALE_VERSION", 409); Object.assign(view, { name: body?.name ?? view.name, config: body?.config ?? view.config, archived: body?.archived ?? view.archived }); view.rowVersion += 1; return ok(view);
+        const viewId = path.split("/").at(-1); const view = workspaceFor(projectId).views.find(item => item.id === viewId); if (!view) return notFound(path); if (workspaceWriteDenied()) return problem("FORBIDDEN", 403); if (Number(body?.rowVersion ?? -1) !== view.rowVersion) return problem("STALE_VERSION", 409); Object.assign(view, { name: body?.name ?? view.name, config: body?.config ?? view.config, archived: body?.archived ?? view.archived }); view.rowVersion += 1; return ok(view);
     }
     if (method === "GET" && path.startsWith(`/api/v1/projects/${projectId}/schedule-workspace/records/`)) {
         const scheduleId = path.split("/").at(-1); const schedule = getSchedules(projectId).find(value => value.id === scheduleId); if (!schedule) return notFound(path); return ok({ schedule: { ...schedule }, values: { ...(valuesFor(projectId)[scheduleId] ?? {}) } });
     }
     if (method === "POST" && path === `/api/v1/projects/${projectId}/schedule-workspace/records`) {
-        if (scenario === "viewer") return problem("FORBIDDEN", 403); const scheduleBody = body?.schedule ?? {}; const schedule = { ...scheduleTemplate, ...scheduleBody, id: nextScheduleId(), projectId, rowVersion: 1, businessRevision: 1, createdBy: userId, participants: [], changes: [] }; state.schedulesByProject[projectId] = [schedule, ...getSchedules(projectId)]; valuesFor(projectId)[schedule.id] = { ...(body?.values ?? {}) }; return ok({ schedule, values: { ...valuesFor(projectId)[schedule.id] } });
+        if (workspaceWriteDenied()) return problem("FORBIDDEN", 403); const scheduleBody = body?.schedule ?? {}; const schedule = { ...scheduleTemplate, ...scheduleBody, id: nextScheduleId(), projectId, rowVersion: 1, businessRevision: 1, createdBy: userId, participants: [], changes: [] }; state.schedulesByProject[projectId] = [schedule, ...getSchedules(projectId)]; valuesFor(projectId)[schedule.id] = { ...(body?.values ?? {}) }; return ok({ schedule, values: { ...valuesFor(projectId)[schedule.id] } });
     }
     if (method === "PATCH" && path.startsWith(`/api/v1/projects/${projectId}/schedule-workspace/records/`) && !path.endsWith("/values")) {
-        if (scenario === "viewer") return problem("FORBIDDEN", 403); const scheduleId = path.split("/").at(-1); const found = applyMutation(body?.schedule ?? {}, projectId, scheduleId); if (!found) return notFound(path); if (Number(body?.schedule?.rowVersion ?? -1) !== found.schedule.rowVersion) return problem("STALE_VERSION", 409); const schedule = { ...found.schedule, ...body.schedule, id: scheduleId, rowVersion: found.schedule.rowVersion + 1 }; found.schedules[found.index] = schedule; valuesFor(projectId)[scheduleId] = { ...(valuesFor(projectId)[scheduleId] ?? {}), ...(body?.values ?? {}) }; return ok({ schedule, values: { ...valuesFor(projectId)[scheduleId] } });
+        if (workspaceWriteDenied()) return problem("FORBIDDEN", 403); const scheduleId = path.split("/").at(-1); const found = applyMutation(body?.schedule ?? {}, projectId, scheduleId); if (!found) return notFound(path); if (workspaceConflictPending) { workspaceConflictPending = false; found.schedules[found.index] = { ...found.schedule, title: `${found.schedule.title} (서버 갱신)`, rowVersion: found.schedule.rowVersion + 1 }; return problem("STALE_VERSION", 409); } if (Number(body?.schedule?.rowVersion ?? -1) !== found.schedule.rowVersion) return problem("STALE_VERSION", 409); const schedule = { ...found.schedule, ...body.schedule, id: scheduleId, rowVersion: found.schedule.rowVersion + 1 }; found.schedules[found.index] = schedule; valuesFor(projectId)[scheduleId] = { ...(valuesFor(projectId)[scheduleId] ?? {}), ...(body?.values ?? {}) }; return ok({ schedule, values: { ...valuesFor(projectId)[scheduleId] } });
     }
     if (method === "PATCH" && path.endsWith("/values")) {
-        if (scenario === "viewer") return problem("FORBIDDEN", 403); const scheduleId = path.split("/").at(-2); const schedule = getSchedules(projectId).find(value => value.id === scheduleId); if (!schedule) return notFound(path); if (Number(body?.rowVersion ?? -1) !== schedule.rowVersion) return problem("STALE_VERSION", 409); schedule.rowVersion += 1; valuesFor(projectId)[scheduleId] = { ...(valuesFor(projectId)[scheduleId] ?? {}), ...(body?.values ?? {}) }; return ok({ schedule, values: { ...valuesFor(projectId)[scheduleId] } });
+        if (workspaceWriteDenied()) return problem("FORBIDDEN", 403); const scheduleId = path.split("/").at(-2); const schedule = getSchedules(projectId).find(value => value.id === scheduleId); if (!schedule) return notFound(path); if (workspaceConflictPending) { workspaceConflictPending = false; schedule.title = `${schedule.title} (서버 갱신)`; schedule.rowVersion += 1; return problem("STALE_VERSION", 409); } if (Number(body?.rowVersion ?? -1) !== schedule.rowVersion) return problem("STALE_VERSION", 409); schedule.rowVersion += 1; valuesFor(projectId)[scheduleId] = { ...(valuesFor(projectId)[scheduleId] ?? {}), ...(body?.values ?? {}) }; return ok({ schedule, values: { ...valuesFor(projectId)[scheduleId] } });
     }
     if (method === "GET" && path === `/api/v1/projects/${projectId}/schedules`)
         return ok(getSchedules(projectId).slice());

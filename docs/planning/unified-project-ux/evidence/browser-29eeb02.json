@@ -1,0 +1,128 @@
+{
+  "date": "2026-09-30",
+  "source": "29eeb024e3db0ba789611e3bf646c74616769fbf",
+  "mode": "synthetic-local-browser",
+  "status": "partial-evidence-not-acceptance",
+  "week": {
+    "hash": "#/projects/p1/schedules?view=builtin-calendar&mode=week&date=2026-09-10&page=0",
+    "viewport": 1440,
+    "scroll": 1425,
+    "buttons": [
+      {
+        "text": "본문으로 건너뛰기",
+        "label": null
+      },
+      {
+        "text": "알림",
+        "label": "알림"
+      },
+      {
+        "text": "",
+        "label": null
+      },
+      {
+        "text": "캘린더",
+        "label": "캘린더 보기"
+      },
+      {
+        "text": "카드",
+        "label": "카드 보기"
+      },
+      {
+        "text": "목록",
+        "label": "목록 보기"
+      },
+      {
+        "text": "보기 설정",
+        "label": null
+      },
+      {
+        "text": "속성",
+        "label": null
+      },
+      {
+        "text": "이전 기간",
+        "label": "이전 기간"
+      },
+      {
+        "text": "오늘",
+        "label": null
+      },
+      {
+        "text": "다음 기간",
+        "label": "다음 기간"
+      }
+    ],
+    "week": [
+      {
+        "height": "1152px"
+      },
+      {
+        "height": "1152px"
+      },
+      {
+        "height": "1152px"
+      },
+      {
+        "height": "1152px"
+      },
+      {
+        "height": "1152px"
+      },
+      {
+        "height": "1152px"
+      },
+      {
+        "height": "1152px"
+      }
+    ],
+    "events": [
+      {
+        "top": "41.6667%",
+        "height": "4.16667%",
+        "left": "0%",
+        "width": "100%"
+      },
+      {
+        "top": "41.6667%",
+        "height": "4.16667%",
+        "left": "0%",
+        "width": "100%"
+      }
+    ]
+  },
+  "popup320": {
+    "hash": "#/projects/p1/schedules?view=builtin-cards&mode=week&date=2026-09-10&page=0",
+    "viewport": 320,
+    "client": 320,
+    "scroll": 320,
+    "dialog": [
+      {
+        "width": 284,
+        "left": 18,
+        "right": 302
+      }
+    ],
+    "close": [
+      {
+        "width": 44,
+        "height": 44
+      }
+    ]
+  },
+  "relatedRoute": {
+    "observed": true,
+    "route": "#/projects/p1/schedules/s1",
+    "dialogCount": 0
+  },
+  "escape": {
+    "observed": true,
+    "focusLabel": "알림",
+    "hashPreserved": true
+  },
+  "finding": "UPUX-FE-005: month/week controls absent from rendered Calendar despite source controls; CSS display:none confirmed independently. Overall task CHANGES_REQUESTED; do not merge.",
+  "limitations": [
+    "Other required browser flows and 200% native zoom not completed on this rejected source.",
+    "Previous popup contrast and widths evidence applies only where source unchanged."
+  ]
+}

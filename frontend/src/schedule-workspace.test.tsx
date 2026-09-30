@@ -91,19 +91,28 @@ test("single-select option IDs and versions remain stable across two saves", asy
 
 test("nested option dirty close uses an accessible discard dialog and preserves add and rename drafts while editing continues", async () => {
   const server = http();
-  server.on("GET", "/api/v1/projects/p1/schedule-workspace", () => json({ properties: [{ id: "priority", name: "우선순위", type: "SINGLE_SELECT", position: 0, archived: false, rowVersion: 1, options: [{ id: "high", label: "높음", color: "red", archived: false }] }], views: [], dashboardViewId: null, dashboardRowVersion: 0 }));
+  server.on("GET", "/api/v1/projects/p1/schedule-workspace", () => json({ properties: [{ id: "priority", name: "우선순위", type: "SINGLE_SELECT", position: 0, archived: false, rowVersion: 1, options: [{ id: "high", label: "높음", color: "red", archived: false }, { id: "low", label: "낮음", color: "blue", archived: false }] }], views: [], dashboardViewId: null, dashboardRowVersion: 0 }));
   window.location.hash = "#/projects/p1/schedules";
   render(<App />);
   const user = userEvent.setup();
   await user.click(await screen.findByRole("button", { name: "속성" }));
   const propertyDialog = screen.getByRole("dialog", { name: "프로젝트 속성" });
+  const originalLabels = within(propertyDialog).getAllByLabelText("레이블");
+  await user.clear(originalLabels[0]); await user.type(originalLabels[0], "매우 높음");
   await user.click(within(propertyDialog).getByRole("button", { name: "옵션 추가" }));
   const labels = within(propertyDialog).getAllByLabelText("레이블");
-  await user.clear(labels[1]); await user.type(labels[1], "보통");
+  await user.clear(labels[2]); await user.type(labels[2], "보통");
+  await user.click(within(propertyDialog).getAllByRole("button", { name: "위로" })[2]);
   await user.click(within(screen.getByRole("dialog")).getAllByRole("button", { name: "닫기" })[1]);
   expect(screen.getByRole("dialog", { name: "변경사항 버리기" })).toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "계속 편집" }));
-  expect(within(screen.getByRole("dialog", { name: "프로젝트 속성" })).getAllByLabelText("레이블")[1]).toHaveValue("보통");
+  const continued = within(screen.getByRole("dialog", { name: "프로젝트 속성" })).getAllByLabelText("레이블");
+  expect(continued.map(input => (input as HTMLInputElement).value)).toEqual(["매우 높음", "보통", "낮음"]);
+  await user.click(within(screen.getByRole("dialog", { name: "프로젝트 속성" })).getAllByRole("button", { name: "닫기" })[1]);
+  await user.click(screen.getByRole("button", { name: "변경사항 버리기" }));
+  await user.click(screen.getByRole("button", { name: "속성" }));
+  const restored = within(screen.getByRole("dialog", { name: "프로젝트 속성" })).getAllByLabelText("레이블");
+  expect(restored.map(input => (input as HTMLInputElement).value)).toEqual(["높음", "낮음"]);
 });
 
 test("calendar event detail and list return preserve the active workspace context", async () => {
@@ -213,9 +222,10 @@ test("dashboard clean refetch adopts server values while dirty conflict preserve
   const view = { id: "shared-cards", name: "공유 카드", scope: "SHARED", ownerId: "u1", rowVersion: 1, archived: false, config: { type: "CARDS", filters: [], sorts: [], groupBy: null, legendBy: null, visibleFields: ["title", "property:notes"] } };
   let externalValue = "alpha";
   let externalVersion = 3;
+  const valueWrites: any[] = [];
   server.on("GET", "/api/v1/projects/p1/schedule-workspace", () => json({ properties: [property], views: [view], dashboardViewId: view.id, dashboardRowVersion: 1 }));
   server.on("POST", "/api/v1/projects/p1/schedule-workspace/query", body => json({ records: [{ schedule: { ...schedule, rowVersion: externalVersion }, values: { notes: externalValue } }], total: 1, hasMore: false, page: body.page, size: body.size, groups: [], queriedAt: "2090-09-10T00:00:00Z" }));
-  server.on("PATCH", "/api/v1/projects/p1/schedule-workspace/records/s1/values", () => json({ code: "ROW_VERSION_CONFLICT" }, 409));
+  server.on("PATCH", "/api/v1/projects/p1/schedule-workspace/records/s1/values", body => { valueWrites.push(body); return valueWrites.length === 1 ? json({ code: "ROW_VERSION_CONFLICT" }, 409) : json({ schedule: { ...schedule, rowVersion: 6 }, values: body.values }); });
   window.location.hash = "#/projects/p1";
   render(<App />);
   const user = userEvent.setup();
@@ -235,8 +245,14 @@ test("dashboard clean refetch adopts server values while dirty conflict preserve
 
   await user.click(screen.getByRole("button", { name: "속성 저장" }));
   expect(await screen.findByRole("alert")).toHaveTextContent("입력한 초안을 유지했습니다");
+  expect(screen.getByRole("button", { name: "최신 값 다시 불러오기" })).toBeInTheDocument();
   expect(input).toHaveValue("mine");
   await user.click(screen.getByRole("button", { name: "취소" }));
   await user.click(screen.getByRole("button", { name: "속성 바로 수정" }));
-  expect(screen.getByLabelText("메모")).toHaveValue("gamma");
+  const latestInput = screen.getByLabelText("메모");
+  expect(latestInput).toHaveValue("gamma");
+  await user.clear(latestInput); await user.type(latestInput, "final");
+  await user.click(screen.getByRole("button", { name: "속성 저장" }));
+  await waitFor(() => expect(valueWrites).toHaveLength(2));
+  expect(valueWrites[1]).toEqual({ rowVersion: 5, values: { notes: "final" } });
 });

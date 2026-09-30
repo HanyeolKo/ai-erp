@@ -131,6 +131,30 @@ function availableHalfHours(rows: ScheduleRow[], day: string, zone: string) {
     }));
 }
 
+export const workspaceCalendarIdentity = (config: WorkspaceConfig, from: string, to: string) => `${JSON.stringify(config)}|${from}|${to}|100`;
+
+export async function readWorkspaceCalendar(projectId: string, config: WorkspaceConfig, from: string, to: string, requireComplete = false) {
+    const records = new Map<string, ScheduleWorkspaceRecord>();
+    let total = 0;
+    let groups: import("../api/client").WorkspaceGroup[] = [];
+    for (let currentPage = 0; currentPage < 10; currentPage++) {
+        let result: Awaited<ReturnType<typeof api.workspaceQuery>>;
+        try {
+            result = await accessRead(`workspace-query:${projectId}:calendar:${from}:${to}:${currentPage}`, () => api.workspaceQuery(projectId, { config, from, to, page: currentPage, size: 100 }));
+        } catch (error) {
+            if (requireComplete || isAccessError(error) || !records.size) throw error;
+            return { records: [...records.values()], total, hasMore: true, page: 0, size: 100, groups, queriedAt: new Date().toISOString(), partial: true, reason: "추가 일정 페이지를 불러오지 못했습니다." };
+        }
+        total = result.total;
+        groups = result.groups;
+        for (const record of result.records) records.set(record.schedule.id, record);
+        if (!result.hasMore) return { ...result, records: [...records.values()], total, groups, partial: false, reason: "" };
+    }
+    if (requireComplete) throw new Error("캘린더 전체 범위를 확인하지 못했습니다.");
+    const capped = records.size >= 1000;
+    return { records: [...records.values()], total, hasMore: true, page: 0, size: 100, groups, queriedAt: new Date().toISOString(), partial: true, reason: capped ? "캘린더는 한 기간에 최대 1000개 일정만 표시합니다." : "추가 일정 페이지를 불러오지 못했습니다. 기간을 좁히거나 목록 보기에서 확인하세요." };
+}
+
 function eventStatusClass(status: string) {
     if (status === "CONFIRMED") return "month-event--confirmed";
     if (status === "CANCELLED") return "month-event--cancelled";
@@ -332,27 +356,10 @@ export function Schedules({ id, workspaceConfig, workspaceProperties = [], works
     // A calendar is a period, not one arbitrary result page.  Keep every
     // effective query argument in the cache identity and load the period in
     // bounded pages so a navigation can never reuse the previous period.
-    const calendarIdentity = workspaceConfig ? `${JSON.stringify(workspaceConfig)}|${effectiveRange.from}|${effectiveRange.to}|100` : "";
+    const calendarIdentity = workspaceConfig ? workspaceCalendarIdentity(workspaceConfig, effectiveRange.from, effectiveRange.to) : "";
     const workspaceReturnQuery = workspaceConfig ? window.location.hash.split("?")[1] ?? "" : "";
     const workspaceReturnSuffix = workspaceReturnQuery ? `?return=${encodeURIComponent(workspaceReturnQuery)}` : "";
-    const workspaceList = useQuery({ queryKey: keys.workspaceQuery(id, workspaceConfig ? "calendar" : "disabled", 0, calendarIdentity), queryFn: async () => {
-        const records = new Map<string, ScheduleWorkspaceRecord>(); let total = 0; let groups: import("../api/client").WorkspaceGroup[] = []; let partial = false; let reason = "";
-        for (let currentPage = 0; currentPage < 10; currentPage++) {
-            try {
-                const result = await accessRead(`workspace-query:${id}:calendar:${effectiveRange.from}:${effectiveRange.to}:${currentPage}`, () => api.workspaceQuery(id, { config: workspaceConfig!, from: effectiveRange.from, to: effectiveRange.to, page: currentPage, size: 100 }));
-                total = result.total; groups = result.groups;
-                for (const record of result.records) records.set(record.schedule.id, record);
-                if (!result.hasMore) return { ...result, records: [...records.values()], total, groups, partial, reason };
-            } catch (error) {
-                if (isAccessError(error)) throw error;
-                if (!records.size) throw error;
-                partial = true; reason = "추가 일정 페이지를 불러오지 못했습니다."; break;
-            }
-        }
-        if (records.size >= 1000) { partial = true; reason = "캘린더는 한 기간에 최대 1000개 일정만 표시합니다."; }
-        else { partial = true; reason = "추가 일정 페이지를 불러오지 못했습니다. 기간을 좁히거나 목록 보기에서 확인하세요."; }
-        return { records: [...records.values()], total, hasMore: true, page: 0, size: 100, groups, queriedAt: new Date().toISOString(), partial, reason };
-    }, enabled: !!workspaceConfig && project.isSuccess && !!project.data && !effectiveRange.error });
+    const workspaceList = useQuery({ queryKey: keys.workspaceQuery(id, workspaceConfig ? "calendar" : "disabled", 0, calendarIdentity), queryFn: () => readWorkspaceCalendar(id, workspaceConfig!, effectiveRange.from, effectiveRange.to), enabled: !!workspaceConfig && project.isSuccess && !!project.data && !effectiveRange.error });
     const activeQuery = workspaceConfig ? workspaceList : list;
     useEffect(() => { if (workspaceConfig && activeQuery.isError && isAccessError(activeQuery.error)) onWorkspaceDenied?.(); }, [activeQuery.error, activeQuery.isError, onWorkspaceDenied, workspaceConfig]);
     const rows = useMemo(() => effectiveRange.error || !project.isSuccess || !project.data || !activeQuery.isSuccess ? [] : (workspaceConfig ? (workspaceList.data?.records ?? []).map(record => record.schedule) : (list.data ?? [])).map(row => overrides[row.id] ?? row), [effectiveRange.error, project.isSuccess, project.data, activeQuery.isSuccess, workspaceConfig, workspaceList.data, list.data, overrides]);

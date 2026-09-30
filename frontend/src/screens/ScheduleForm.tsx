@@ -98,6 +98,16 @@ function contextPrefill(queryString?: string) {
     const automaticEnd = addLocalHour(start, zone);
     return { start, end: validEnd ?? automaticEnd.local, endInstant: validEnd ? undefined : automaticEnd.instant, zone };
 }
+function validatedReturnContext(queryString?: string) {
+    const raw = new URLSearchParams(queryString ?? "").get("return");
+    if (!raw || raw.includes("#")) return "";
+    const params = new URLSearchParams(raw);
+    const allowed = new Set(["view", "page", "date", "mode", "after", "before", "text", "status", "ack", "mine", "zone"]);
+    if ([...params.keys()].some(key => !allowed.has(key))) return "";
+    const page = params.get("page");
+    if (page !== null && (!/^\d+$/.test(page) || Number(page) > 10000)) return "";
+    return params.toString();
+}
 
 function PropertyInput({ property, value, onChange }: { property: ScheduleProperty; value: string | number | boolean | null | undefined; onChange: (value: string | number | boolean | null) => void }) {
     const label = `${property.name}${property.archived ? " · Archived" : ""}`;
@@ -122,6 +132,7 @@ function Editor({ id, scheduleId, queryString, project, userId, current, members
 }) {
     // The editor mounts only after detail succeeds. Query refreshes never overwrite an unsaved draft.
     const [snapshot] = useState(current);
+    const returnContext = useMemo(() => validatedReturnContext(queryString), [queryString]);
     const prefill = useMemo(() => contextPrefill(queryString), [queryString]);
     const [title, setTitle] = useState(snapshot?.title ?? "");
     const [description, setDescription] = useState(snapshot?.description ?? "");
@@ -173,7 +184,7 @@ function Editor({ id, scheduleId, queryString, project, userId, current, members
     const save = useMutation({ mutationFn: (body: CreateBody) => {
         if (!workspace.data || (snapshot && !workspaceRecord.data)) throw new Error("프로젝트 속성 준비가 끝나지 않았습니다.");
         return snapshot ? api.workspaceRecordEdit(project.id, snapshot.id, { schedule: { ...body, rowVersion: rowVersionRef.current ?? snapshot.rowVersion }, values }) : api.workspaceRecordCreate(project.id, { schedule: body, values });
-    }, onMutate: captureSession, onError: async (error, _body, context) => { if (!isSessionContextActive(context)) return; if (isAccessError(error)) recordAccessDenial(writeAccessKey); if (snapshot && error instanceof ApiError && error.status === 409) { try { const latest = await api.detail(project.id, snapshot.id); if (isSessionContextActive(context)) { setConflict(latest); setConflictReadFailed(false); } } catch { if (isSessionContextActive(context)) setConflictReadFailed(true); } } }, onSuccess: async (value, _body, context) => { if (!isSessionContextActive(context)) return; markSaved(); const record = (value as { schedule: Schedule }).schedule; await refreshSchedule(qc, project.id, record.id); if (!isSessionContextActive(context)) return; go(`/projects/${project.id}/schedules/${record.id}`); } });
+    }, onMutate: captureSession, onError: async (error, _body, context) => { if (!isSessionContextActive(context)) return; if (isAccessError(error)) recordAccessDenial(writeAccessKey); if (snapshot && error instanceof ApiError && error.status === 409) { try { const latest = await api.detail(project.id, snapshot.id); if (isSessionContextActive(context)) { setConflict(latest); setConflictReadFailed(false); } } catch { if (isSessionContextActive(context)) setConflictReadFailed(true); } } }, onSuccess: async (value, _body, context) => { if (!isSessionContextActive(context)) return; markSaved(); const record = (value as { schedule: Schedule }).schedule; await refreshSchedule(qc, project.id, record.id); if (!isSessionContextActive(context)) return; go(`/projects/${project.id}/schedules/${record.id}${returnContext ? `?return=${encodeURIComponent(returnContext)}` : ""}`); } });
     const serverErrors: Record<string, string[]> = {};
     const inputFields: Record<string, string> = { title: "title", description: "description", startsAt: "start", endsAt: "end", zone: "zone", timeZone: "zone", memberParticipantIds: "members", externalAttendeeEmails: "external" };
     if (save.error instanceof ApiError) {
@@ -258,7 +269,7 @@ function Editor({ id, scheduleId, queryString, project, userId, current, members
             <QueryState query={workspace} loadingMessage="프로젝트 속성을 불러오는 중입니다." errorMessage="프로젝트 속성을 불러오지 못했습니다." />
             {!!workspace.data?.properties.length && <fieldset className="schedule-form-section" disabled={disabled}><legend>Project properties</legend>{workspace.data.properties.slice().sort((a, b) => a.position - b.position || a.id.localeCompare(b.id)).map(property => property.archived ? <p key={property.id}>{property.name} · 보관됨 · {values[property.id] == null ? "설정 안 함" : String(values[property.id])}<button type="button" disabled={disabled} onClick={() => { setValuesDirty(true); setValues(current => ({ ...current, [property.id]: null })); }}>지우기</button></p> : <PropertyInput key={property.id} property={property} value={values[property.id]} onChange={value => { setValuesDirty(true); setValues(current => ({ ...current, [property.id]: value })); }} />)}</fieldset>}
             {save.isError && <div className="schedule-form-feedback"><Notice error={save.error} /><p>입력한 내용은 유지됩니다. 충돌한 경우 아래 값을 비교한 뒤 처리하세요.</p>{conflict && <><dl className="schedule-conflict-comparison"><div><dt>내 입력</dt><dd>{title || "제목 없음"} · {start} ~ {end}</dd></div><div><dt>서버 최신값</dt><dd>{conflict.title} · {utcToLocalDateTime(conflict.startsAt, zone)} ~ {utcToLocalDateTime(conflict.endsAt, zone)}</dd></div></dl><div className="schedule-conflict-actions"><button type="button" onClick={() => { const body = buildBody(); if (!body) return; rowVersionRef.current = conflict.rowVersion; setConflict(null); save.reset(); save.mutate(body); }}>내 입력으로 즉시 재시도</button><button type="button" onClick={() => { const nextStart = utcToLocalDateTime(conflict.startsAt, zone); const nextEnd = utcToLocalDateTime(conflict.endsAt, zone); const nextIds = conflict.participants.flatMap(p => p.memberUserId ? [p.memberUserId] : []); const nextExternal = conflict.participants.flatMap(p => p.externalEmail ? [p.externalEmail] : []).join(", "); setTitle(conflict.title); setDescription(conflict.description ?? ""); setStart(nextStart); setEnd(nextEnd); setIds(nextIds); setExternal(nextExternal); rowVersionRef.current = conflict.rowVersion; instantBaseline.current = { zone, startLocal: nextStart, endLocal: nextEnd, startsAt: conflict.startsAt, endsAt: conflict.endsAt }; initialDraft.current = { title: conflict.title, description: conflict.description ?? "", zone, start: nextStart, end: nextEnd, ids: nextIds, external: nextExternal }; endEdited.current = true; automaticEndInstant.current = undefined; setConflict(null); save.reset(); }}>최신값 적용</button></div></>}{conflictReadFailed && <button type="button" onClick={async () => { if (!snapshot || disabled) return; try { const latest = await api.detail(project.id, snapshot.id); setConflict(latest); setConflictReadFailed(false); } catch { setConflictReadFailed(true); } }}>최신값 다시 불러오기</button>}{denied && <RetryButton onRetry={async () => { if (await onAccessRetry()) save.reset(); }} />}</div>}{writeDenied && !save.isError && <div className="schedule-form-feedback"><p>일정 저장 권한을 다시 확인해야 합니다. 입력한 내용은 유지됩니다.</p><RetryButton onRetry={async () => { if (await onAccessRetry()) save.reset(); }}>접근 상태 다시 확인</RetryButton></div>}
-            <div className="schedule-form-actions"><Link className="button button-secondary" to={snapshot ? `/projects/${id}/schedules/${snapshot.id}` : `/projects/${id}/schedules`} onClick={event => { if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; if (!confirmDiscard()) event.preventDefault(); }}>취소</Link><button className="button button-primary" type="submit" disabled={disabled || !membersReady}>일정 저장</button></div>
+            <div className="schedule-form-actions"><Link className="button button-secondary" to={snapshot ? `/projects/${id}/schedules/${snapshot.id}${returnContext ? `?return=${encodeURIComponent(returnContext)}` : ""}` : `/projects/${id}/schedules${returnContext ? `?${returnContext}` : ""}`} onClick={event => { if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; if (!confirmDiscard()) event.preventDefault(); }}>취소</Link><button className="button button-primary" type="submit" disabled={disabled || !membersReady}>일정 저장</button></div>
         </form>
     </div>;
 }
