@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, ApiError, type CreateBody, type Members, type Project, type Schedule, type ScheduleProperty } from "../api/client";
 import { accessKey, accessRead, accessReadCanClear, capabilities, clearAccessDenial, isAccessError, keys, recordAccessDenial, refreshSchedule, useAccessDenied, useMe, useProject } from "../state";
@@ -175,9 +175,9 @@ function Editor({ id, scheduleId, queryString, project, userId, current, members
         initialDraft.current = { title: "", description: "", zone: next.zone, start: next.start, end: next.end, ids: [], external: "" };
         previousQuery.current = nextQuery;
     }, [confirmDiscard, queryString, scheduleId]);
-    useEffect(() => {
+    useLayoutEffect(() => {
         if (!Object.keys(errors).length) return;
-        requestAnimationFrame(() => document.querySelector<HTMLInputElement>("input[aria-invalid='true'], textarea[aria-invalid='true']")?.focus());
+        document.querySelector<HTMLInputElement>("input[aria-invalid='true'], textarea[aria-invalid='true']")?.focus();
     }, [errors]);
     const qc = useQueryClient();
     const writeAccessKey = `schedule-write:${project.id}:${snapshot?.id ?? "new"}`;

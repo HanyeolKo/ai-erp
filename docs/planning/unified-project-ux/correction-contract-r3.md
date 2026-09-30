@@ -1,0 +1,30 @@
+# Parent correction contract r3
+
+- Task consolidate-pr-17-18-22, increment unified-project-ux; accepted product/UI/visual r1 unchanged. High risk. Parent root, 2026-09-30.
+- Source/base: current branch5d725fa1393f1c76111c1f0a712c7da1e30b670e; main8991a0947d41580454da5fbcf23dcd247c852b45; backend47dac12 unchanged/accepted219.
+- Parent accepts independent final-task-review-r2.md CHANGES_REQUESTED. Four earlier findings close at source level; three P1 stable IDs remain SV-FE-006, UPUX-FE-003, SV-FE-013. CI/browser cannot override these defects.
+- Actual correction count: four completed batches and failed acceptance retained; next is attempt5, same Sol/medium ceiling. No reset, rename-to-reset, Astra execution, model sweep, or reviewer retry authorization.
+- Parent self-review: r2 added approximations of existing Calendar behavior rather than sharing its exact target and time mutation flow. Those approximations missed timezone/range, original instant precision and uncertain-outcome recovery. This bounded contract requires one common implementation, replacing duplicate approximation.
+- Authorization basis: human full autonomous implementation/merge/closure/deployment request plus latest explicit continuation; developer requires completing already-authorized necessary work and reuse of that authority. Parent makes a further explicit task-specific exception to the ordinary retry ceiling, with actual count/failures recorded. No new explicit numerical-counter approval is claimed. This is parent-owned authorization, not worker self-escalation or reviewer approval.
+
+## Owner and restrictions
+
+Existing /root/unified_frontend_final_correction, canonical implementer gpt-5.6-sol/medium; ACK r3 required; same minimal bounded context<=35k tokens, output<=400words plus artifact; usage null, depth1, no redelegation. Own frontend/** and synthetic scripts/ui-preview-server.mjs only; may write frontend-correction-r3-result.md and raw evidence logs. Not alone; preserve other source/documents. No backend, deployments, dependencies, harness, Git, browser, PR or release edits. Parent owns orchestration/architecture/docs/Git/browser and acceptance.
+
+## Binding correction
+
+1. SV-FE-006: recovery must verify the EXACT active Calendar read definition: user zone, anchor+mode, explicit after/before override, workspace config, from/to, size100 and all required pages. Do not reconstruct a generic Seoul window in parent. Share the actual query specification/traversal from the Calendar implementation with recovery. Preserve local zone/range/search state across denial; retain the Calendar controller when protected rows are hidden, or lift the state without resetting it. Failures at any later page401/403/404 keep results hidden and ALL open mutations locked. Fresh project role+metadata+exact active target success is the only unlock boundary; populate the matching cache identity only after complete success.
+2. UPUX-FE-003: share ONE common instant-preservation and time-mutation recovery implementation between Calendar and workspace List. Remove the simplified independent behavior. An unchanged local field retains its original full UTC instant, including seconds/milliseconds. Changed fields use existing validated local-time conversion/DST handling. Uncertain network/500 save follows existing main latest-role/detail/outcome recovery and locking, resolves already-committed outcome without replay, and forbids re-saving stale/unknown state until explicit fresh re-entry. Keep current409/dirtyContinue/Discard/context, creator/cancelled/viewer rights and broad invalidations.
+3. SV-FE-013: focused tests MUST assert request bodies and transitions, not only existence: nondefault zone plus explicit range (including later-page denial and failed/successful recovery matching exact from/to/config/size/page, preserved controls/URL and no transient writes); untouched subminute field exactness; uncertain save committed/uncommitted outcome, no replay until resolved and role loss; filter SAVE from URLpage2=>page0; dashboard clean external refetch followed by write uses new version; dirty conflict/cancel next write uses latest version; property AND dashboard failed/successful fresh recovery keeps/enables correct writes. Preserve317 prior passing tests and restored round5 behaviors. Reuse existing original main integration tests as shared-flow evidence.
+
+## Evidence and acceptance
+
+- Run focused new regression tests iteratively, full suite once after behavioral batch, typecheck/build, node fixture check, diff check. Supported local runtime native configloader+threads. Durable commands/cwd/exits/counts, untouched backend proof, actual helper reuse and criterion mapping in frontend-correction-r3-result.md.
+- Source freeze for parent browser; keep scoped settings/properties viewport fit, popup560, 44pxmobiletargets, month/week and all current plan/calendar behavior.
+- Independent Astra/high task-review PASS and exact final-SHA CI/browser, release-manager and independent release-review required before merge. Root never implements code; no self-verdict.
+- If blocked or further acceptance failure, return exact evidence to parent. No worker-authorized additional batches or model changes.
+
+## Concurrent CI/browser qualification evidence
+- Prior5d725fa CI36672742781 completed failure: frontend316/317, original form invalid-submit focus assertion project-schedule-redesign.test.tsx135. Raw .tmp/ci-36672742781-failed.log. Parent assigns diagnosis and preservation of real async focus transition within this running r3 batch; no assertion removal/skip/unchanged rerun.
+- Immutable production-bundle responsive geometry at1440/1280/768/390/320 in evidence/responsive-5d725fa.json passes page/body horizontal overflow bounds, mobile44pxbuttons and48pxcheckboxlabels. Reuse only unchanged structure/style, final affected flows required.
+- Property creation type lacked accessible name; parent assigns persistent visible labels for new name/type inside accepted UI-plan accessibility criteria. Preserve field order and reflow; no new design.

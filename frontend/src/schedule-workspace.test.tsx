@@ -245,6 +245,7 @@ test("dashboard clean refetch adopts server values while dirty conflict preserve
 
   await user.click(screen.getByRole("button", { name: "속성 저장" }));
   expect(await screen.findByRole("alert")).toHaveTextContent("입력한 초안을 유지했습니다");
+  expect(valueWrites[0]).toEqual({ rowVersion: 4, values: { notes: "mine" } });
   expect(screen.getByRole("button", { name: "최신 값 다시 불러오기" })).toBeInTheDocument();
   expect(input).toHaveValue("mine");
   await user.click(screen.getByRole("button", { name: "취소" }));

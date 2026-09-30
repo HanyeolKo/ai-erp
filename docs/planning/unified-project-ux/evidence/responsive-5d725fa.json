@@ -1,0 +1,705 @@
+{
+  "date": "2026-09-30",
+  "source": "5d725fa1393f1c76111c1f0a712c7da1e30b670e",
+  "mode": "synthetic-local-immutable-production-build",
+  "cssSha256": "1AD413A2661A801C8C9CE8CE0AC48AE182BA747FD3820F96577FAC3BA769B248",
+  "jsSha256": "0553E400530C089CEF07FCFFB2BEF29A348C873970D59769C4BA3DF12193E888",
+  "rows": [
+    {
+      "width": 1440,
+      "source": "5d725fa immutable production bundle",
+      "bundleCss": "1AD413A2661A801C8C9CE8CE0AC48AE182BA747FD3820F96577FAC3BA769B248",
+      "보기 설정": {
+        "client": 1440,
+        "scroll": 1440,
+        "dialog": [
+          {
+            "width": 560,
+            "left": 440,
+            "right": 1000
+          }
+        ],
+        "body": [
+          {
+            "client": 543,
+            "scroll": 543
+          }
+        ],
+        "close": [
+          {
+            "width": 40,
+            "height": 41.59375
+          }
+        ]
+      },
+      "속성": {
+        "client": 1440,
+        "scroll": 1440,
+        "dialog": [
+          {
+            "width": 560,
+            "left": 440,
+            "right": 1000
+          }
+        ],
+        "body": [
+          {
+            "client": 543,
+            "scroll": 543
+          }
+        ],
+        "close": [
+          {
+            "width": 40,
+            "height": 41.59375
+          }
+        ]
+      },
+      "알림": {
+        "client": 1440,
+        "scroll": 1440,
+        "dialog": [
+          {
+            "width": 560,
+            "left": 440,
+            "right": 1000
+          }
+        ],
+        "body": [
+          {
+            "client": 558,
+            "scroll": 558
+          }
+        ],
+        "close": [
+          {
+            "width": 40,
+            "height": 41.59375
+          }
+        ]
+      }
+    },
+    {
+      "width": 1280,
+      "source": "5d725fa immutable production bundle",
+      "보기 설정": {
+        "client": 1280,
+        "scroll": 1280,
+        "dialog": [
+          {
+            "width": 560,
+            "left": 360,
+            "right": 920
+          }
+        ],
+        "body": [
+          {
+            "client": 543,
+            "scroll": 543
+          }
+        ],
+        "close": [
+          {
+            "width": 40,
+            "height": 41.59375
+          }
+        ]
+      },
+      "속성": {
+        "client": 1280,
+        "scroll": 1280,
+        "dialog": [
+          {
+            "width": 560,
+            "left": 360,
+            "right": 920
+          }
+        ],
+        "body": [
+          {
+            "client": 543,
+            "scroll": 543
+          }
+        ],
+        "close": [
+          {
+            "width": 40,
+            "height": 41.59375
+          }
+        ]
+      },
+      "알림": {
+        "client": 1280,
+        "scroll": 1280,
+        "dialog": [
+          {
+            "width": 560,
+            "left": 360,
+            "right": 920
+          }
+        ],
+        "body": [
+          {
+            "client": 558,
+            "scroll": 558
+          }
+        ],
+        "close": [
+          {
+            "width": 40,
+            "height": 41.59375
+          }
+        ]
+      }
+    },
+    {
+      "width": 768,
+      "source": "5d725fa immutable production bundle",
+      "보기 설정": {
+        "client": 768,
+        "scroll": 768,
+        "dialog": [
+          {
+            "width": 560,
+            "left": 104,
+            "right": 664
+          }
+        ],
+        "body": [
+          {
+            "client": 543,
+            "scroll": 543
+          }
+        ],
+        "close": [
+          {
+            "width": 40,
+            "height": 41.59375
+          }
+        ]
+      },
+      "속성": {
+        "client": 768,
+        "scroll": 768,
+        "dialog": [
+          {
+            "width": 560,
+            "left": 104,
+            "right": 664
+          }
+        ],
+        "body": [
+          {
+            "client": 543,
+            "scroll": 543
+          }
+        ],
+        "close": [
+          {
+            "width": 40,
+            "height": 41.59375
+          }
+        ]
+      },
+      "알림": {
+        "client": 768,
+        "scroll": 768,
+        "dialog": [
+          {
+            "width": 560,
+            "left": 104,
+            "right": 664
+          }
+        ],
+        "body": [
+          {
+            "client": 558,
+            "scroll": 558
+          }
+        ],
+        "close": [
+          {
+            "width": 40,
+            "height": 41.59375
+          }
+        ]
+      }
+    },
+    {
+      "width": 390,
+      "source": "5d725fa immutable production bundle",
+      "보기 설정": {
+        "client": 390,
+        "scroll": 390,
+        "dialog": [
+          {
+            "width": 354,
+            "left": 18,
+            "right": 372
+          }
+        ],
+        "body": [
+          {
+            "client": 352,
+            "scroll": 352
+          }
+        ],
+        "buttons": [
+          {
+            "text": "닫기",
+            "width": 44,
+            "height": 44
+          },
+          {
+            "text": "필터 추가",
+            "width": 290,
+            "height": 44
+          },
+          {
+            "text": "정렬 추가",
+            "width": 290,
+            "height": 44
+          },
+          {
+            "text": "취소",
+            "width": 64,
+            "height": 44
+          },
+          {
+            "text": "보기 저장",
+            "width": 98.140625,
+            "height": 44
+          }
+        ],
+        "checkboxTargets": [
+          {
+            "text": "제목",
+            "width": 290,
+            "height": 48
+          },
+          {
+            "text": "시작",
+            "width": 290,
+            "height": 48
+          },
+          {
+            "text": "종료",
+            "width": 290,
+            "height": 48
+          },
+          {
+            "text": "상태",
+            "width": 290,
+            "height": 48
+          },
+          {
+            "text": "작성자",
+            "width": 290,
+            "height": 48
+          },
+          {
+            "text": "Priority",
+            "width": 290,
+            "height": 48
+          },
+          {
+            "text": "Notes",
+            "width": 290,
+            "height": 48
+          }
+        ]
+      },
+      "속성": {
+        "client": 390,
+        "scroll": 390,
+        "dialog": [
+          {
+            "width": 354,
+            "left": 18,
+            "right": 372
+          }
+        ],
+        "body": [
+          {
+            "client": 352,
+            "scroll": 352
+          }
+        ],
+        "buttons": [
+          {
+            "text": "닫기",
+            "width": 44,
+            "height": 44
+          },
+          {
+            "text": "저장",
+            "width": 286,
+            "height": 44
+          },
+          {
+            "text": "위로",
+            "width": 256,
+            "height": 44
+          },
+          {
+            "text": "아래로",
+            "width": 256,
+            "height": 44
+          },
+          {
+            "text": "위로",
+            "width": 256,
+            "height": 44
+          },
+          {
+            "text": "아래로",
+            "width": 256,
+            "height": 44
+          },
+          {
+            "text": "위로",
+            "width": 256,
+            "height": 44
+          },
+          {
+            "text": "아래로",
+            "width": 256,
+            "height": 44
+          },
+          {
+            "text": "옵션 추가",
+            "width": 256,
+            "height": 44
+          },
+          {
+            "text": "옵션 저장",
+            "width": 256,
+            "height": 44
+          },
+          {
+            "text": "저장",
+            "width": 286,
+            "height": 44
+          },
+          {
+            "text": "속성 추가",
+            "width": 286,
+            "height": 44
+          },
+          {
+            "text": "닫기",
+            "width": 286,
+            "height": 44
+          }
+        ],
+        "checkboxTargets": [
+          {
+            "text": "보관됨",
+            "width": 286,
+            "height": 48
+          },
+          {
+            "text": "보관됨",
+            "width": 256,
+            "height": 48
+          },
+          {
+            "text": "보관됨",
+            "width": 256,
+            "height": 48
+          },
+          {
+            "text": "보관됨",
+            "width": 256,
+            "height": 48
+          },
+          {
+            "text": "보관됨",
+            "width": 286,
+            "height": 48
+          }
+        ]
+      },
+      "알림": {
+        "client": 390,
+        "scroll": 390,
+        "dialog": [
+          {
+            "width": 354,
+            "left": 18,
+            "right": 372
+          }
+        ],
+        "body": [
+          {
+            "client": 352,
+            "scroll": 352
+          }
+        ],
+        "buttons": [
+          {
+            "text": "닫기",
+            "width": 44,
+            "height": 44
+          },
+          {
+            "text": "읽음 처리",
+            "width": 320,
+            "height": 44
+          },
+          {
+            "text": "이전",
+            "width": 64,
+            "height": 44
+          },
+          {
+            "text": "다음",
+            "width": 64,
+            "height": 44
+          }
+        ],
+        "checkboxTargets": []
+      }
+    },
+    {
+      "width": 320,
+      "source": "5d725fa immutable production bundle",
+      "보기 설정": {
+        "client": 320,
+        "scroll": 320,
+        "dialog": [
+          {
+            "width": 284,
+            "left": 18,
+            "right": 302
+          }
+        ],
+        "body": [
+          {
+            "client": 282,
+            "scroll": 282
+          }
+        ],
+        "buttons": [
+          {
+            "text": "닫기",
+            "width": 44,
+            "height": 44
+          },
+          {
+            "text": "필터 추가",
+            "width": 220,
+            "height": 44
+          },
+          {
+            "text": "정렬 추가",
+            "width": 220,
+            "height": 44
+          },
+          {
+            "text": "취소",
+            "width": 64,
+            "height": 44
+          },
+          {
+            "text": "보기 저장",
+            "width": 98.140625,
+            "height": 44
+          }
+        ],
+        "checkboxTargets": [
+          {
+            "text": "제목",
+            "width": 220,
+            "height": 48
+          },
+          {
+            "text": "시작",
+            "width": 220,
+            "height": 48
+          },
+          {
+            "text": "종료",
+            "width": 220,
+            "height": 48
+          },
+          {
+            "text": "상태",
+            "width": 220,
+            "height": 48
+          },
+          {
+            "text": "작성자",
+            "width": 220,
+            "height": 48
+          },
+          {
+            "text": "Priority",
+            "width": 220,
+            "height": 48
+          },
+          {
+            "text": "Notes",
+            "width": 220,
+            "height": 48
+          }
+        ]
+      },
+      "속성": {
+        "client": 320,
+        "scroll": 320,
+        "dialog": [
+          {
+            "width": 284,
+            "left": 18,
+            "right": 302
+          }
+        ],
+        "body": [
+          {
+            "client": 282,
+            "scroll": 282
+          }
+        ],
+        "buttons": [
+          {
+            "text": "닫기",
+            "width": 44,
+            "height": 44
+          },
+          {
+            "text": "저장",
+            "width": 216,
+            "height": 44
+          },
+          {
+            "text": "위로",
+            "width": 186,
+            "height": 44
+          },
+          {
+            "text": "아래로",
+            "width": 186,
+            "height": 44
+          },
+          {
+            "text": "위로",
+            "width": 186,
+            "height": 44
+          },
+          {
+            "text": "아래로",
+            "width": 186,
+            "height": 44
+          },
+          {
+            "text": "위로",
+            "width": 186,
+            "height": 44
+          },
+          {
+            "text": "아래로",
+            "width": 186,
+            "height": 44
+          },
+          {
+            "text": "옵션 추가",
+            "width": 186,
+            "height": 44
+          },
+          {
+            "text": "옵션 저장",
+            "width": 186,
+            "height": 44
+          },
+          {
+            "text": "저장",
+            "width": 216,
+            "height": 44
+          },
+          {
+            "text": "속성 추가",
+            "width": 216,
+            "height": 44
+          },
+          {
+            "text": "닫기",
+            "width": 216,
+            "height": 44
+          }
+        ],
+        "checkboxTargets": [
+          {
+            "text": "보관됨",
+            "width": 216,
+            "height": 48
+          },
+          {
+            "text": "보관됨",
+            "width": 186,
+            "height": 48
+          },
+          {
+            "text": "보관됨",
+            "width": 186,
+            "height": 48
+          },
+          {
+            "text": "보관됨",
+            "width": 186,
+            "height": 48
+          },
+          {
+            "text": "보관됨",
+            "width": 216,
+            "height": 48
+          }
+        ]
+      },
+      "알림": {
+        "client": 320,
+        "scroll": 320,
+        "dialog": [
+          {
+            "width": 284,
+            "left": 18,
+            "right": 302
+          }
+        ],
+        "body": [
+          {
+            "client": 282,
+            "scroll": 282
+          }
+        ],
+        "buttons": [
+          {
+            "text": "닫기",
+            "width": 44,
+            "height": 44
+          },
+          {
+            "text": "읽음 처리",
+            "width": 250,
+            "height": 44
+          },
+          {
+            "text": "이전",
+            "width": 64,
+            "height": 44
+          },
+          {
+            "text": "다음",
+            "width": 64,
+            "height": 44
+          }
+        ],
+        "checkboxTargets": []
+      }
+    }
+  ],
+  "scope": "Settings/properties/popup responsive geometry only; source task remains CHANGES_REQUESTED on3otherstableIDs. Reuse for unchanged CSS/structure only; final affected behavior/source checks required.",
+  "nativeZoom": "not-run",
+  "keyboard": "Escape used to close each Dialog; no complete keyboard-only operation claim.",
+  "limitation": "Property creation type lacked accessible name in this source; parent assigned persistent-label qualification inside running r3 batch."
+}
