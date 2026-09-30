@@ -87,7 +87,7 @@ type AcceptResult = ResponseOf<
 type RejectResult = ResponseOf<
   paths["/api/v1/invitations/{token}/reject"]["post"]
 >;
-type Notifications = ResponseOf<paths["/api/v1/notifications"]["get"]>;
+export type Notifications = ResponseOf<paths["/api/v1/notifications"]["get"]>;
 type ReadResult = ResponseOf<paths["/api/v1/notifications/{id}/read"]["post"]>;
 export type Members = ResponseOf<
   paths["/api/v1/projects/{projectId}/members"]["get"]
@@ -125,81 +125,27 @@ export type ProjectCalendar = { status: "NOT_BOUND" | "BOUND" | "REAUTH_REQUIRED
 export type PlanKind = "EPIC" | "TOPIC" | "TASK" | "MILESTONE";
 export type PlanState = "BACKLOG" | "READY" | "IN_PROGRESS" | "BLOCKED" | "DONE" | "CANCELLED";
 export type ForecastState = "EMPTY" | "UNDATED" | "INCOMPLETE" | "COMPLETE";
-export type PlanSummary = {
-  taskCount: number;
-  doneCount: number;
-  blockedCount: number;
-  overdueCount: number;
-  unplannedCount: number;
-  unassignedCount: number;
-  progressPercent: number | null;
-  forecastStart: string | null;
-  forecastEnd: string | null;
-  forecastState: ForecastState;
-  outsideTarget: boolean;
-};
-export type PlanItem = {
-  id: string;
-  projectId: string;
-  parentId: string | null;
-  kind: PlanKind;
-  title: string;
-  description: string | null;
-  assigneeId: string | null;
-  assigneeName?: string | null;
-  state: PlanState;
-  targetStart: string | null;
-  targetEnd: string | null;
-  deadline: string | null;
-  sortOrder: number;
-  labels: string[];
-  rowVersion: number;
-  createdBy?: string;
-  updatedAt?: string;
-  predecessorIds: string[];
-  successorIds: string[];
-  blockerIds: string[];
-  summary: PlanSummary;
-};
-export type PlanSnapshot = {
-  projectId: string;
-  rowVersion: number;
-  targetStart: string | null;
-  targetEnd: string | null;
-  asOfDate: string;
-  items: PlanItem[];
-  matchedIds: string[];
-  summary: PlanSummary;
-  complete: boolean;
-  totalCount: number;
-};
-export type PlanItemWrite = {
-  requestId?: string;
-  rowVersion?: number;
-  parentId: string | null;
-  kind: PlanKind;
-  title: string;
-  description: string;
-  assigneeId: string | null;
-  state: PlanState;
-  targetStart: string | null;
-  targetEnd: string | null;
-  deadline: string | null;
-  sortOrder: number;
-  labels: string[];
-  predecessorIds: string[];
-  reason?: string;
-};
-export type PlanHistoryEntry = {
-  id: string;
-  actorId: string;
-  occurredAt: string;
-  version: number;
-  reason?: string | null;
-  before: Partial<PlanItem> | null;
-  after: Partial<PlanItem> | null;
-};
+export type PlanSummary = { taskCount: number; doneCount: number; blockedCount: number; overdueCount: number; unplannedCount: number; unassignedCount: number; progressPercent: number | null; forecastStart: string | null; forecastEnd: string | null; forecastState: ForecastState; outsideTarget: boolean };
+export type PlanItem = { id: string; projectId: string; parentId: string | null; kind: PlanKind; title: string; description: string | null; assigneeId: string | null; assigneeName?: string | null; state: PlanState; targetStart: string | null; targetEnd: string | null; deadline: string | null; sortOrder: number; labels: string[]; rowVersion: number; createdBy?: string; updatedAt?: string; predecessorIds: string[]; successorIds: string[]; blockerIds: string[]; summary: PlanSummary };
+export type PlanSnapshot = { projectId: string; rowVersion: number; targetStart: string | null; targetEnd: string | null; asOfDate: string; items: PlanItem[]; matchedIds: string[]; summary: PlanSummary; complete: boolean; totalCount: number };
+export type PlanItemWrite = { requestId?: string; rowVersion?: number; parentId: string | null; kind: PlanKind; title: string; description: string; assigneeId: string | null; state: PlanState; targetStart: string | null; targetEnd: string | null; deadline: string | null; sortOrder: number; labels: string[]; predecessorIds: string[]; reason?: string };
+export type PlanHistoryEntry = { id: string; actorId: string; occurredAt: string; version: number; reason?: string | null; before: Partial<PlanItem> | null; after: Partial<PlanItem> | null };
 export type PlanHistory = { entries: PlanHistoryEntry[]; hasNext: boolean };
+export type PropertyType = "TEXT" | "NUMBER" | "CHECKBOX" | "DATE" | "SINGLE_SELECT";
+export type PropertyOption = { id: string; label: string; color: "gray" | "blue" | "green" | "amber" | "red" | "purple" | "pink" | "teal"; archived: boolean };
+export type ScheduleProperty = { id: string; name: string; type: PropertyType; position: number; archived: boolean; rowVersion: number; options: PropertyOption[]; valueCount?: number };
+export type WorkspaceField = "title" | "startsAt" | "endsAt" | "status" | "createdBy" | `property:${string}`;
+export type WorkspaceFilter = { field: WorkspaceField; operator: "EQ" | "NE" | "CONTAINS" | "GT" | "GTE" | "LT" | "LTE" | "IS_EMPTY" | "IS_NOT_EMPTY"; value?: string | number | boolean | null };
+export type WorkspaceSort = { field: WorkspaceField; direction: "ASC" | "DESC" };
+export type WorkspaceConfig = { type: "CALENDAR" | "CARDS" | "LIST"; filters: WorkspaceFilter[]; sorts: WorkspaceSort[]; groupBy: string | null; legendBy: string | null; visibleFields: WorkspaceField[] };
+export type WorkspaceView = { id: string; name: string; scope: "BUILTIN" | "PERSONAL" | "SHARED"; ownerId: string | null; rowVersion: number; archived: boolean; config: WorkspaceConfig };
+export type ScheduleWorkspaceRecord = { schedule: Schedule; values: Record<string, string | number | boolean | null> };
+export type WorkspaceGroup = { optionId: string | null; label: string; color: PropertyOption["color"] | null; count: number };
+export type WorkspaceQueryResult = { records: ScheduleWorkspaceRecord[]; total: number; hasMore: boolean; page: number; size: number; groups: WorkspaceGroup[]; queriedAt: string };
+export type ScheduleWorkspace = { properties: ScheduleProperty[]; views: WorkspaceView[]; dashboardViewId: string | null; dashboardRowVersion: number };
+export type PropertyWrite = { name: string; type?: PropertyType; position?: number; archived?: boolean; rowVersion?: number; options?: Array<{ id?: string; label: string; color: PropertyOption["color"]; archived?: boolean }> };
+export type ViewWrite = { name: string; scope: "PERSONAL" | "SHARED"; config: WorkspaceConfig; rowVersion?: number; archived?: boolean };
+export type WorkspaceRecordWrite = { schedule: CreateBody | EditBody; values?: Record<string, string | number | boolean | null> };
 type RetryResult = ResponseOf<
   paths["/api/v1/projects/{projectId}/schedules/{id}/calendar/retry"]["post"]
 >;
@@ -414,4 +360,15 @@ export const api = {
     mutate<PlanItem, PlanItemWrite>(`${base(p)}/plan/items/${segment(id)}`, "PATCH", body),
   planHistory: (p: string, id: string, page = 0, limit = 50) =>
     read<PlanHistory>(`${base(p)}/plan/items/${segment(id)}/history?page=${page}&limit=${limit}`),
+  workspace: (p: string) => read<ScheduleWorkspace>(`${base(p)}/schedule-workspace`),
+  workspacePropertyCreate: (p: string, body: PropertyWrite) => mutate<ScheduleProperty, PropertyWrite>(`${base(p)}/schedule-workspace/properties`, "POST", body),
+  workspacePropertyEdit: (p: string, propertyId: string, body: PropertyWrite) => mutate<ScheduleProperty, PropertyWrite>(`${base(p)}/schedule-workspace/properties/${segment(propertyId)}`, "PATCH", body),
+  workspaceViewCreate: (p: string, body: ViewWrite) => mutate<WorkspaceView, ViewWrite>(`${base(p)}/schedule-workspace/views`, "POST", body),
+  workspaceViewEdit: (p: string, viewId: string, body: ViewWrite) => mutate<WorkspaceView, ViewWrite>(`${base(p)}/schedule-workspace/views/${segment(viewId)}`, "PATCH", body),
+  workspaceDashboard: (p: string, body: { viewId: string | null; rowVersion: number }) => mutate<{ dashboardViewId: string | null; dashboardRowVersion: number }, typeof body>(`${base(p)}/schedule-workspace/dashboard`, "PATCH", body),
+  workspaceQuery: (p: string, body: { config: WorkspaceConfig; from?: string; to?: string; page?: number; size?: number }) => mutate<WorkspaceQueryResult, typeof body>(`${base(p)}/schedule-workspace/query`, "POST", body),
+  workspaceRecord: (p: string, s: string) => read<ScheduleWorkspaceRecord>(`${base(p)}/schedule-workspace/records/${segment(s)}`),
+  workspaceRecordCreate: (p: string, body: WorkspaceRecordWrite) => mutate<ScheduleWorkspaceRecord, WorkspaceRecordWrite>(`${base(p)}/schedule-workspace/records`, "POST", body),
+  workspaceRecordEdit: (p: string, s: string, body: WorkspaceRecordWrite) => mutate<ScheduleWorkspaceRecord, WorkspaceRecordWrite>(`${base(p)}/schedule-workspace/records/${segment(s)}`, "PATCH", body),
+  workspaceValuesEdit: (p: string, s: string, body: { rowVersion: number; values: Record<string, string | number | boolean | null> }) => mutate<ScheduleWorkspaceRecord, typeof body>(`${base(p)}/schedule-workspace/records/${segment(s)}/values`, "PATCH", body),
 };

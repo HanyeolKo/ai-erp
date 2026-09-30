@@ -1,0 +1,8 @@
+# Backend integrated CI evidence
+- Source SHA:47dac12ff50bf3bd3e696963c40de7c1cc30ad1e; branch codex/unified-project-ux; source backend remains unchanged while frontend implementation proceeds.
+- Run https://github.com/HanyeolKo/ai-erp/actions/runs/36523924817 completed SUCCESS2026-09-29T05:14:24Z. harness and verify both success, including deployment-contract/Caddy, gradle clean test integrationTest openapi3 bootJar, APIgeneration, baseline frontendtests/typecheck/build and Dockerbuild.
+- Downloaded verification-artifacts to C:/Users/USER/AppData/Local/Temp/unified-project-ux-ci-36523924817. HTML report counters: test159/failures0/ignored0; openapiContractTest8/0/0; integrationTest52/0/0. Total219checks; includes ProjectPlanPostgresIntegrationTest, ScheduleWorkspacePostgresIntegrationTest and V10ScheduleWorkspaceMigrationIntegrationTest.
+- Source report paths reports/tests/{test,openapiContractTest,integrationTest}/index.html and matching classes/*.html; generated api-spec/openapi3.yaml. This is actual PostgreSQL Testcontainers execution, not local compilation or synthetic UI evidence.
+- Baseline frontend in this commit is main8991 code; new frontend candidate is still uncommitted and not certified by this run. Final merged implementation requires new frontend suite/browser evidence and exact final SHA CI.
+- Independent backend task verdict pending allocation/final integrated review; parent records evidence only, not an independent PASS.
+- GitHub repo permissions read/push/admin verified; main default branch, merge/squash/rebase allowed. Existing production runner ai-erp-prod-home-server online/idle on read2026-09-29; no deployment dispatched by this observation.

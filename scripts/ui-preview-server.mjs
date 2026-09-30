@@ -190,6 +190,13 @@ const makeState = () => {
         invite: { ...baseInvitation },
         membersByProject: { [projectId]: baseMembers.map((member) => ({ ...member })) },
         schedulesByProject: { [projectId]: [ { ...scheduleTemplate }, { ...secondarySchedule } ] },
+        scheduleWorkspaceByProject: { [projectId]: { properties: [
+            { id: "prop-priority", name: "Priority", type: "SINGLE_SELECT", position: 0, archived: false, rowVersion: 1, options: [
+                { id: "opt-high", label: "High", color: "red", archived: false }, { id: "opt-normal", label: "Normal", color: "blue", archived: false }, { id: "opt-low", label: "Low", color: "gray", archived: false },
+            ] },
+            { id: "prop-notes", name: "Notes", type: "TEXT", position: 1, archived: false, rowVersion: 1, options: [] },
+        ], views: [], dashboardViewId: null, dashboardRowVersion: 0 } },
+        scheduleValuesByProject: { [projectId]: { s1: { "prop-priority": "opt-high", "prop-notes": "주간 운영 검토" }, s2: { "prop-priority": "opt-normal", "prop-notes": null } } },
         notifications: [...baseNotifications],
         creationOptions: [{ id: groupId, name: "서울 운영 그룹", canCreate: scenario !== "viewer", reason: scenario === "viewer" ? "프로젝트 생성 권한이 없습니다." : null }],
         projectFilesByProject: { [projectId]: scenario === "empty" ? [] : baseProjectFiles.map((file) => ({ ...file })) },
@@ -244,7 +251,6 @@ const stateProjectRole = (project) => scenario === "viewer" ? "VIEWER" : "MANAGE
 
 const getProject = (id) => state.projects.find((project) => project.id === id);
 const getSchedules = (id) => state.schedulesByProject[id] ?? [];
-const getMembers = (id) => state.membersByProject[id] ?? [];
 const getPlan = (id) => state.planByProject[id] ?? [];
 const planSnapshot = (id, url) => {
     const all = getPlan(id);
@@ -267,6 +273,42 @@ const planSnapshot = (id, url) => {
     });
     return { projectId: id, rowVersion: state.planVersions[id] ?? 0, targetStart: state.planTargets[id]?.targetStart ?? null, targetEnd: state.planTargets[id]?.targetEnd ?? null, asOfDate: "2026-09-10", items: all, matchedIds: matches.map((item) => item.id), summary: planSummary(all), complete: true, totalCount: all.length };
 };
+const builtinWorkspaceViews = () => [
+    { id: "builtin-calendar", name: "Calendar", scope: "BUILTIN", ownerId: null, rowVersion: 0, archived: false, config: { type: "CALENDAR", filters: [], sorts: [{ field: "startsAt", direction: "ASC" }], groupBy: null, legendBy: null, visibleFields: ["title", "startsAt", "endsAt", "status"] } },
+    { id: "builtin-cards", name: "Cards", scope: "BUILTIN", ownerId: null, rowVersion: 0, archived: false, config: { type: "CARDS", filters: [], sorts: [], groupBy: null, legendBy: null, visibleFields: ["title", "startsAt", "endsAt", "status"] } },
+    { id: "builtin-list", name: "List", scope: "BUILTIN", ownerId: null, rowVersion: 0, archived: false, config: { type: "LIST", filters: [], sorts: [], groupBy: null, legendBy: null, visibleFields: ["title", "startsAt", "endsAt", "status"] } },
+];
+const workspaceFor = (id) => state.scheduleWorkspaceByProject[id] ?? { properties: [], views: [], dashboardViewId: null, dashboardRowVersion: 0 };
+const valuesFor = (id) => state.scheduleValuesByProject[id] ?? {};
+const propertyForField = (id, field) => field?.startsWith("property:") ? workspaceFor(id).properties.find(property => property.id === field.slice(9)) : undefined;
+const matchesWorkspaceFilter = (id, schedule, values, filter) => {
+    const property = propertyForField(id, filter.field);
+    const actual = property ? values[property.id] : schedule[filter.field];
+    if (filter.operator === "IS_EMPTY") return actual === null || actual === undefined || actual === "";
+    if (filter.operator === "IS_NOT_EMPTY") return actual !== null && actual !== undefined && actual !== "";
+    if (actual === null || actual === undefined) return filter.operator === "NE";
+    const expected = filter.value;
+    if (filter.operator === "EQ") return actual === expected;
+    if (filter.operator === "NE") return actual !== expected;
+    if (filter.operator === "CONTAINS") return String(actual).toLowerCase().includes(String(expected ?? "").toLowerCase());
+    if (filter.operator === "GT") return actual > expected;
+    if (filter.operator === "GTE") return actual >= expected;
+    if (filter.operator === "LT") return actual < expected;
+    if (filter.operator === "LTE") return actual <= expected;
+    return true;
+};
+const queryWorkspace = (id, body) => {
+    const config = body?.config ?? builtinWorkspaceViews()[1].config;
+    const values = valuesFor(id);
+    let records = getSchedules(id).map(schedule => ({ schedule: { ...schedule }, values: { ...(values[schedule.id] ?? {}) } })).filter(record => (config.filters ?? []).every(filter => matchesWorkspaceFilter(id, record.schedule, record.values, filter)));
+    if (body?.from && body?.to) records = records.filter(record => record.schedule.endsAt > body.from && record.schedule.startsAt < body.to);
+    const valueAt = (record, field) => field?.startsWith("property:") ? record.values[field.slice(9)] : record.schedule[field];
+    for (const sort of [...(config.sorts ?? [])].reverse()) records.sort((a, b) => { const av = valueAt(a, sort.field); const bv = valueAt(b, sort.field); if (av === bv) return a.schedule.id.localeCompare(b.schedule.id); if (av === null || av === undefined) return 1; if (bv === null || bv === undefined) return -1; const result = av < bv ? -1 : 1; return sort.direction === "DESC" ? -result : result; });
+    const groups = config.groupBy ? [...new Set(records.map(record => valueAt(record, `property:${config.groupBy}`) ?? null))].map(optionId => { const property = workspaceFor(id).properties.find(item => item.id === config.groupBy); const option = property?.options.find(item => item.id === optionId); return { optionId, label: option?.label ?? "Unset", color: option?.color ?? null, count: records.filter(record => (valueAt(record, `property:${config.groupBy}`) ?? null) === optionId).length }; }) : [];
+    const page = Math.max(0, Number(body?.page ?? 0)); const size = Math.min(100, Math.max(1, Number(body?.size ?? 50))); const pageRecords = records.slice(page * size, (page + 1) * size);
+    return { records: pageRecords, total: records.length, hasMore: (page + 1) * size < records.length, page, size, groups, queriedAt: nowIso() };
+};
+const getMembers = (id) => state.membersByProject[id] ?? [];
 const getProjection = (id, sid) => {
     if (id !== projectId)
         return undefined;
@@ -443,6 +485,43 @@ const routeRequest = async (request, body) => {
         if (!item) return notFound(path);
         if (body?.rowVersion !== item.rowVersion) return problem("CONFLICT", 409);
         const before = { ...item }; Object.assign(item, body); item.description = body?.description ?? null; item.rowVersion += 1; item.updatedAt = nowIso(); const entry = { id: `history-${Date.now()}`, actorId: userId, occurredAt: nowIso(), version: item.rowVersion, reason: body?.reason ?? null, before, after: { ...item } }; state.planHistory[itemId] = [...(state.planHistory[itemId] ?? []), entry]; return ok(item);
+    }
+    if (method === "GET" && path === `/api/v1/projects/${projectId}/schedule-workspace`)
+        return ok({ ...workspaceFor(projectId), properties: workspaceFor(projectId).properties.map(property => ({ ...property, options: property.options.map(option => ({ ...option })) })), views: [...builtinWorkspaceViews(), ...workspaceFor(projectId).views.filter(view => !view.archived && (view.scope === "SHARED" || view.ownerId === userId))] });
+    if (method === "POST" && path === `/api/v1/projects/${projectId}/schedule-workspace/query`)
+        return ok(queryWorkspace(projectId, body));
+    if (method === "PATCH" && path === `/api/v1/projects/${projectId}/schedule-workspace/dashboard`) {
+        if (scenario === "viewer") return problem("FORBIDDEN", 403);
+        const workspace = workspaceFor(projectId);
+        if (Number(body?.rowVersion ?? -1) !== workspace.dashboardRowVersion) return problem("STALE_VERSION", 409);
+        if (body?.viewId && ![...builtinWorkspaceViews(), ...workspace.views].some(view => view.id === body.viewId && !view.archived && (view.scope === "BUILTIN" || view.scope === "SHARED"))) return problem("INVALID_VIEW", 400);
+        workspace.dashboardViewId = body?.viewId ?? null; workspace.dashboardRowVersion += 1; return ok({ dashboardViewId: workspace.dashboardViewId, dashboardRowVersion: workspace.dashboardRowVersion });
+    }
+    if (method === "POST" && path === `/api/v1/projects/${projectId}/schedule-workspace/properties`) {
+        if (scenario === "viewer") return problem("FORBIDDEN", 403);
+        const workspace = workspaceFor(projectId); if (workspace.properties.length >= 50) return problem("PROPERTY_CAP", 400); const property = { id: `prop-${Date.now().toString(36)}`, name: String(body?.name ?? "New property"), type: body?.type ?? "TEXT", position: body?.position ?? workspace.properties.length, archived: false, rowVersion: 1, options: body?.options ?? [] }; workspace.properties.push(property); return ok(property);
+    }
+    if (method === "PATCH" && path.startsWith(`/api/v1/projects/${projectId}/schedule-workspace/properties/`)) {
+        if (scenario === "viewer") return problem("FORBIDDEN", 403);
+        const propertyId = path.split("/").at(-1); const workspace = workspaceFor(projectId); const property = workspace.properties.find(item => item.id === propertyId); if (!property) return notFound(path); if (Number(body?.rowVersion ?? -1) !== property.rowVersion) return problem("STALE_VERSION", 409); Object.assign(property, { name: body?.name ?? property.name, position: body?.position ?? property.position, archived: body?.archived ?? property.archived }); if (Array.isArray(body?.options)) property.options = body.options.map((option, index) => ({ id: option.id ?? `option-${propertyId}-${index + 1}`, label: String(option.label ?? "새 옵션"), color: option.color ?? "gray", archived: Boolean(option.archived) })); property.rowVersion += 1; return ok({ ...property, options: property.options.map(option => ({ ...option })) });
+    }
+    if (method === "POST" && path === `/api/v1/projects/${projectId}/schedule-workspace/views`) {
+        const workspace = workspaceFor(projectId); const scope = body?.scope === "SHARED" ? "SHARED" : "PERSONAL"; if (scenario === "viewer" || (scope === "SHARED" && scenario === "viewer")) return problem("FORBIDDEN", 403); const view = { id: `view-${Date.now().toString(36)}`, name: String(body?.name ?? "Saved view"), scope, ownerId: userId, rowVersion: 1, archived: false, config: body?.config }; workspace.views.push(view); return ok(view);
+    }
+    if (method === "PATCH" && path.startsWith(`/api/v1/projects/${projectId}/schedule-workspace/views/`)) {
+        const viewId = path.split("/").at(-1); const view = workspaceFor(projectId).views.find(item => item.id === viewId); if (!view) return notFound(path); if (view.scope === "SHARED" && scenario === "viewer") return problem("FORBIDDEN", 403); if (Number(body?.rowVersion ?? -1) !== view.rowVersion) return problem("STALE_VERSION", 409); Object.assign(view, { name: body?.name ?? view.name, config: body?.config ?? view.config, archived: body?.archived ?? view.archived }); view.rowVersion += 1; return ok(view);
+    }
+    if (method === "GET" && path.startsWith(`/api/v1/projects/${projectId}/schedule-workspace/records/`)) {
+        const scheduleId = path.split("/").at(-1); const schedule = getSchedules(projectId).find(value => value.id === scheduleId); if (!schedule) return notFound(path); return ok({ schedule: { ...schedule }, values: { ...(valuesFor(projectId)[scheduleId] ?? {}) } });
+    }
+    if (method === "POST" && path === `/api/v1/projects/${projectId}/schedule-workspace/records`) {
+        if (scenario === "viewer") return problem("FORBIDDEN", 403); const scheduleBody = body?.schedule ?? {}; const schedule = { ...scheduleTemplate, ...scheduleBody, id: nextScheduleId(), projectId, rowVersion: 1, businessRevision: 1, createdBy: userId, participants: [], changes: [] }; state.schedulesByProject[projectId] = [schedule, ...getSchedules(projectId)]; valuesFor(projectId)[schedule.id] = { ...(body?.values ?? {}) }; return ok({ schedule, values: { ...valuesFor(projectId)[schedule.id] } });
+    }
+    if (method === "PATCH" && path.startsWith(`/api/v1/projects/${projectId}/schedule-workspace/records/`) && !path.endsWith("/values")) {
+        if (scenario === "viewer") return problem("FORBIDDEN", 403); const scheduleId = path.split("/").at(-1); const found = applyMutation(body?.schedule ?? {}, projectId, scheduleId); if (!found) return notFound(path); if (Number(body?.schedule?.rowVersion ?? -1) !== found.schedule.rowVersion) return problem("STALE_VERSION", 409); const schedule = { ...found.schedule, ...body.schedule, id: scheduleId, rowVersion: found.schedule.rowVersion + 1 }; found.schedules[found.index] = schedule; valuesFor(projectId)[scheduleId] = { ...(valuesFor(projectId)[scheduleId] ?? {}), ...(body?.values ?? {}) }; return ok({ schedule, values: { ...valuesFor(projectId)[scheduleId] } });
+    }
+    if (method === "PATCH" && path.endsWith("/values")) {
+        if (scenario === "viewer") return problem("FORBIDDEN", 403); const scheduleId = path.split("/").at(-2); const schedule = getSchedules(projectId).find(value => value.id === scheduleId); if (!schedule) return notFound(path); if (Number(body?.rowVersion ?? -1) !== schedule.rowVersion) return problem("STALE_VERSION", 409); schedule.rowVersion += 1; valuesFor(projectId)[scheduleId] = { ...(valuesFor(projectId)[scheduleId] ?? {}), ...(body?.values ?? {}) }; return ok({ schedule, values: { ...valuesFor(projectId)[scheduleId] } });
     }
     if (method === "GET" && path === `/api/v1/projects/${projectId}/schedules`)
         return ok(getSchedules(projectId).slice());

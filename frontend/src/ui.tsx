@@ -6,6 +6,7 @@ import {
   isSessionContextActive,
   terminateSession,
 } from "./session";
+import { NotificationContent } from "./Notifications";
 export const go = (path: string) => {
   window.location.hash = `#${path}`;
 };
@@ -52,6 +53,7 @@ export function Shell({
   const [open, setOpen] = useState(false);
   const [logoutError, setLogoutError] = useState<unknown>();
   const me = useQuery({ queryKey: ["me"], queryFn: api.me });
+  const [notificationOpen, setNotificationOpen] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
   const current = window.location.hash.replace(/^#/, "") || "/";
   const logout = useMutation({
@@ -103,7 +105,7 @@ export function Shell({
             <span>AI ERP</span>
           </Link>
           <div className="topbar-actions">
-            {project && <Link to="/notifications">알림</Link>}
+            {project && <button className="notification-trigger" type="button" aria-label="알림" aria-expanded={notificationOpen} onClick={() => setNotificationOpen(true)}>알림</button>}
             <details className="account-menu">
               <summary>{me.data?.displayName || "내 계정"}</summary>
               <div className="account-menu-panel">
@@ -144,6 +146,7 @@ export function Shell({
           </div>
         )}
       </header>
+      {project && notificationOpen && <Dialog open title="알림" labelledBy="notification-dialog-title" onClose={() => setNotificationOpen(false)}><NotificationContent compact onNavigate={() => setNotificationOpen(false)} /><Link className="button button-secondary" to="/notifications" onClick={() => setNotificationOpen(false)}>모든 알림 보기</Link></Dialog>}
       <div className={project || workspace ? "workspace" : "lobby-workspace"}>
         {project && (
           <aside
