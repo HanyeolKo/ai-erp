@@ -387,7 +387,8 @@ export function Schedules({ id, workspaceConfig, workspaceProperties = [], works
     const workspaceList = useQuery({ queryKey: keys.workspaceQuery(id, workspaceConfig ? "calendar" : "disabled", 0, calendarIdentity), queryFn: () => readWorkspaceCalendar(id, workspaceConfig!, effectiveRange.from, effectiveRange.to), enabled: !!workspaceConfig && !workspaceBlocked && project.isSuccess && !!project.data && !effectiveRange.error });
     const activeQuery = workspaceConfig ? workspaceList : list;
     useEffect(() => { if (workspaceConfig && activeQuery.isError && isAccessError(activeQuery.error)) onWorkspaceDenied?.(); }, [activeQuery.error, activeQuery.isError, onWorkspaceDenied, workspaceConfig]);
-    const rows = useMemo(() => workspaceBlocked || effectiveRange.error || !project.isSuccess || !project.data || !activeQuery.isSuccess ? [] : (workspaceConfig ? (workspaceList.data?.records ?? []).map(record => record.schedule) : (list.data ?? [])).map(row => overrides[row.id] ?? row), [workspaceBlocked, effectiveRange.error, project.isSuccess, project.data, activeQuery.isSuccess, workspaceConfig, workspaceList.data, list.data, overrides]);
+    const activeServerRows = useMemo(() => workspaceConfig ? (workspaceList.data?.records ?? []).map(record => record.schedule) : (list.data ?? []), [workspaceConfig, workspaceList.data, list.data]);
+    const rows = useMemo(() => workspaceBlocked || effectiveRange.error || !project.isSuccess || !project.data || !activeQuery.isSuccess ? [] : activeServerRows.map(row => overrides[row.id] ?? row), [workspaceBlocked, effectiveRange.error, project.isSuccess, project.data, activeQuery.isSuccess, activeServerRows, overrides]);
     const calendarMetadata = useMemo(() => { const metadata = new Map<string, { text: string; color?: PropertyOption["color"] }>(); if (!workspaceConfig) return metadata; for (const record of workspaceList.data?.records ?? []) { const parts: string[] = []; let color: PropertyOption["color"] | undefined; const ids = [...new Set([...(workspaceConfig.visibleFields ?? []).filter(field => field.startsWith("property:")).map(field => field.slice(9)), workspaceConfig.legendBy].filter((value): value is string => !!value))]; for (const propertyId of ids) { const property = workspaceProperties.find(item => item.id === propertyId); if (!property) continue; const value = record.values[propertyId]; if (property.type === "SINGLE_SELECT") { const option = property.options.find(item => item.id === value); parts.push(`${property.name}: ${value == null || value === "" ? "설정 안 함" : option ? `${option.label}${option.archived ? " · 보관됨" : ""}` : "보관된 옵션"}`); if (property.id === workspaceConfig.legendBy) color = option?.color ?? "gray"; } else if (property.type === "CHECKBOX") parts.push(`${property.name}: ${value == null ? "설정 안 함" : value ? "예" : "아니오"}`); else parts.push(`${property.name}: ${value == null || value === "" ? "설정 안 함" : String(value)}`); } if (parts.length) metadata.set(record.schedule.id, { text: parts.join(" · "), color }); } return metadata; }, [workspaceConfig, workspaceList.data, workspaceProperties]);
     const enriched = useMemo<ScheduleRow[]>(() => rows.map(schedule => ({ s: schedule, ack: acknowledgement(schedule, me.data!.id) })), [rows, me.data!.id]);
     const filtered = useMemo(() => enriched.filter(row => (!text || row.s.title.toLocaleLowerCase().includes(text.toLocaleLowerCase()) || row.s.description?.toLocaleLowerCase().includes(text.toLocaleLowerCase())) && (status === "ALL" || row.s.status === status) && (ack === "ALL" || row.ack === ack) && (!mine || row.s.createdBy === me.data!.id)), [enriched, text, status, ack, mine, me.data!.id]);
@@ -408,14 +409,14 @@ export function Schedules({ id, workspaceConfig, workspaceProperties = [], works
         if (dialogSchedule) { dialogOriginal.current = null; setDialogSchedule(null); }
     }, [contextKey, dialogSchedule]);
     useEffect(() => {
-        if (!list.isSuccess) return;
+        if (!activeQuery.isSuccess) return;
         setOverrides(previous => {
             const next = { ...previous };
             let changed = false;
-            for (const row of list.data) if (next[row.id] && row.rowVersion >= next[row.id].rowVersion) { delete next[row.id]; changed = true; }
+            for (const row of activeServerRows) if (next[row.id] && row.rowVersion >= next[row.id].rowVersion) { delete next[row.id]; changed = true; }
             return changed ? next : previous;
         });
-    }, [list.data, list.isSuccess]);
+    }, [activeQuery.isSuccess, activeServerRows]);
     const locked = (scheduleId: string) => workspaceBlocked || pendingId !== null || lockedIds.has(scheduleId) || recoveringId !== null || activeToken !== null;
     const directLocked = (scheduleId: string) => workspaceBlocked || pendingId !== null || lockedIds.has(scheduleId) || recoveringId !== null || (activeToken !== null && !activeToken.startsWith(`drag:${scheduleId}:`));
     const canEdit = (schedule: CalendarSchedule) => !!me.data && !!project.data && capabilities(project.data, me.data.id, schedule as unknown as Parameters<typeof capabilities>[2]).edit;
@@ -444,6 +445,13 @@ export function Schedules({ id, workspaceConfig, workspaceProperties = [], works
         try {
             const [latest, membership, target] = await Promise.allSettled([accessRead(accessKey("schedule-write", id, schedule.id), () => api.detail(id, schedule.id)), readFreshRole(), refreshActiveTarget()]);
             if (!isSessionContextActive(context)) return;
+            if (workspaceConfig && target.status === "rejected" && isAccessError(target.reason)) {
+                onWorkspaceDenied?.();
+                setLockedIds(previous => { const next = new Set(previous); next.delete(schedule.id); return next; });
+                setRecoverySchedule(null); setRecoveryIntent(null);
+                setFeedback({ kind: "error", text: "활성 일정 범위의 접근이 거부되어 보호된 작업을 모두 잠갔습니다." });
+                return;
+            }
             if (latest.status === "fulfilled" && membership.status === "fulfilled" && target.status === "fulfilled") {
                 setOverrides(previous => ({ ...previous, [schedule.id]: latest.value as unknown as Rows[number] }));
                 const editable = !!me.data && capabilities(membership.value, me.data.id, latest.value as unknown as Parameters<typeof capabilities>[2]).edit;
@@ -487,12 +495,21 @@ export function Schedules({ id, workspaceConfig, workspaceProperties = [], works
                 setFeedback({ kind: "success", text: `${schedule.title} 일정을 ${previewText(schedule, change, zone)}으로 저장했습니다.` });
             } else if (result.kind === "rejected") {
                 const error = result.error;
-                setRecoverySchedule(schedule); setRecoveryIntent(null);
                 setFeedback({ kind: "error", text: error instanceof ApiError && error.status === 403 ? "일정을 변경할 권한이 없습니다." : (error instanceof ApiError ? error.problem.code ?? "일정 변경이 거부되었습니다." : "일정 변경이 거부되었습니다.") });
-                if (isAccessError(error)) { recordAccessDenial(accessKey("schedule-write", id, schedule.id)); setLockedIds(previous => new Set(previous).add(schedule.id)); }
+                if (isAccessError(error)) {
+                    recordAccessDenial(accessKey("schedule-write", id, schedule.id));
+                    if (workspaceConfig) onWorkspaceDenied?.();
+                    else { setRecoverySchedule(schedule); setRecoveryIntent(null); setLockedIds(previous => new Set(previous).add(schedule.id)); }
+                } else { setRecoverySchedule(schedule); setRecoveryIntent(null); }
             } else if (result.kind === "locked") {
-                setRecoverySchedule(schedule); setRecoveryIntent(change); setLockedIds(previous => new Set(previous).add(schedule.id));
-                setFeedback({ kind: "error", text: "저장 결과와 현재 권한을 확인하지 못해 편집을 잠갔습니다." });
+                const targetDenied = !!workspaceConfig && isAccessError(result.targetError);
+                if (targetDenied) {
+                    onWorkspaceDenied?.(); setRecoverySchedule(null); setRecoveryIntent(null);
+                    setFeedback({ kind: "error", text: "활성 일정 범위의 접근이 거부되어 보호된 작업을 모두 잠갔습니다." });
+                } else {
+                    setRecoverySchedule(schedule); setRecoveryIntent(change); setLockedIds(previous => new Set(previous).add(schedule.id));
+                    setFeedback({ kind: "error", text: "저장 결과와 현재 권한을 확인하지 못해 편집을 잠갔습니다." });
+                }
             } else {
                 setOverrides(previous => ({ ...previous, [schedule.id]: result.latest as unknown as Rows[number] }));
                 await refreshSchedule(queryClient, id, schedule.id);

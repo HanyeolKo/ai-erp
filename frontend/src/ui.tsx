@@ -78,6 +78,7 @@ export function Shell({
     if (!open) return;
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
+      if (document.querySelector("dialog[open]")) return;
       event.preventDefault();
       setOpen(false);
       menuButton.current?.focus();

@@ -41,3 +41,13 @@
 - Native Astra/high final-task-review-r2.md CHANGES_REQUESTED at5d725fa1393f1c76111c1f0a712c7da1e30b670e. Four prior stable findings close; three P1 IDs remain, with read-only precision-loss reproduction. All317/full44/affected12 passing evidence retained as bounded evidence, not acceptance.
 - Parent self-review and explicit task-specific attempt5 authorization are in correction-contract-r3.md, using existing full human autonomous implementation/deployment and continuation authority. No new numerical-counter permission is claimed, no failed-history/count reset, no Astra implementation or model sweep. Structural correction must share actual Calendar query and time recovery instead of approximating them. Same Sol/medium executor followup pending.
 - Actual attempt5: existing /root/unified_frontend_final_correction Sol/medium followup successfully dispatched; ACK r3 received2026-09-30. Only one active source worker. correction-contract-r3.md operative; parent owns final review/Git/release.
+
+## r3 independent recovery regression and sixth correction2026-09-30
+- Parent accepts Astra/high source evidence on bd32ea7: disabled legacy-query override cleanup shadows newer workspace rows; manual target read denial bypasses global workspace protection. Attempt5 remains unaccepted,325 tests are scoped passing evidence only.
+- Parent self-review and explicit bounded attempt6 exception are in correction-contract-r4.md. Same Sol/medium executor, unchanged human autonomy/continuation authority, no count reset/model sweep/Astra execution. Actual followup/ACK pending.
+
+- Actual attempt6 ACK r4 received; returned frozen328/full40 focused/type/build/diff exit0. Parent found separate legacy URL initial page state mismatch on immutablebd32. Qualification arrived after freeze; worker correctly made no additional source edits. correction-contract-r5.md explicitly assigns actual attempt7 sameSol, with all prior counts preserved. Followup/ACK pending.
+
+- Actual attempt7 ACK/FINAL r5:332/full44focused/type/build/diff exit0, frozen r4 preserved. Parent native mobile browser found menu global Escape preventDefault suppresses notification Dialog cancel (first Escape closes Menu only; second popup). Existing UI AC1 unmet. correction-contract-r6.md explicitly assigns actualattempt8 sameSol, all prior history retained. Followup/ACK pending.
+
+- Actual attempt8 ACK/FINAL r6 recorded2026-09-30: modal menu listener1line and2regressions, full334/focused23/typebuilddiff exit0; all r4/r5source preserved. Parent accepts source freeze for verification only; finalCI/browser/independentreview/release remain pending.

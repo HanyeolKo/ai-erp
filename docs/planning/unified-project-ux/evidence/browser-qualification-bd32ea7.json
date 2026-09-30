@@ -1,0 +1,145 @@
+{
+  "source": "bd32ea71aefd0f3d5ea748eabbeb850dee530a10",
+  "environment": "immutable bundle5177; synthetic loopback API only",
+  "checks": [
+    {
+      "source": "bd32ea71aefd0f3d5ea748eabbeb850dee530a10",
+      "scope": "unchanged popup/property flow only; r3 task rejected for Calendar recovery",
+      "checks": {
+        "popupEscapePreservesCalendarURL": true,
+        "focusReturnsToNotificationTrigger": true,
+        "typesCreatedThroughUI": [
+          "NUMBER",
+          "CHECKBOX",
+          "DATE"
+        ],
+        "existingTypes": [
+          "TEXT",
+          "SINGLE_SELECT"
+        ],
+        "persistentNameTypeLabels": true,
+        "optionDirtyEscapeOpensDiscard": true,
+        "continueKeepsRename": "긴급 검토",
+        "savedOptionsOrder": [
+          "opt-normal",
+          "opt-high",
+          "opt-low"
+        ],
+        "savedOptionIdentityPreserved": true
+      },
+      "nonProductToolErrors": [
+        "stale UID after dialog remount retried using fresh snapshot; not claimed product failure"
+      ]
+    },
+    {
+      "source": "bd32ea7",
+      "scope": "saved views unchanged r4",
+      "managerBuiltinCreatesShared": true,
+      "groupLegendStablePropertyId": "prop-priority",
+      "visibleFieldsCount": 9,
+      "cardScheduleIds": [
+        "s1",
+        "s2"
+      ],
+      "pageReset": 0,
+      "hash": "view=view-munpgf9t&mode=week&date=2026-09-10&page=0"
+    },
+    {
+      "source": "bd32ea7",
+      "scope": "unchanged detail/property flow",
+      "detailDirtyNavigationNativeConfirm": true,
+      "dismissPreservesDraft": true,
+      "valuesSubmitted": {
+        "Notes": "공통 데이터 확인",
+        "예상 시간": 1.25,
+        "준비 완료": true,
+        "검토일": "2026-09-12"
+      }
+    },
+    {
+      "source": "bd32ea7",
+      "detailSavedDateConfirmed": "2026-09-12",
+      "dateInteraction": "native Date fill changed DOM without React event; actual save verified after input/change event on changed value",
+      "all5TypesInCards": true
+    },
+    {
+      "source": "bd32ea7",
+      "dashboardSharedViewSelected": "운영 카드 공유",
+      "dashboardScheduleIds": [
+        "s1",
+        "s2"
+      ],
+      "dashboardSharedTypedValues": true
+    },
+    {
+      "source": "bd32ea7",
+      "status": "FAIL assigned before r4 freeze",
+      "criterion": "SV009 UPUX004",
+      "legacyInput": "view=list&date=2026-09-10&page=2",
+      "actualHash": "view=builtin-list&date=2026-09-10&page=0",
+      "actualUIPage": 3,
+      "actualRows": 0,
+      "total": 2
+    },
+    {
+      "source": "bd32ea7",
+      "status": "FAIL assigned r6 attempt8",
+      "mobileMenuPopup": "openMenu/openPopup/Escape -> menu false, popup open; secondEscape popup closes/focus notification",
+      "criterion": "ui-plan AC1 Escape without mobile-menu interference"
+    },
+    {
+      "source": "bd32ea7",
+      "memberSharedCopy": true,
+      "newName": "내 운영 목록",
+      "newScope": "PERSONAL",
+      "newId": "view-munqaukg",
+      "originalSharedView": "view-shared-member",
+      "originalRowVersion": 2,
+      "buttonScrolledBeforeSave": true
+    },
+    {
+      "source": "bd32ea7",
+      "viewer": {
+        "create": 0,
+        "editLinks": 0,
+        "settingsDisabled": true,
+        "propertiesDisabled": true
+      }
+    }
+  ],
+  "properties320": {
+    "content": [
+      {
+        "type": "text",
+        "text": "Script ran on page and returned:\n```json\n{\"width\":320,\"dialog\":{\"x\":18,\"y\":12,\"width\":284,\"height\":876,\"top\":12,\"right\":302,\"bottom\":888,\"left\":18},\"body\":{\"client\":282,\"scroll\":282},\"labels\":[\"새 속성 이름\",\"속성 유형텍스트숫자체크박스날짜단일 선택\"],\"overflow\":0,\"buttons\":[{\"name\":\"저장\",\"h\":44,\"w\":216},{\"name\":\"저장\",\"h\":44,\"w\":216},{\"name\":\"속성 추가\",\"h\":44,\"w\":216},{\"name\":\"닫기\",\"h\":44,\"w\":216}]}\n```"
+      }
+    ]
+  },
+  "zoomReflow": {
+    "method": "640x450 CSS pixels at DPR2; equivalent1280 physical pixels/200% effective reflow, not native Chrome zoom",
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "Script ran on page and returned:\n```json\n{\"logicalWidth\":640,\"dpr\":2,\"dialog\":{\"x\":18,\"y\":12,\"width\":589,\"height\":426,\"top\":12,\"right\":607,\"bottom\":438,\"left\":18},\"body\":{\"client\":572,\"scroll\":572},\"labels\":[\"새 속성 이름\",\"속성 유형텍스트숫자체크박스날짜단일 선택\"],\"overflow\":0}\n```"
+        }
+      ]
+    }
+  },
+  "popupMobileFailure": {
+    "content": [
+      {
+        "type": "text",
+        "text": "Script ran on page and returned:\n```json\n{\"hash\":\"#/projects/p1/schedules?view=builtin-list&date=2026-09-10&page=0\",\"focus\":null,\"menu\":\"false\",\"dialogs\":1}\n```"
+      }
+    ]
+  },
+  "viewer": {
+    "content": [
+      {
+        "type": "text",
+        "text": "Script ran on page and returned:\n```json\n{\"hash\":\"#/projects/p1/schedules?view=builtin-calendar&page=0\",\"create\":0,\"editLinks\":0,\"settingsDisabled\":true,\"propertiesDisabled\":true}\n```"
+      }
+    ]
+  }
+}
