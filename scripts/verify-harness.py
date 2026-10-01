@@ -222,13 +222,13 @@ def verify_templates(root: Path, spec: dict) -> list[str]:
     required_text = {
         contract: ("contract revision", "increment id", "plan revision", "plan/review paths", "permitted files", "acceptance criteria", "model reason", "context manifest", "context budget", "output budget", "fork/reuse", "usage availability", "ready-to-implement", "VISUAL-DESIGN-CONTRACT", "data-encoding"),
         result: ("contract revision", "Selected model", "Invocation", "model reason", "context manifest", "context budget", "output budget", "fork/reuse", "usage availability", "ready-for-review", "Checks not run", "screen-to-rule mapping", "data-encoding"),
-        rubric: ("task-review", "gpt-5.3-codex-spark", "gpt-5.6-luna", "independent reviewer"),
+        rubric: ("task-review", "gpt-5.3-codex-spark", "gpt-6-luna", "independent reviewer"),
         root / "harness/templates/INCREMENT-PLAN.md": ("increment id", "plan revision", "users", "deferred scope", "API", "acceptance criteria"),
         root / "harness/templates/INCREMENT-REVIEW.md": ("increment id", "plan revision", "independent evaluator", "verdict", "checks not run"),
         root / "harness/evaluation/INCREMENT-PLAN-RUBRIC.md": ("product scope", "cross-layer impact", "revision safety", "independent evidence"),
         root / "harness/templates/RELEASE-CONTRACT.md": ("increment", "reviewed commit", "same-sha", "authorization", "rollback"),
         root / "harness/templates/RELEASE-RESULT.md": ("matching task", "increment", "reviewed SHA", "active release", "observation", "operator-action-required", "checks not run"),
-        root / "harness/policies/MODEL-ORCHESTRATION.md": ("gpt-6-astra", "gpt-5.6-luna", "gpt-5.3-codex-spark", "selection reason", "context manifest", "context budget", "output budget", "fork/reuse", "usage availability", "max_parallelism", "max_delegation_depth"),
+        root / "harness/policies/MODEL-ORCHESTRATION.md": ("gpt-6-astra", "gpt-6-luna", "gpt-5.6-luna", "gpt-5.3-codex-spark", "selection reason", "context manifest", "context budget", "output budget", "fork/reuse", "usage availability", "max_parallelism", "max_delegation_depth"),
         root / "harness/templates/MODEL-USAGE-RECORD.md": ("selected model", "reasoning effort", "selection reason", "availability evidence", "context manifest", "context budget", "output budget", "fork/reuse", "token usage", "cache usage"),
         root / "harness/templates/MODEL-ESCALATION.md": ("task and contract revision", "role", "failed attempt", "expected/actual evidence", "failure classification", "previous model", "selected next model", "parent decision", "remaining attempts", "stop condition", "separate independent reviewer", "self-escalation"),
         root / "harness/templates/RELEASE-REVIEW.md": ("release-review", "increment", "revision", "mode", "verdict", "checks not run"),
@@ -466,7 +466,7 @@ def verify_model_and_paths(root: Path, spec: dict) -> list[str]:
         "ui-ux-designer": ("gpt-5.6-sol", "medium"),
         "ui-visual-designer": ("gpt-5.6-sol", "medium"),
         "reviewer": ("gpt-6-astra", "high"),
-        "implementer": ("gpt-5.6-luna", "high"),
+        "implementer": ("gpt-6-luna", "high"),
         "product-planner": ("gpt-5.6-sol", "medium"),
         "release-manager": ("gpt-5.6-luna", "high"),
     }
@@ -480,6 +480,28 @@ def verify_model_and_paths(root: Path, spec: dict) -> list[str]:
             errors.append(f"{agent['id']} must declare model_reasoning_effort={expected_effort}")
         if config.get("sandbox_mode") != agent.get("access"):
             errors.append(f"{agent['id']} must use {agent.get('access')} sandbox")
+    implementation_model_docs = (
+        "harness/skills/ai-erp-implement/SKILL.md",
+        ".agents/skills/ai-erp-implement/SKILL.md",
+        "harness/skills/ai-erp/SKILL.md",
+        "harness/skills/ai-erp-verify/SKILL.md",
+        "harness/team/agents/implementer.md",
+        "harness/team/agents/reviewer.md",
+        "harness/policies/MODEL-ORCHESTRATION.md",
+        "harness/ENVIRONMENT.md",
+        "harness/HARNESS.md",
+        "AGENTS.md",
+        "harness/evaluation/TASK-REVIEW-RUBRIC.md",
+        "harness/templates/IMPLEMENTATION-RESULT.md",
+    )
+    for relative in implementation_model_docs:
+        path = root / relative
+        if not path.is_file():
+            errors.append(f"implementation model guidance is missing: {relative}")
+            continue
+        guidance = path.read_text(encoding="utf-8").lower().replace("gpt-6 luna", "gpt-6-luna")
+        if "gpt-6-luna" not in guidance:
+            errors.append(f"implementation model guidance must name gpt-6-luna: {relative}")
     cfg = tomllib.loads((root / ".codex/config.toml").read_text(encoding="utf-8"))
     if cfg.get("model") != "gpt-6-astra":
         errors.append("root config must declare model=gpt-6-astra")
@@ -876,7 +898,7 @@ def main() -> int:
         print("Harness verification failed:\n- " + "\n- ".join(errors), file=sys.stderr)
         return 1
     print("Harness verification passed: schema, permissions, DAG, Codex parity, UI routing, and pinned skill bytes.")
-    print("Astra owns orchestration/final review; Sol owns lower planning/design; Luna owns implementation/release; executor escalation is Luna -> Terra -> Sol and never Astra.")
+    print("Astra owns orchestration/final review; Sol owns lower planning/design; GPT-6 Luna owns implementation; GPT-5.6 Luna owns release; executor escalation is GPT-6 Luna -> Terra -> Sol and never Astra.")
     return 0
 
 

@@ -43,6 +43,11 @@ public class ProjectAccess {
             throw new com.aierp.platform.web.ValidationFailure("assigneeId","Assignee must be an active project MANAGER or MEMBER");
     }
     public long memberCount(UUID projectId) { return members.countByProjectId(projectId); }
+    /** Project name captured by a project-owned API for schedule event snapshots. */
+    public String projectName(UUID projectId) {
+        if (projects == null) throw new IllegalStateException("PROJECT_LOOKUP_UNAVAILABLE");
+        return projects.findById(projectId).map(p -> p.name).orElse(null);
+    }
     /** Resolves current active MANAGER/MEMBER eligibility in one module-owned batch. */
     public Set<UUID> eligibleAcknowledgers(UUID projectId, Collection<UUID> userIds) {
         if (userIds.size() > 200) throw new IllegalArgumentException("Eligibility batch exceeds 200");

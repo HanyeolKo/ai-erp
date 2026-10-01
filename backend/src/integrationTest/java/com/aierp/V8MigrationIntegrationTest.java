@@ -10,23 +10,20 @@ import java.time.Instant;
 import java.sql.Timestamp;
 import java.util.UUID;
 import org.flywaydb.core.Flyway;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 /** Exercises the real PostgreSQL upgrade boundary from the last pre-Workspace schema. */
-@Testcontainers
 class V8MigrationIntegrationTest {
-    @Container
-    static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:18.6");
+    private static final NativeIntegrationRuntime RUNTIME = NativeIntegrationRuntime.start(false);
+
 
     @Test
     void v7ToV8PreservesLegacyRowsAndAddsWorkspaceCalendarSchema() throws Exception {
         var database = "aierp_v7_to_v8_" + UUID.randomUUID().toString().replace("-", "");
-        var adminUrl = "jdbc:postgresql://%s:%d/postgres".formatted(postgres.getHost(), postgres.getMappedPort(5432));
-        var databaseUrl = "jdbc:postgresql://%s:%d/%s".formatted(postgres.getHost(), postgres.getMappedPort(5432), database);
-        try (var admin = DriverManager.getConnection(adminUrl, postgres.getUsername(), postgres.getPassword())) {
+        var adminUrl = RUNTIME.postgresUrl();
+        var databaseUrl = RUNTIME.postgresUrlFor(database);
+        try (var admin = DriverManager.getConnection(adminUrl, RUNTIME.postgresUsername(), RUNTIME.postgresPassword())) {
             admin.createStatement().execute("CREATE DATABASE " + identifier(database));
         }
         var user = UUID.randomUUID();
@@ -38,15 +35,15 @@ class V8MigrationIntegrationTest {
         var schedule = UUID.randomUUID();
         var projection = UUID.randomUUID();
         try {
-            Flyway.configure().dataSource(databaseUrl, postgres.getUsername(), postgres.getPassword())
+            Flyway.configure().dataSource(databaseUrl, RUNTIME.postgresUsername(), RUNTIME.postgresPassword())
                 .locations("classpath:db/migration").target("7").load().migrate();
-            try (var db = DriverManager.getConnection(databaseUrl, postgres.getUsername(), postgres.getPassword())) {
+            try (var db = DriverManager.getConnection(databaseUrl, RUNTIME.postgresUsername(), RUNTIME.postgresPassword())) {
                 insertLegacyRows(db, user, group, project, invitation, connection, calendar, schedule, projection);
             }
 
-            Flyway.configure().dataSource(databaseUrl, postgres.getUsername(), postgres.getPassword())
+            Flyway.configure().dataSource(databaseUrl, RUNTIME.postgresUsername(), RUNTIME.postgresPassword())
                 .locations("classpath:db/migration").target("8").load().migrate();
-            try (var db = DriverManager.getConnection(databaseUrl, postgres.getUsername(), postgres.getPassword())) {
+            try (var db = DriverManager.getConnection(databaseUrl, RUNTIME.postgresUsername(), RUNTIME.postgresPassword())) {
                 assertThat(scalar(db, "SELECT name FROM project.project WHERE id=?", project)).isEqualTo("Legacy project");
                 assertThat(scalar(db, "SELECT status FROM project.project_invitation WHERE id=?", invitation)).isEqualTo("PENDING");
                 assertThat(scalar(db, "SELECT role FROM \"group\".group_member WHERE group_id=? AND user_account_id=?", group, user)).isEqualTo("OWNER");
@@ -61,7 +58,7 @@ class V8MigrationIntegrationTest {
                 assertThat(scalar(db, "SELECT version FROM flyway_schema_history WHERE version='8' AND success", new Object[0])).isEqualTo("8");
             }
         } finally {
-            try (var admin = DriverManager.getConnection(adminUrl, postgres.getUsername(), postgres.getPassword())) {
+            try (var admin = DriverManager.getConnection(adminUrl, RUNTIME.postgresUsername(), RUNTIME.postgresPassword())) {
                 admin.createStatement().execute("DROP DATABASE IF EXISTS " + identifier(database));
             }
         }
@@ -103,5 +100,10 @@ class V8MigrationIntegrationTest {
 
     private static String identifier(String value) {
         return "\"" + value.replace("\"", "\"\"") + "\"";
+    }
+
+    @AfterAll
+    static void stopNativeIntegrationRuntime() {
+        RUNTIME.close();
     }
 }

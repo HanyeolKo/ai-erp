@@ -12,37 +12,35 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.session.Session;
+import org.springframework.session.SessionRepository;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.transaction.annotation.Transactional;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureTestRestTemplate
-@Testcontainers(disabledWithoutDocker = false)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
+@TestExecutionListeners(listeners = NativeIntegrationRuntimeCleanupListener.class,
+        mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
 class FoundationIntegrationTest {
+    private static final NativeIntegrationRuntime RUNTIME = NativeIntegrationRuntime.start(true);
 
-    @Container
-    static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:18.6");
 
-    @Container
-    static final GenericContainer<?> REDIS = new GenericContainer<>(DockerImageName.parse("redis:8.2.9"))
-            .withExposedPorts(6379);
 
     @DynamicPropertySource
     static void containerProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
-        registry.add("spring.datasource.username", POSTGRES::getUsername);
-        registry.add("spring.datasource.password", POSTGRES::getPassword);
-        registry.add("spring.data.redis.url", () -> "redis://%s:%d".formatted(REDIS.getHost(), REDIS.getMappedPort(6379)));
+        registry.add("spring.datasource.url", RUNTIME::postgresUrl);
+        registry.add("spring.datasource.username", RUNTIME::postgresUsername);
+        registry.add("spring.datasource.password", RUNTIME::postgresPassword);
+        registry.add("spring.data.redis.url", RUNTIME::redisUrl);
         registry.add("spring.flyway.locations", () -> "classpath:db/migration,classpath:db/integration-migration");
     }
 
@@ -51,6 +49,12 @@ class FoundationIntegrationTest {
 
     @Autowired
     private TestRestTemplate restTemplate;
+
+    @Autowired
+    private SessionRepository<?> sessionRepository;
+
+    @Autowired
+    private StringRedisTemplate redisTemplate;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -74,6 +78,20 @@ class FoundationIntegrationTest {
                 "platform", "identity", "group", "project", "schedule", "notification", "calendar_integration", "audit");
         assertThat(readiness.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(readiness.getBody()).containsOnlyKeys("status");
+        assertThat(redisTemplate.getConnectionFactory().getConnection().ping()).isEqualTo("PONG");
+    }
+
+    @Test
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    void persists_and_reloads_a_spring_session_through_redis() {
+        SessionRepository repository = (SessionRepository) sessionRepository;
+        Session session = (Session) repository.createSession();
+        session.setAttribute("native-runtime-session", "survives-round-trip");
+        repository.save(session);
+
+        Session loaded = (Session) repository.findById(session.getId());
+        assertThat(loaded).isNotNull();
+        assertThat((String) loaded.getAttribute("native-runtime-session")).isEqualTo("survives-round-trip");
     }
 
     @Test
@@ -96,4 +114,5 @@ class FoundationIntegrationTest {
         assertThat(qTypeResult).isNotNull();
         assertThat(qTypeResult.label()).isEqualTo("foundation");
     }
+
 }

@@ -48,6 +48,12 @@ class OpenApiContractTest {
         assertNullable(responseSchema(base+"/{id}/calendar/retry","post"),"retryClassification");
         var notification=resolve(responseSchema("/api/v1/notifications","get").path("items"));
         assertNullable(notification,"readAt");assertNullable(notification,"link");
+        assertThat(notification.path("required").valueStream().map(JsonNode::asText).toList()).contains("content");
+        var content=resolve(notification.path("properties").path("content"));
+        assertThat(content.path("properties").propertyNames()).contains("provenance","projectName","scheduleTitle","actorDisplayName","occurredAt","scheduleStatus","businessRevision","summary","changedFields","currentScheduleStatus","resourceAvailable");
+        var change=resolve(content.path("properties").path("changedFields").path("items"));
+        assertThat(change.path("required").valueStream().map(JsonNode::asText).toList()).contains("field","label");
+        assertNullable(change,"before");assertNullable(change,"after");
         assertNullable(responseSchema("/api/v1/system/configuration","get"),"loginUrl");
     }
     @Test void projectCreationOptionsAndCreateResponseSchemasAreExplicit() {

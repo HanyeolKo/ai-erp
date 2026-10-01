@@ -20,6 +20,7 @@ class SupportingApiTest {
     @org.springframework.test.context.bean.override.mockito.MockitoBean com.aierp.calendarintegration.ProjectCalendarRepository calendars;
     @org.springframework.test.context.bean.override.mockito.MockitoBean com.aierp.calendarintegration.CalendarProjectionRepository projections;
     @org.springframework.test.context.bean.override.mockito.MockitoBean com.aierp.project.api.ProjectAccess access;
+    @org.springframework.test.context.bean.override.mockito.MockitoBean com.aierp.project.api.ProjectNotificationAccess projectNotificationAccess;
     @org.springframework.test.context.bean.override.mockito.MockitoBean com.aierp.schedule.api.ScheduleLookup scheduleLookup;
     @org.springframework.test.context.bean.override.mockito.MockitoBean GoogleAccess googleAccess;
     @org.springframework.test.context.bean.override.mockito.MockitoBean IdentityProfiles identityProfiles;

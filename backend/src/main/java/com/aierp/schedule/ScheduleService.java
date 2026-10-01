@@ -2,6 +2,7 @@ package com.aierp.schedule;
 
 import com.aierp.project.api.ProjectAccess;
 import com.aierp.platform.events.EventJournal;
+import com.aierp.platform.events.DomainEvent;
 import com.aierp.platform.web.*;
 import com.aierp.schedule.api.ScheduleController.*;
 import java.time.Instant;
@@ -78,35 +79,49 @@ public class ScheduleService {
         apply(schedule,input);
         schedules.saveAndFlush(schedule);
         replaceParticipants(schedule,input);
-        change(schedule,user,"SCHEDULE_CREATED");
+        change(schedule,user,"SCHEDULE_CREATED","Schedule created",List.of());
         return response(schedule);
     }
     @Transactional public ScheduleResponse update(UUID projectId,UUID id,Write input,UUID user) {
         access.requireWriter(projectId,user,null);
         var schedule=find(projectId,id);access.requireWriter(projectId,user,schedule.createdBy);
         validate(input,true);check(schedule,input.rowVersion());editable(schedule);
+        String beforeTitle=schedule.title;
+        Instant beforeStartsAt=schedule.startsAt;
+        Instant beforeEndsAt=schedule.endsAt;
+        boolean descriptionChanged=!Objects.equals(schedule.description,input.description());
+        boolean participantChange=participantsChanged(schedule,input);
         boolean changed=!Objects.equals(schedule.title,input.title().trim())
                 || !Objects.equals(schedule.description,input.description())
                 || !Objects.equals(schedule.startsAt,input.startsAt()) || !Objects.equals(schedule.endsAt,input.endsAt())
-                || participantsChanged(schedule,input);
+                || participantChange;
         if(!changed) return response(schedule);
+        var fields=new ArrayList<DomainEvent.ChangedField>();
+        if(!Objects.equals(beforeTitle,input.title().trim())) fields.add(new DomainEvent.ChangedField("title","Title",beforeTitle,input.title().trim()));
+        if(!Objects.equals(beforeStartsAt,input.startsAt())) fields.add(new DomainEvent.ChangedField("startsAt","Start time",beforeStartsAt==null?null:beforeStartsAt.toString(),input.startsAt().toString()));
+        if(!Objects.equals(beforeEndsAt,input.endsAt())) fields.add(new DomainEvent.ChangedField("endsAt","End time",beforeEndsAt==null?null:beforeEndsAt.toString(),input.endsAt().toString()));
+        if(descriptionChanged) fields.add(new DomainEvent.ChangedField("description","Description",null,null));
+        if(participantChange) fields.add(new DomainEvent.ChangedField("participants","Participants",null,null));
         apply(schedule,input);
         replaceParticipants(schedule,input);
         if(schedule.status==ScheduleEntity.Status.CONFIRMED) schedule.businessRevision++;
-        schedules.saveAndFlush(schedule); change(schedule,user,"SCHEDULE_CHANGED");
+        schedules.saveAndFlush(schedule); change(schedule,user,"SCHEDULE_CHANGED","Schedule details changed",fields);
         return response(schedule);
     }
     @Transactional public ScheduleResponse confirm(UUID projectId,UUID id,Revision revision,UUID user) {
         var schedule=writable(projectId,id,revision,user);
         if(schedule.status!=ScheduleEntity.Status.DRAFT) throw new IllegalStateException("SCHEDULE_NOT_DRAFT");
         schedule.status=ScheduleEntity.Status.CONFIRMED;schedule.businessRevision=1;
-        return changed(schedule,user,"SCHEDULE_CONFIRMED");
+        return changed(schedule,user,"SCHEDULE_CONFIRMED","Schedule confirmed",List.of(
+            new DomainEvent.ChangedField("status","Status","DRAFT","CONFIRMED")));
     }
     @Transactional public ScheduleResponse cancel(UUID projectId,UUID id,Revision revision,UUID user) {
         var schedule=writable(projectId,id,revision,user);editable(schedule);
+        String beforeStatus=schedule.status.name();
         if(schedule.status==ScheduleEntity.Status.CONFIRMED) schedule.businessRevision++;
         schedule.status=ScheduleEntity.Status.CANCELLED;
-        return changed(schedule,user,"SCHEDULE_CANCELLED");
+        return changed(schedule,user,"SCHEDULE_CANCELLED","Schedule cancelled",List.of(
+            new DomainEvent.ChangedField("status","Status",beforeStatus,"CANCELLED")));
     }
     @Transactional public ScheduleResponse acknowledge(UUID projectId,UUID id,Acknowledge input,UUID user) {
         if("VIEWER".equals(access.role(projectId,user))) throw new AccessDeniedException("VIEWER_READ_ONLY");
@@ -165,13 +180,24 @@ public class ScheduleService {
         for(UUID id:memberIds) {var p=new ScheduleParticipantEntity();p.id=UUID.randomUUID();p.scheduleId=s.id;p.memberUserAccountId=id;participants.save(p);}
         for(String email:emails) {var p=new ScheduleParticipantEntity();p.id=UUID.randomUUID();p.scheduleId=s.id;p.externalEmail=email;participants.save(p);}
     }
-    private ScheduleResponse changed(ScheduleEntity s,UUID user,String type) {
-        s.updatedAt=Instant.now();schedules.saveAndFlush(s);change(s,user,type);return response(s);
+    private ScheduleResponse changed(ScheduleEntity s,UUID user,String type,String summary,List<DomainEvent.ChangedField> fields) {
+        s.updatedAt=Instant.now();schedules.saveAndFlush(s);change(s,user,type,summary,fields);return response(s);
     }
     private void change(ScheduleEntity s,UUID user,String type) {
+        change(s,user,type,switch(type) {
+            case "SCHEDULE_CREATED" -> "Schedule created";
+            case "SCHEDULE_CONFIRMED" -> "Schedule confirmed";
+            case "SCHEDULE_CANCELLED" -> "Schedule cancelled";
+            default -> "Schedule changed";
+        },List.of());
+    }
+    private void change(ScheduleEntity s,UUID user,String type,String summary,List<DomainEvent.ChangedField> fields) {
         var c=new ScheduleChangeEntity();c.id=UUID.randomUUID();c.scheduleId=s.id;c.businessRevision=s.businessRevision;c.changeType=type;c.changedBy=user;c.createdAt=Instant.now();changes.save(c);
         var recipients=participants.findByScheduleId(s.id).stream().map(p->p.memberUserAccountId).filter(Objects::nonNull).toList();
-        events.record(type,s.id,s.projectId,user,recipients,s.businessRevision);
+        var profile=profiles.find(Set.of(user)).get(user);
+        var snapshot=new DomainEvent.NotificationSnapshot(access.projectName(s.projectId),s.title,
+            profile==null?null:profile.displayName(),c.createdAt,s.status.name(),s.businessRevision,summary,fields);
+        events.record(type,s.id,s.projectId,user,recipients,s.businessRevision,snapshot);
     }
     private ScheduleEntity find(UUID projectId,UUID id) {return schedules.findByIdAndProjectId(id,projectId).orElseThrow(NoSuchElementException::new);}
     private ScheduleResponse response(ScheduleEntity s) {

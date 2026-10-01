@@ -20,6 +20,13 @@ public class ScheduleLookup {
         if (!schedules.existsByIdAndProjectId(scheduleId, projectId)) throw new NoSuchElementException();
     }
 
+    /** Current, bounded notification check; historical event facts stay in the event snapshot. */
+    public java.util.Optional<NotificationTarget> notificationTarget(UUID projectId, UUID scheduleId) {
+        return schedules.findByIdAndProjectId(scheduleId, projectId)
+            .map(s -> new NotificationTarget(s.title, s.status.name()));
+    }
+    public record NotificationTarget(String title, String status) { }
+
     /** Returns one immutable schedule view for Calendar delivery; no schedule entity crosses the module boundary. */
     public CalendarSnapshot snapshot(UUID projectId, UUID scheduleId) {
         var schedule = schedules.findByIdAndProjectId(scheduleId, projectId).orElseThrow(NoSuchElementException::new);
