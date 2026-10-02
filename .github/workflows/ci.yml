@@ -37,8 +37,6 @@ jobs:
           --health-interval 5s
           --health-timeout 3s
           --health-retries 20
-    env:
-      AI_ERP_REDIS_TEST_URL: redis://127.0.0.1:${{ job.services.redis.ports[6379] }}
     steps:
       - uses: actions/checkout@v5
       - uses: gradle/actions/wrapper-validation@v5
@@ -66,6 +64,8 @@ jobs:
       - run: bash scripts/tests/deployment-contract.sh
       - run: bash scripts/tests/caddy-no-sni.sh
       - run: ./gradlew clean test integrationTest redisIntegrationTest openapi3 bootJar
+        env:
+          AI_ERP_REDIS_TEST_URL: redis://127.0.0.1:${{ job.services.redis.ports['6379'] }}
         working-directory: backend
       - run: pnpm api:generate
       - run: pnpm frontend:test

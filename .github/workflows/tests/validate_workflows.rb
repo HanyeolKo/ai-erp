@@ -110,7 +110,7 @@ def ci_steps
     { "run" => SYNTAX_RUN },
     { "run" => "bash scripts/tests/deployment-contract.sh" },
     { "run" => CADDY_NO_SNI_TEST_RUN },
-    { "run" => "./gradlew clean test integrationTest redisIntegrationTest openapi3 bootJar", "working-directory" => "backend" },
+    { "run" => "./gradlew clean test integrationTest redisIntegrationTest openapi3 bootJar", "env" => { "AI_ERP_REDIS_TEST_URL" => "redis://127.0.0.1:${{ job.services.redis.ports['6379'] }}" }, "working-directory" => "backend" },
     { "run" => "pnpm api:generate" },
     { "run" => "pnpm frontend:test" },
     { "run" => "pnpm frontend:typecheck" },
@@ -141,9 +141,8 @@ def validate_ci!(ci)
   assert!(harness["runs-on"] == "ubuntu-latest", "CI harness GitHub-hosted runner")
   assert_steps!(harness.fetch("steps"), harness_steps, "CI harness")
   verify = ci.fetch("jobs").fetch("verify")
-  assert!(verify.keys.sort == ["env", "runs-on", "services", "steps"], "CI job keys")
+  assert!(verify.keys.sort == ["runs-on", "services", "steps"], "CI job keys")
   assert!(verify["runs-on"] == "ubuntu-latest", "CI GitHub-hosted runner")
-  assert!(verify["env"] == { "AI_ERP_REDIS_TEST_URL" => "redis://127.0.0.1:${{ job.services.redis.ports[6379] }}" }, "CI Redis loopback URL mapping")
   assert!(verify["services"].keys == ["redis"], "CI Redis service list")
   redis = verify.fetch("services").fetch("redis")
   assert!(redis.keys.sort == ["image", "options", "ports"], "CI Redis service keys")
@@ -233,10 +232,20 @@ def self_test!(documents)
     assert_rejected!("shell substitution deployment step #{index}") { mutated = deep_copy(baseline); deploy_job(mutated)["steps"][index]["shell"] = "sh"; validate!(mutated) }
   end
   assert_rejected!("missing CI harness job") { mutated = deep_copy(baseline); mutated["ci.yml"]["jobs"].delete("harness"); validate!(mutated) }
+  assert_rejected!("job.services context in job-level environment") do
+    mutated = deep_copy(baseline)
+    mutated["ci.yml"]["jobs"]["verify"]["env"] = { "AI_ERP_REDIS_TEST_URL" => "redis://127.0.0.1:${{ job.services.redis.ports['6379'] }}" }
+    validate!(mutated)
+  end
   assert_rejected!("missing CI Redis service") { mutated = deep_copy(baseline); mutated["ci.yml"]["jobs"]["verify"]["services"].delete("redis"); validate!(mutated) }
   assert_rejected!("wrong CI Redis service version") { mutated = deep_copy(baseline); mutated["ci.yml"]["jobs"]["verify"]["services"]["redis"]["image"] = "redis:8.2.8"; validate!(mutated) }
   assert_rejected!("static CI Redis service port") { mutated = deep_copy(baseline); mutated["ci.yml"]["jobs"]["verify"]["services"]["redis"]["ports"] = ["6379:6379"]; validate!(mutated) }
-  assert_rejected!("CI Redis URL mapped to a non-loopback host") { mutated = deep_copy(baseline); mutated["ci.yml"]["jobs"]["verify"]["env"]["AI_ERP_REDIS_TEST_URL"] = "redis://redis:6379"; validate!(mutated) }
+  assert_rejected!("CI Redis URL mapped to a non-loopback host") do
+    mutated = deep_copy(baseline)
+    index = ci_steps.index { |step| step["run"]&.include?("redisIntegrationTest") }
+    mutated["ci.yml"]["jobs"]["verify"]["steps"][index]["env"]["AI_ERP_REDIS_TEST_URL"] = "redis://redis:6379"
+    validate!(mutated)
+  end
   harness_steps.each_index do |index|
     assert_rejected!("deleted CI harness step #{index}") { mutated = deep_copy(baseline); mutated["ci.yml"]["jobs"]["harness"]["steps"].delete_at(index); validate!(mutated) }
     assert_rejected!("disabled CI harness step #{index}") { mutated = deep_copy(baseline); mutated["ci.yml"]["jobs"]["harness"]["steps"][index]["if"] = "false"; validate!(mutated) }
