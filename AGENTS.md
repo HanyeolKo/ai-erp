@@ -37,6 +37,7 @@ Do not archive short conversation replies, temporary notes, raw command output, 
   - `reviewer -> implementer` for UI implementation after passing `ui-plan-review` and completing the parent contract.
   - Every stage returns to the upper orchestrator; no screen shortcut or reverse implementation edge is allowed.
 - Native Codex names are `ai-erp-ui-ux-designer`, `ai-erp-ui-visual-designer`, `ai-erp-router`, `ai-erp-reviewer`, `ai-erp-implementer`, `ai-erp-product-planner`, and `ai-erp-release-manager`.
+- Native Codex names also include `ai-erp-librarian`. The librarian uses `gpt-5.6-sol` / `medium` and does not replace design, implementation, release, or verdict ownership.
 - Backend and frontend changes follow the same mandatory UI specialist gate before changing screen behavior.
 - Project skills: `.agents/skills/ai-erp*/SKILL.md`; native role wrappers: `.codex/agents/ai-erp-*.toml`.
 - Select pinned vendor guidance through `$ai-erp-frontend-design`, `$ai-erp-ui-ux-pro-max`, and `$ai-erp-web-design-guidelines`; load only relevant material.
@@ -45,6 +46,7 @@ Do not archive short conversation replies, temporary notes, raw command output, 
 - Run `python -B scripts/test_verify_harness.py` after harness edits.
 - Reporting follows `harness/policies/reporting.json`: local source first, then the configured Notion archive for substantial reader documents.
 - Canonical contracts use English; reader reports use Korean and localized prose, preserving exact machine tokens.
+- Before producing user-facing Korean reports or replies, read the full pinned `vendor/writing-guidance/fluent-korean.md`; this guidance copy is self-contained and does not add a global plugin runtime dependency.
 - External dependencies use `harness/workflows/EXTERNAL-DEPENDENCIES.md`: declare mode and target-specific readiness. Missing or unknown required setup stops dependent work before edits or execution and returns `harness/templates/BLOCKER-REPORT.md` to the parent; goal-mode continuation cannot override the block.
 - Explicitly scoped `offline-contract-only` work may proceed only when independent of missing external facts and must not be reported as live integration success. Do not invent credentials, OAuth settings, permissions, provider responses, or alternate providers.
 - Respect spec approval gates and reuse authorization already granted.
@@ -54,4 +56,6 @@ Do not archive short conversation replies, temporary notes, raw command output, 
 - Parent-owned executor escalation is Luna/high -> Terra/medium -> Sol/medium, never Astra execution. Sol-ceiling failures return to the Astra orchestrator for self-review; workers cannot self-escalate. Generic dispatch records model, effort, canonical role/contract, bounded context, and `MODEL-ESCALATION.md` when applicable. Limits are two active workers and delegation depth one.
 - Implementer is parent-assigned execution and verification only; it may not own verdicts, routing, or improvement actions.
 - Execution evidence and bounded retry guidance: `harness/loops/EXECUTION-LOOP.md`.
+- Parent-approved substantive document save, bounded retrieval, and archive work routes through `librarian` with exact paths and `harness/templates/DOCUMENT-ASSIGNMENT.md` / `harness/templates/DOCUMENT-RESULT.md`; local files remain canonical, reading status is checked before archive mutation, and short or intermediate material is exempt. Documents may mention or quote technical work; changes to executable code, tests, behavior configuration, screen-decision meaning, release permissions/commands, or verdicts retain their existing gate.
+- Conditional behavior evidence uses `harness/workflows/BEHAVIOR-EVIDENCE.md` and `harness/templates/BEHAVIOR-EVIDENCE.md`: the parent prepares scenarios, router observes read-only, implementer owns code/tests/raw checks, and reviewer independently verifies. Record expected versus observed outcomes with revision, environment, and external-readiness evidence; fixtures do not prove live integration.
 <!-- harness-factory:end ai-erp -->

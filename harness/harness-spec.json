@@ -72,6 +72,16 @@
         ".github"
       ],
       "coordinator": "release-manager"
+    },
+    {
+      "id": "documentation",
+      "paths": [
+        "docs/planning",
+        "docs/ux",
+        "docs/reports",
+        "docs/releases"
+      ],
+      "coordinator": "librarian"
     }
   ],
   "agents": [
@@ -181,6 +191,19 @@
       ],
       "model_tier": "fast",
       "access": "workspace-write"
+    },
+    {
+      "id": "librarian",
+      "description": "Persist, retrieve, and archive parent-approved substantive documents while preserving local source meaning and reading-queue status.",
+      "lane": "execution",
+      "capabilities": [
+        "documentation"
+      ],
+      "domains": [
+        "documentation"
+      ],
+      "model_tier": "deep",
+      "access": "workspace-write"
     }
   ],
   "skills": [
@@ -188,7 +211,7 @@
       "id": "ai-erp",
       "kind": "entry",
       "entry_agent": "router",
-      "domains": ["ui-ux", "harness", "implementation", "planning", "release"],
+      "domains": ["ui-ux", "harness", "implementation", "planning", "release", "documentation"],
       "instructions": "harness/skills/ai-erp/SKILL.md",
       "evaluator": "task-review"
     },
@@ -387,6 +410,15 @@
           "harness/templates/IMPLEMENTATION-CONTRACT.md",
           "harness/templates/IMPLEMENTATION-RESULT.md"
         ]
+      },
+      {
+        "from": "router",
+        "to": "librarian",
+        "when": "A parent-approved substantive document save, bounded retrieval, or archive request has exact authorized paths and no source, test, behavior, release, or verdict change is required.",
+        "artifacts": [
+          "harness/templates/DOCUMENT-ASSIGNMENT.md",
+          "harness/templates/DOCUMENT-RESULT.md"
+        ]
       }
     ]
   },
@@ -397,8 +429,8 @@
       "owner": "reviewer",
       "runner": "router",
       "type": "rubric",
-      "command": "Read harness/policies/VERIFICATION.json and review the contract/result or compact TASK-RECORD evidence with harness/evaluation/TASK-REVIEW-RUBRIC.md; apply the selected risk tier and actual check evidence.",
-      "pass_condition": "Every applicable required criterion must pass; failed or pending required criteria cannot pass. Only explicitly out-of-scope criteria may be marked N/A with a recorded reason. Low and standard work may pass through applicable checks and parent acceptance; standard Sol/medium review is optional with one N/A reason when unused. High-risk work requires relevant integration checks and an independent Astra/high review. Planning-only UI tasks still require ui-plan-review; UI, release, access, and external prerequisites remain mandatory."
+      "command": "Read harness/policies/VERIFICATION.json and review the contract/result or compact TASK-RECORD evidence with harness/evaluation/TASK-REVIEW-RUBRIC.md; apply the selected risk tier and actual check evidence. When behavior evidence is applicable, read harness/workflows/BEHAVIOR-EVIDENCE.md and harness/templates/BEHAVIOR-EVIDENCE.md.",
+      "pass_condition": "Every applicable required criterion must pass; failed or pending required criteria cannot pass. Only explicitly out-of-scope criteria may be marked N/A with a recorded reason. Low and standard work may pass through applicable checks and parent acceptance; standard Sol/medium review is optional with one N/A reason when unused. High-risk work requires relevant integration checks and an independent Astra/high review. Applicable behavior evidence must distinguish parent-prepared expected outcomes from router-observed results with matching revision, environment, and external-readiness evidence; fixtures never prove live integration. Planning-only UI tasks still require ui-plan-review; UI, release, access, and external prerequisites remain mandatory."
     },
     {
       "id": "increment-plan-review",
