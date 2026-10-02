@@ -30,6 +30,7 @@ class HarnessContractTests(unittest.TestCase):
         for path in (ROOT / ".agents/skills").glob("ai-erp*"):
             shutil.copytree(path, self.root / ".agents/skills" / path.name)
         shutil.copyfile(ROOT / "AGENTS.md", self.root / "AGENTS.md")
+        shutil.copyfile(ROOT / ".gitattributes", self.root / ".gitattributes")
 
     def tearDown(self):
         if self.root.resolve().parent != self.parent:
@@ -89,6 +90,49 @@ class HarnessContractTests(unittest.TestCase):
         path.write_text(json.dumps(policy), encoding="utf-8")
         self.assertIn("verification execution guard mismatch: ux_smoke", self.errors())
 
+    def test_behavior_evidence_template_is_required(self):
+        (self.root / "harness/templates/BEHAVIOR-EVIDENCE.md").unlink()
+        self.assertIn("BEHAVIOR-EVIDENCE.md", self.errors())
+
+    def test_behavior_evidence_workflow_keeps_conditional_and_live_boundary(self):
+        path = self.root / "harness/workflows/BEHAVIOR-EVIDENCE.md"
+        text = path.read_text(encoding="utf-8")
+        path.write_text(text.replace("Behavior evidence is a conditional handoff", "Behavior evidence is a mandatory handoff"), encoding="utf-8")
+        errors = self.errors()
+        self.assertIn("behavior-evidence workflow", errors)
+
+    def test_behavior_evidence_pass_condition_keeps_expected_observed_boundary(self):
+        def weaken(spec):
+            evaluator = next(item for item in spec["evaluators"] if item["id"] == "task-review")
+            evaluator["pass_condition"] = evaluator["pass_condition"].replace("Applicable behavior evidence must distinguish parent-prepared expected outcomes from router-observed results with matching revision, environment, and external-readiness evidence; fixtures never prove live integration.", "Behavior evidence is optional.")
+        self.change_spec(weaken)
+        self.assertIn("task-review pass condition", self.errors())
+
+    def test_behavior_evidence_router_ownership_is_required(self):
+        path = self.root / "harness/team/agents/router.md"
+        path.write_text(path.read_text(encoding="utf-8").replace("collect observed results read-only", "collect observed results and edit implementation files"), encoding="utf-8")
+        self.assertIn("router role must state behavior-evidence boundary", self.errors())
+
+    def test_behavior_evidence_fixture_boundary_cannot_be_negated(self):
+        path = self.root / "harness/workflows/BEHAVIOR-EVIDENCE.md"
+        text = path.read_text(encoding="utf-8").replace("Fixtures and mocks can support offline checks, but they never count as live integration evidence.", "Fixtures and mocks count as live integration evidence.")
+        path.write_text(text, encoding="utf-8")
+        self.assertIn("operative rule", self.errors())
+
+    def test_behavior_evidence_small_edit_proportionality_cannot_be_negated(self):
+        path = self.root / "harness/workflows/BEHAVIOR-EVIDENCE.md"
+        text = path.read_text(encoding="utf-8").replace(
+            "The parent records required dimensions and justified `N/A` dimensions; a small edit keeps proportional checks without a mandatory specialist document.",
+            "The parent records required dimensions and justified `N/A` dimensions; a small edit requires a mandatory specialist document.",
+        )
+        path.write_text(text, encoding="utf-8")
+        self.assertIn("behavior-evidence workflow", self.errors())
+
+    def test_verification_matrix_policy_triggers_cannot_be_broadened(self):
+        path = self.root / "harness/workflows/VERIFICATION-MATRIX.md"
+        path.write_text(path.read_text(encoding="utf-8").replace("run only on their policy triggers", "run regardless of their policy triggers"), encoding="utf-8")
+        self.assertIn("verification matrix", self.errors())
+
     def test_compact_task_record_is_required(self):
         (self.root / "harness/templates/TASK-RECORD.md").unlink()
         self.assertIn("missing compact task record template", self.errors())
@@ -143,6 +187,12 @@ class HarnessContractTests(unittest.TestCase):
             }]
         self.change_spec(bypass)
         self.assertIn("UI routing", self.errors())
+
+    def test_ui_routing_diagnostic_keeps_stable_prefix(self):
+        def bypass(spec):
+            spec["orchestration"]["handoffs"] = spec["orchestration"]["handoffs"][1:]
+        self.change_spec(bypass)
+        self.assertIn("UI routing must contain exactly the accepted handoff edges", self.errors())
 
     def test_forbidden_implementer_review_back_edge_fails(self):
         def add_back_edge(spec):
@@ -462,7 +512,109 @@ class HarnessContractTests(unittest.TestCase):
                 "from": "product-planner", "to": "implementer", "when": "An increment plan is ready", "artifacts": []
             })
         self.change_spec(shortcut)
-        self.assertIn("exactly the eight accepted handoff edges", self.errors())
+        self.assertIn("exactly the accepted handoff edges", self.errors())
+
+    def test_librarian_model_drift_fails(self):
+        path = self.root / ".codex/agents/ai-erp-librarian.toml"
+        path.write_text(path.read_text(encoding="utf-8").replace('model = "gpt-5.6-sol"', 'model = "gpt-5.6-luna"'), encoding="utf-8")
+        self.assertIn("librarian must declare model=gpt-5.6-sol", self.errors())
+
+    def test_librarian_access_drift_fails(self):
+        path = self.root / ".codex/agents/ai-erp-librarian.toml"
+        path.write_text(path.read_text(encoding="utf-8").replace('sandbox_mode = "workspace-write"', 'sandbox_mode = "read-only"'), encoding="utf-8")
+        self.assertIn("Codex agent access parity mismatch", self.errors())
+
+    def test_librarian_capability_drift_fails(self):
+        def weaken(spec):
+            next(agent for agent in spec["agents"] if agent["id"] == "librarian")["capabilities"] = []
+        self.change_spec(weaken)
+        self.assertIn("capabilities must not be empty", self.errors())
+
+    def test_librarian_route_shortcut_fails(self):
+        def shortcut(spec):
+            spec["orchestration"]["handoffs"].append({
+                "from": "librarian", "to": "reviewer", "when": "document", "artifacts": ["harness/templates/DOCUMENT-RESULT.md"]
+            })
+        self.change_spec(shortcut)
+        self.assertIn("forbidden routing shortcut/back edge", self.errors())
+
+    def test_document_workflow_reading_status_boundary_cannot_be_negated(self):
+        path = self.root / "harness/workflows/DOCUMENT-MANAGEMENT.md"
+        text = path.read_text(encoding="utf-8").replace("It inspects the actual reading status before mutation", "It skips the actual reading status before mutation")
+        path.write_text(text, encoding="utf-8")
+        self.assertIn("document-management workflow", self.errors())
+
+    def test_document_unread_page_must_update_and_retain_status(self):
+        path = self.root / "harness/workflows/DOCUMENT-MANAGEMENT.md"
+        text = path.read_text(encoding="utf-8").replace(
+            "update a same-context `안읽음` page and retain `안읽음`",
+            "create a duplicate same-context `안읽음` page and discard the existing page",
+        )
+        path.write_text(text, encoding="utf-8")
+        self.assertIn("document-management workflow", self.errors())
+
+    def test_document_never_guesses_rule_cannot_be_negated(self):
+        path = self.root / "harness/workflows/DOCUMENT-MANAGEMENT.md"
+        text = path.read_text(encoding="utf-8").replace(
+            "never guesses, duplicates, shares, changes permissions, deletes, renames, or bulk-merges documents.",
+            "Do not apply this rule: never guesses, duplicates, shares, changes permissions, deletes, renames, or bulk-merges documents.",
+        )
+        path.write_text(text, encoding="utf-8")
+        self.assertIn("document-management workflow", self.errors())
+
+    def test_document_librarian_boundary_cannot_be_negated(self):
+        path = self.root / "harness/workflows/DOCUMENT-MANAGEMENT.md"
+        text = path.read_text(encoding="utf-8").replace(
+            "Librarian does not route, review, approve, or delegate.",
+            "Do not apply this rule: Librarian does not route, review, approve, or delegate.",
+        )
+        path.write_text(text, encoding="utf-8")
+        self.assertIn("document-management workflow", self.errors())
+
+    def test_document_read_and_reading_pages_must_be_preserved(self):
+        path = self.root / "harness/team/agents/librarian.md"
+        text = path.read_text(encoding="utf-8").replace("Preserve `읽음` and `읽는중`", "Reset `읽음` and `읽는중`")
+        path.write_text(text, encoding="utf-8")
+        self.assertIn("librarian role must preserve operative document rule", self.errors())
+
+    def test_document_new_page_must_explicitly_initialize_unread(self):
+        path = self.root / "harness/team/agents/librarian.md"
+        text = path.read_text(encoding="utf-8").replace("explicitly set `안읽음`", "leave the reading status unspecified")
+        path.write_text(text, encoding="utf-8")
+        self.assertIn("librarian role must preserve operative document rule", self.errors())
+
+    def test_librarian_authorized_paths_remain_exact(self):
+        path = self.root / "harness/team/agents/librarian.md"
+        text = path.read_text(encoding="utf-8").replace("or `docs/releases`", "or `src`")
+        path.write_text(text, encoding="utf-8")
+        self.assertIn("librarian role must preserve operative document rule", self.errors())
+
+    def test_librarian_actual_change_boundary_remains_operational(self):
+        path = self.root / "harness/team/agents/librarian.md"
+        text = path.read_text(encoding="utf-8").replace("only when the requested operation changes", "even when the requested operation changes")
+        path.write_text(text, encoding="utf-8")
+        self.assertIn("librarian role must preserve operative document rule", self.errors())
+
+    def test_librarian_unknown_readiness_must_stop_synchronization(self):
+        path = self.root / "harness/team/agents/librarian.md"
+        text = path.read_text(encoding="utf-8").replace("stop synchronization", "continue synchronization")
+        path.write_text(text, encoding="utf-8")
+        self.assertIn("librarian role must preserve operative document rule", self.errors())
+
+    def test_writing_guidance_hash_is_required(self):
+        path = self.root / "vendor/writing-guidance/fluent-korean.md"
+        path.write_bytes(path.read_bytes() + b"\r\nTampered.\r\n")
+        self.assertIn("pinned writing guidance SHA-256 mismatch", self.errors())
+
+    def test_writing_guidance_link_cannot_be_removed(self):
+        path = self.root / "AGENTS.md"
+        path.write_text(path.read_text(encoding="utf-8").replace("read the full pinned `vendor/writing-guidance/fluent-korean.md`", "read the pinned guidance"), encoding="utf-8")
+        self.assertIn("writing-guidance link missing", self.errors())
+
+    def test_writing_guidance_read_instruction_cannot_be_negated(self):
+        path = self.root / "AGENTS.md"
+        path.write_text(path.read_text(encoding="utf-8").replace("read the full pinned `vendor/writing-guidance/fluent-korean.md`", "do not read the full pinned `vendor/writing-guidance/fluent-korean.md`"), encoding="utf-8")
+        self.assertIn("writing-guidance link missing", self.errors())
 
     def test_missing_external_blocker_workflow_fails_for_intended_guard(self):
         (self.root / "harness/workflows/EXTERNAL-DEPENDENCIES.md").unlink()
@@ -585,6 +737,27 @@ class HarnessContractTests(unittest.TestCase):
         subprocess.run(["git", "init", "--quiet", str(self.root)], check=True, capture_output=True)
         subprocess.run(["git", "-c", "core.autocrlf=false", "add", "--all"], cwd=self.root, check=True, capture_output=True)
         self.assertEqual([], verifier.verify_project(self.root, require_tracked=True))
+
+    def test_pinned_writing_guidance_git_filter_preserves_raw_bytes(self):
+        relative = Path("vendor/writing-guidance/fluent-korean.md")
+        source = self.root / relative
+        self.assertIn(b"\r\n", source.read_bytes())
+        subprocess.run(["git", "init", "--quiet", str(self.root)], check=True, capture_output=True)
+        raw = subprocess.run(
+            ["git", "hash-object", "--no-filters", str(source)],
+            cwd=self.root,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        filtered = subprocess.run(
+            ["git", "-c", "core.autocrlf=true", "hash-object", "--path", str(relative), str(source)],
+            cwd=self.root,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        self.assertEqual(raw, filtered)
 
 
 if __name__ == "__main__":

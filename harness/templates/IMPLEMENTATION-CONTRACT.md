@@ -20,6 +20,10 @@ Complete this contract before any implementation worker starts.
   - Conditional regression check: required / not warranted / infeasible
   - If required: failure-before-fix and pass-after-fix evidence:
   - If not run, rationale and alternative evidence:
+- Behavior evidence applicability: required / not warranted / blocked; reason from actual change scope:
+- If required: parent-prepared scenarios, expected outcomes, reviewed revision, target environment, external-readiness status, and `harness/templates/BEHAVIOR-EVIDENCE.md` path:
+- Required scenario dimensions or justified `N/A`: authorization refusal/revoked access; failed save/conflict; recovery followed by another edit; affected-screen visibility/keyboard behavior:
+- Live integration versus fixture/mock boundary:
 - Review and evidence validity:
   - Reviewed revision or commit:
   - Affected checks to rerun after edits:
@@ -28,6 +32,7 @@ Complete this contract before any implementation worker starts.
   2.
   3.
 - Validation commands and expected outcomes:
+- Behavior evidence ownership: parent prepares scenarios; router observes read-only; implementer owns code/tests/raw checks; reviewer independently verifies and issues the verdict:
 - Model reason and selection/invocation evidence requirements:
 - Input context manifest and context budget:
 - Output budget:
