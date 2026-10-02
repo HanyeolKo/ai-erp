@@ -23,14 +23,15 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 /** CI Testcontainers coverage for additive V9 project-plan persistence and semantics. */
 @SpringBootTest
+@org.springframework.context.annotation.Import(H2SessionConfiguration.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @TestExecutionListeners(listeners = NativeIntegrationRuntimeCleanupListener.class,
         mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
 class ProjectPlanPostgresIntegrationTest {
-    private static final NativeIntegrationRuntime RUNTIME = NativeIntegrationRuntime.start(true);
+    private static final NativeIntegrationRuntime RUNTIME = NativeIntegrationRuntime.start();
 
 
-    @DynamicPropertySource static void properties(DynamicPropertyRegistry registry){registry.add("spring.datasource.url",RUNTIME::postgresUrl);registry.add("spring.datasource.username",RUNTIME::postgresUsername);registry.add("spring.datasource.password",RUNTIME::postgresPassword);registry.add("spring.data.redis.url", RUNTIME::redisUrl);registry.add("spring.flyway.locations",()->"classpath:db/migration,classpath:db/integration-migration");}
+    @DynamicPropertySource static void properties(DynamicPropertyRegistry registry){registry.add("spring.datasource.url",RUNTIME::postgresUrl);registry.add("spring.datasource.username",RUNTIME::postgresUsername);registry.add("spring.datasource.password",RUNTIME::postgresPassword);registry.add("spring.flyway.locations",()->"classpath:db/migration,classpath:db/integration-migration");}
     @Autowired JdbcTemplate jdbc; @Autowired ProjectPlanService service;
     @MockitoBean GoogleAuthorizationService googleAuthorization; @MockitoBean GoogleHttpClient googleHttp;
     @MockitoSpyBean ProjectPlanRepository planRepository;

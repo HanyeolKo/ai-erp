@@ -27,11 +27,12 @@ import static org.mockito.Mockito.*;
 
 /** PostgreSQL concurrency coverage for the project-lock/save barrier. */
 @SpringBootTest
+@org.springframework.context.annotation.Import(H2SessionConfiguration.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @TestExecutionListeners(listeners = NativeIntegrationRuntimeCleanupListener.class,
         mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
 class DrivePersistenceIntegrationTest {
-    private static final NativeIntegrationRuntime RUNTIME = NativeIntegrationRuntime.start(true);
+    private static final NativeIntegrationRuntime RUNTIME = NativeIntegrationRuntime.start();
 
 
 
@@ -40,7 +41,6 @@ class DrivePersistenceIntegrationTest {
         registry.add("spring.datasource.url", RUNTIME::postgresUrl);
         registry.add("spring.datasource.username", RUNTIME::postgresUsername);
         registry.add("spring.datasource.password", RUNTIME::postgresPassword);
-        registry.add("spring.data.redis.url", RUNTIME::redisUrl);
         registry.add("spring.flyway.locations", () -> "classpath:db/migration,classpath:db/integration-migration");
     }
 

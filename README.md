@@ -24,7 +24,7 @@
 5. 루트에서 `pnpm api:generate`
 6. `pnpm frontend:test && pnpm frontend:typecheck && pnpm frontend:build`
 
-통합 검증은 Docker 없이 `cd backend && ./gradlew integrationTest`로 실행하며, 임시 PostgreSQL 18.6 및 Redis 프로세스를 시작합니다. CI의 Compose 검사와 이미지 빌드에는 Docker를 사용합니다.
+일반 통합 검증은 Docker 없이 `cd backend && ./gradlew integrationTest`로 실행하며 임시 PostgreSQL 18.6과 테스트 전용 H2 JDBC 세션 저장소를 사용합니다. Redis 호환성 검증은 별도 `redisIntegrationTest` 태스크가 담당합니다. 이 태스크에는 `AI_ERP_REDIS_TEST_URL=redis://127.0.0.1:<port>`처럼 로컬 임시 Redis 8.2.9의 명시적 주소가 필요하며, 운영 주소는 사용할 수 없습니다. CI는 동적 루프백 포트에 `redis:8.2.9` 서비스를 올리고 해당 태스크를 실행합니다. Compose 검사와 이미지 빌드에는 Docker를 사용합니다.
 
 ## 로컬 개발과 API 검토
 

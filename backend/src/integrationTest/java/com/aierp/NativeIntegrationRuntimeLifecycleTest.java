@@ -3,10 +3,7 @@ package com.aierp;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.lettuce.core.RedisClient;
 import java.net.ConnectException;
-import java.net.InetAddress;
-import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -18,28 +15,19 @@ import org.junit.jupiter.api.Test;
 class NativeIntegrationRuntimeLifecycleTest {
 
     @Test
-    void startsPostgres18AndRedisOnLoopbackAndStopsBothProcessesAndRemovesData() throws Exception {
-        var runtime = NativeIntegrationRuntime.start(true);
+    void startsPostgres18OnLoopbackAndStopsItAndRemovesItsData() throws Exception {
+        var runtime = NativeIntegrationRuntime.start();
         var postgresPort = runtime.postgresPort();
-        var redisPort = runtime.redisPort();
         var postgresDataDirectory = runtime.postgresDataDirectory();
         try {
-            assertThat(nativeProcessIds("redis-server")).isNotEmpty();
             try (var connection = DriverManager.getConnection(
                     runtime.postgresUrl(), runtime.postgresUsername(), runtime.postgresPassword())) {
                 try (var statement = connection.createStatement();
-                        var result = statement.executeQuery(
-                                "SELECT version(), current_setting('listen_addresses')")) {
+                        var result = statement.executeQuery("SELECT version(), current_setting('listen_addresses')")) {
                     assertThat(result.next()).isTrue();
                     assertThat(result.getString(1)).contains("PostgreSQL 18.6");
                     assertThat(result.getString(2)).isEqualTo("127.0.0.1");
                 }
-            }
-
-            try (var client = RedisClient.create(runtime.redisUrl());
-                    var connection = client.connect()) {
-                assertThat(connection.sync().ping()).isEqualTo("PONG");
-                assertThat(connection.sync().info()).doesNotContain("\\u");
             }
         } finally {
             runtime.close();
@@ -47,26 +35,23 @@ class NativeIntegrationRuntimeLifecycleTest {
 
         assertThat(Files.exists(postgresDataDirectory)).isFalse();
         assertThatThrownBy(() -> connect(postgresPort)).isInstanceOf(ConnectException.class);
-        assertThatThrownBy(() -> connect(redisPort)).isInstanceOf(ConnectException.class);
     }
 
     @Test
-    void stopsPostgresAndRemovesItsDataWhenRedisCannotBind() throws Exception {
+    void closesPostgresAndRemovesItsDataWhenPostgresStartupFails() throws Exception {
         var postgresProcesses = nativeProcessIds("postgres");
-        var redisProcesses = nativeProcessIds("redis-server");
         var dataDirectories = integrationDataDirectories();
-
-        try (var reservedPort = new ServerSocket(0, 1, InetAddress.getByName("127.0.0.1"))) {
-            int occupiedPort = reservedPort.getLocalPort();
-            assertThatThrownBy(() -> NativeIntegrationRuntime.start(true, occupiedPort))
+        var invalidDirectory = Path.of(System.getProperty("java.io.tmpdir"), "ai-erp-test-file-" + System.nanoTime());
+        Files.writeString(invalidDirectory, "not a directory");
+        try {
+            assertThatThrownBy(() -> NativeIntegrationRuntime.start(invalidDirectory))
                     .isInstanceOf(IllegalStateException.class)
-                    .hasMessage("Unable to start native integration services")
-                    .hasCauseInstanceOf(Exception.class);
+                    .hasMessage("Unable to start native PostgreSQL integration service");
+            assertThat(nativeProcessIds("postgres")).isEqualTo(postgresProcesses);
+            assertThat(integrationDataDirectories()).isEqualTo(dataDirectories);
+        } finally {
+            Files.deleteIfExists(invalidDirectory);
         }
-
-        assertThat(nativeProcessIds("postgres")).isEqualTo(postgresProcesses);
-        assertThat(nativeProcessIds("redis-server")).isEqualTo(redisProcesses);
-        assertThat(integrationDataDirectories()).isEqualTo(dataDirectories);
     }
 
     private static void connect(int port) throws Exception {

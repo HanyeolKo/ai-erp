@@ -28,11 +28,12 @@ import org.springframework.test.context.DynamicPropertySource;
 
 /** Validates the real account/grant lock barrier with PostgreSQL row locks. */
 @SpringBootTest
+@org.springframework.context.annotation.Import(H2SessionConfiguration.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @TestExecutionListeners(listeners = NativeIntegrationRuntimeCleanupListener.class,
         mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
 class GoogleAuthorizationBarrierPostgresIntegrationTest {
-    private static final NativeIntegrationRuntime RUNTIME = NativeIntegrationRuntime.start(true);
+    private static final NativeIntegrationRuntime RUNTIME = NativeIntegrationRuntime.start();
 
 
 
@@ -41,7 +42,6 @@ class GoogleAuthorizationBarrierPostgresIntegrationTest {
         registry.add("spring.datasource.url", RUNTIME::postgresUrl);
         registry.add("spring.datasource.username", RUNTIME::postgresUsername);
         registry.add("spring.datasource.password", RUNTIME::postgresPassword);
-        registry.add("spring.data.redis.url", RUNTIME::redisUrl);
         registry.add("spring.flyway.locations", () -> "classpath:db/migration,classpath:db/integration-migration");
         registry.add("APP_GOOGLE_WORKSPACE_ENABLED", () -> "true");
         registry.add("APP_OIDC_ENABLED", () -> "true");

@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 
 /** Exercises the real PostgreSQL upgrade boundary from the last pre-Workspace schema. */
 class V8MigrationIntegrationTest {
-    private static final NativeIntegrationRuntime RUNTIME = NativeIntegrationRuntime.start(false);
+    private static final NativeIntegrationRuntime RUNTIME = NativeIntegrationRuntime.start();
 
 
     @Test

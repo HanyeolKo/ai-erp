@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 
 /** Real PostgreSQL upgrade proof for the additive V9-to-V10 schedule workspace boundary. */
 class V10ScheduleWorkspaceMigrationIntegrationTest {
-    private static final NativeIntegrationRuntime RUNTIME = NativeIntegrationRuntime.start(false);
+    private static final NativeIntegrationRuntime RUNTIME = NativeIntegrationRuntime.start();
 
     @Test void v9ProjectPlanRowsSurviveAndWorkspaceTablesAreEmptyAndConstrained() throws Exception {
         var database="aierp_v9_to_v10_"+UUID.randomUUID().toString().replace("-","");

@@ -39,16 +39,16 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @SpringBootTest
+@org.springframework.context.annotation.Import(H2SessionConfiguration.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @TestExecutionListeners(listeners = NativeIntegrationRuntimeCleanupListener.class,
         mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
 class Phase1PersistenceIntegrationTest {
-    private static final NativeIntegrationRuntime RUNTIME = NativeIntegrationRuntime.start(true);
+    private static final NativeIntegrationRuntime RUNTIME = NativeIntegrationRuntime.start();
 
 
     @DynamicPropertySource static void properties(DynamicPropertyRegistry r) {
         r.add("spring.datasource.url",RUNTIME::postgresUrl);r.add("spring.datasource.username",RUNTIME::postgresUsername);r.add("spring.datasource.password",RUNTIME::postgresPassword);
-        r.add("spring.data.redis.url", RUNTIME::redisUrl);
         r.add("spring.flyway.locations",()->"classpath:db/migration,classpath:db/integration-migration");
         r.add("google.workspace.calendar.dispatch-delay-ms", () -> "86400000");
     }
