@@ -11,7 +11,12 @@ public class EventJournal {
     public EventJournal(EventPublicationRepository publications,ApplicationEventPublisher publisher) {this.publications=publications;this.publisher=publisher;}
     @Transactional(propagation=Propagation.MANDATORY)
     public void record(String type,UUID aggregateId,UUID projectId,UUID actorId,List<UUID> recipients,long revision) {
-        var event=new DomainEvent(UUID.randomUUID(),type,aggregateId,projectId,actorId,List.copyOf(recipients),revision);
+        record(type,aggregateId,projectId,actorId,recipients,revision,null);
+    }
+    @Transactional(propagation=Propagation.MANDATORY)
+    public void record(String type,UUID aggregateId,UUID projectId,UUID actorId,List<UUID> recipients,long revision,
+                       DomainEvent.NotificationSnapshot snapshot) {
+        var event=new DomainEvent(UUID.randomUUID(),type,aggregateId,projectId,actorId,List.copyOf(recipients),revision,snapshot);
         var stored=new EventPublication();stored.id=event.publicationId();stored.eventType=type;stored.aggregateId=aggregateId;stored.payload=event;stored.createdAt=Instant.now();
         publications.save(stored);
         publisher.publishEvent(event);

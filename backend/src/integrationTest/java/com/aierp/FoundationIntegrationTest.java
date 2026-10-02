@@ -12,37 +12,37 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
+import javax.sql.DataSource;
+import org.springframework.session.jdbc.JdbcIndexedSessionRepository;
+import org.springframework.session.Session;
+import org.springframework.session.SessionRepository;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.context.annotation.Import;
 import org.springframework.transaction.annotation.Transactional;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureTestRestTemplate
-@Testcontainers(disabledWithoutDocker = false)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
+@Import(H2SessionConfiguration.class)
+@TestExecutionListeners(listeners = NativeIntegrationRuntimeCleanupListener.class,
+        mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
 class FoundationIntegrationTest {
+    private static final NativeIntegrationRuntime RUNTIME = NativeIntegrationRuntime.start();
 
-    @Container
-    static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:18.6");
 
-    @Container
-    static final GenericContainer<?> REDIS = new GenericContainer<>(DockerImageName.parse("redis:8.2.9"))
-            .withExposedPorts(6379);
 
     @DynamicPropertySource
     static void containerProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
-        registry.add("spring.datasource.username", POSTGRES::getUsername);
-        registry.add("spring.datasource.password", POSTGRES::getPassword);
-        registry.add("spring.data.redis.url", () -> "redis://%s:%d".formatted(REDIS.getHost(), REDIS.getMappedPort(6379)));
+        registry.add("spring.datasource.url", RUNTIME::postgresUrl);
+        registry.add("spring.datasource.username", RUNTIME::postgresUsername);
+        registry.add("spring.datasource.password", RUNTIME::postgresPassword);
         registry.add("spring.flyway.locations", () -> "classpath:db/migration,classpath:db/integration-migration");
     }
 
@@ -50,7 +50,13 @@ class FoundationIntegrationTest {
     private JdbcTemplate jdbcTemplate;
 
     @Autowired
+    private DataSource dataSource;
+
+    @Autowired
     private TestRestTemplate restTemplate;
+
+    @Autowired
+    private SessionRepository<?> sessionRepository;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -61,7 +67,7 @@ class FoundationIntegrationTest {
     }
 
     @Test
-    void applies_foundation_schema_migration_and_reports_readiness_without_details() {
+    void applies_foundation_schema_migration_and_reports_readiness_without_details() throws Exception {
         var schemas = jdbcTemplate.queryForList(
                 "SELECT schema_name FROM information_schema.schemata WHERE schema_name IN "
                         + "('platform', 'identity', 'group', 'project', 'schedule', 'notification', 'calendar_integration', 'audit')",
@@ -74,6 +80,42 @@ class FoundationIntegrationTest {
                 "platform", "identity", "group", "project", "schedule", "notification", "calendar_integration", "audit");
         assertThat(readiness.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(readiness.getBody()).containsOnlyKeys("status");
+        try (var connection = dataSource.getConnection()) {
+            assertThat(connection.getMetaData().getURL()).startsWith("jdbc:postgresql:");
+        }
+        assertThat(sessionRepository).isInstanceOf(JdbcIndexedSessionRepository.class);
+    }
+
+    @Test
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    void persists_reloads_and_deletes_a_spring_session_through_isolated_h2_jdbc() {
+        SessionRepository repository = (SessionRepository) sessionRepository;
+        Session session = (Session) repository.createSession();
+        session.setAttribute("native-runtime-session", "survives-round-trip");
+        repository.save(session);
+
+        Session loaded = (Session) repository.findById(session.getId());
+        assertThat(loaded).isNotNull();
+        assertThat((String) loaded.getAttribute("native-runtime-session")).isEqualTo("survives-round-trip");
+        repository.deleteById(session.getId());
+        assertThat(repository.findById(session.getId())).isNull();
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM information_schema.tables WHERE table_name='SPRING_SESSION'", Integer.class))
+                .isZero();
+    }
+
+    @Test
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    void expired_jdbc_sessions_are_not_returned() throws InterruptedException {
+        SessionRepository repository = (SessionRepository) sessionRepository;
+        Session session = (Session) repository.createSession();
+        session.setMaxInactiveInterval(java.time.Duration.ofMillis(100));
+        session.setAttribute("expiry-check", "short-lived");
+        repository.save(session);
+
+        Thread.sleep(250);
+
+        assertThat(repository.findById(session.getId())).isNull();
     }
 
     @Test
@@ -96,4 +138,5 @@ class FoundationIntegrationTest {
         assertThat(qTypeResult).isNotNull();
         assertThat(qTypeResult.label()).isEqualTo("foundation");
     }
+
 }

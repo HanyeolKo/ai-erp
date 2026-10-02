@@ -244,19 +244,38 @@ class HarnessContractTests(unittest.TestCase):
         path.write_text("\n".join(line for line in path.read_text(encoding="utf-8").splitlines() if not line.startswith("model =")), encoding="utf-8")
         self.assertIn("missing keys", self.errors())
 
-    def test_saved_luna_model_is_default(self):
+    def test_saved_gpt6_luna_model_is_default(self):
         path = self.root / ".codex/agents/ai-erp-implementer.toml"
-        self.assertIn('model = "gpt-5.6-luna"', path.read_text(encoding="utf-8"))
+        self.assertIn('model = "gpt-6-luna"', path.read_text(encoding="utf-8"))
         self.assertEqual("", self.errors())
 
-    def test_luna_default_is_saved_explicitly(self):
+    def test_default_model_is_saved_explicitly(self):
         path = self.root / ".codex/agents/ai-erp-implementer.toml"
-        self.assertIn('model = "gpt-5.6-luna"', path.read_text(encoding="utf-8"))
+        self.assertIn('model = "gpt-6-luna"', path.read_text(encoding="utf-8"))
+
+    def test_implementation_model_guidance_is_consistent(self):
+        for relative in (
+            "harness/skills/ai-erp-implement/SKILL.md",
+            ".agents/skills/ai-erp-implement/SKILL.md",
+            "harness/skills/ai-erp/SKILL.md",
+            "harness/skills/ai-erp-verify/SKILL.md",
+            "harness/team/agents/implementer.md",
+            "harness/team/agents/reviewer.md",
+            "harness/policies/MODEL-ORCHESTRATION.md",
+            "harness/ENVIRONMENT.md",
+            "harness/HARNESS.md",
+            "AGENTS.md",
+            "harness/evaluation/TASK-REVIEW-RUBRIC.md",
+            "harness/templates/IMPLEMENTATION-RESULT.md",
+        ):
+            guidance = (self.root / relative).read_text(encoding="utf-8").lower().replace("gpt-6 luna", "gpt-6-luna")
+            self.assertIn("gpt-6-luna", guidance)
+        self.assertIn('model = "gpt-5.6-luna"', (self.root / ".codex/agents/ai-erp-release-manager.toml").read_text(encoding="utf-8"))
 
     def test_unapproved_implementer_model_fails(self):
         path = self.root / ".codex/agents/ai-erp-implementer.toml"
-        path.write_text(path.read_text(encoding="utf-8").replace('gpt-5.6-luna', 'gpt-5.6-sol'), encoding="utf-8")
-        self.assertIn("implementer must declare model=gpt-5.6-luna", self.errors())
+        path.write_text(path.read_text(encoding="utf-8").replace('gpt-6-luna', 'gpt-5.6-sol'), encoding="utf-8")
+        self.assertIn("implementer must declare model=gpt-6-luna", self.errors())
 
     def test_upper_role_model_override_fails(self):
         path = self.root / ".codex/agents/ai-erp-router.toml"
@@ -271,8 +290,8 @@ class HarnessContractTests(unittest.TestCase):
 
     def test_astra_executor_drift_fails(self):
         path = self.root / ".codex/agents/ai-erp-implementer.toml"
-        path.write_text(path.read_text(encoding="utf-8").replace('gpt-5.6-luna', 'gpt-6-astra'), encoding="utf-8")
-        self.assertIn("implementer must declare model=gpt-5.6-luna", self.errors())
+        path.write_text(path.read_text(encoding="utf-8").replace('gpt-6-luna', 'gpt-6-astra'), encoding="utf-8")
+        self.assertIn("implementer must declare model=gpt-6-luna", self.errors())
 
     def test_implementer_cannot_own_evaluator(self):
         def change(spec):

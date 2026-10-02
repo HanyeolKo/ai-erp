@@ -12,6 +12,9 @@ import com.aierp.project.api.ProjectController;
 import com.aierp.schedule.*;
 import com.aierp.schedule.api.ScheduleController.*;
 import com.aierp.calendarintegration.*;
+import com.aierp.platform.events.*;
+import com.aierp.notification.*;
+import com.aierp.project.api.ProjectNotificationAccess;
 import java.time.Instant;
 import java.time.Duration;
 import java.sql.*;
@@ -21,6 +24,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.jdbc.core.JdbcTemplate;
 import jakarta.persistence.EntityManager;
 import javax.sql.DataSource;
@@ -30,19 +35,20 @@ import org.springframework.test.context.*;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.flywaydb.core.Flyway;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.*;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-@SpringBootTest @Testcontainers
+@SpringBootTest
+@org.springframework.context.annotation.Import(H2SessionConfiguration.class)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
+@TestExecutionListeners(listeners = NativeIntegrationRuntimeCleanupListener.class,
+        mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
 class Phase1PersistenceIntegrationTest {
-    @Container static final PostgreSQLContainer<?> postgres=new PostgreSQLContainer<>("postgres:18.6");
-    @Container static final GenericContainer<?> redis=new GenericContainer<>("redis:8.2.9").withExposedPorts(6379);
+    private static final NativeIntegrationRuntime RUNTIME = NativeIntegrationRuntime.start();
+
+
     @DynamicPropertySource static void properties(DynamicPropertyRegistry r) {
-        r.add("spring.datasource.url",postgres::getJdbcUrl);r.add("spring.datasource.username",postgres::getUsername);r.add("spring.datasource.password",postgres::getPassword);
-        r.add("spring.data.redis.url",()->"redis://"+redis.getHost()+":"+redis.getMappedPort(6379));
+        r.add("spring.datasource.url",RUNTIME::postgresUrl);r.add("spring.datasource.username",RUNTIME::postgresUsername);r.add("spring.datasource.password",RUNTIME::postgresPassword);
         r.add("spring.flyway.locations",()->"classpath:db/migration,classpath:db/integration-migration");
         r.add("google.workspace.calendar.dispatch-delay-ms", () -> "86400000");
     }
@@ -59,6 +65,10 @@ class Phase1PersistenceIntegrationTest {
     @Autowired ProjectShareInvitationService shareInvitations;
     @Autowired ProjectRepository projectRepository;
     @Autowired ProjectMemberRepository projectMembers;
+    @Autowired EventPublicationRepository publications;
+    @Autowired EventRelay eventRelay;
+    @Autowired NotificationRepository notifications;
+    @Autowired ProjectNotificationAccess projectNotificationAccess;
     @Autowired DashboardController dashboard;
     @MockitoBean CalendarAdapter adapter;
     @MockitoBean GoogleAuthorizationService access;
@@ -110,6 +120,37 @@ class Phase1PersistenceIntegrationTest {
         assertThat(jdbc.queryForObject("SELECT count(*) FROM audit.audit_log WHERE aggregate_id=?",Integer.class,draft.id())).isGreaterThanOrEqualTo(3);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM platform.event_publication WHERE aggregate_id=? AND published_at IS NOT NULL",Integer.class,draft.id())).isGreaterThanOrEqualTo(3);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM notification.notification WHERE user_account_id=?",Integer.class,user)).isPositive();
+    }
+    @Test void delayedOutboxDeliveryUsesImmutableSnapshotAfterProjectAndScheduleAreRenamed() {
+        var created=schedules.create(project,new Write("Original title",Instant.now().plusSeconds(3600),Instant.now().plusSeconds(7200),null,null,List.of(user),List.of()),user);
+        var eventTime=Instant.parse("2026-09-30T10:15:30Z");
+        var snapshot=new DomainEvent.NotificationSnapshot("Original project","Original title","Phase1 User",eventTime,"DRAFT",0,"Schedule created",List.of());
+        var event=new DomainEvent(UUID.randomUUID(),"SCHEDULE_CREATED",created.id(),project,user,List.of(user),0,snapshot);
+        jdbc.update("UPDATE project.project SET name='Renamed project' WHERE id=?",project);
+        schedules.update(project,created.id(),new Write("Renamed title",created.startsAt(),created.endsAt(),created.rowVersion(),null,List.of(user),List.of()),user);
+        var publication=new EventPublication();publication.id=event.publicationId();publication.eventType=event.type();publication.aggregateId=event.aggregateId();publication.payload=event;publication.createdAt=Instant.now();
+        publications.saveAndFlush(publication);
+
+        eventRelay.deliver(event.publicationId());
+
+        var saved=notifications.findByUserAccountId(user,org.springframework.data.domain.PageRequest.of(0,100,org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC,"createdAt"))).stream()
+            .filter(n->n.type.equals("SCHEDULE_CREATED")&&n.payload.get("content") instanceof Map<?,?> content&&"Original title".equals(content.get("scheduleTitle")))
+            .findFirst().orElseThrow();
+        @SuppressWarnings("unchecked") var content=(Map<String,Object>)saved.payload.get("content");
+        assertThat(content.get("projectName")).isEqualTo("Original project");assertThat(content.get("scheduleTitle")).isEqualTo("Original title");
+        assertThat(content.get("occurredAt")).isEqualTo("2026-09-30T10:15:30Z");
+        assertThat(schedules.detail(project,created.id(),user).title()).isEqualTo("Renamed title");
+        assertThat(projectRepository.findById(project).orElseThrow().name).isEqualTo("Renamed project");
+    }
+    @Test void notificationProjectAccessRequiresAnExistingProjectAndCurrentMembership() {
+        assertThat(projectNotificationAccess.visibleProject(project,user)).get()
+            .extracting(ProjectNotificationAccess.ProjectView::name).isEqualTo("Project");
+        var anotherUser=UUID.randomUUID();
+        assertThat(projectNotificationAccess.visibleProject(project,anotherUser)).isEmpty();
+        var key=new ProjectMemberEntity.Key();key.projectId=project;key.userAccountId=user;
+        projectMembers.deleteById(key);projectMembers.flush();
+        assertThat(projectNotificationAccess.visibleProject(project,user)).isEmpty();
+        assertThat(projectNotificationAccess.visibleProject(UUID.randomUUID(),user)).isEmpty();
     }
     @Test void projectCreationPersistsProjectAndCreatorManagerAndSupportsRead() {
         var owner=UUID.randomUUID();
@@ -420,15 +461,15 @@ class Phase1PersistenceIntegrationTest {
     }
     @Test void v6UpgradeKeepsLegacyRowsNullAndRetainsProjectRoles() throws Exception {
         var databaseName="aierp_v6_"+UUID.randomUUID().toString().replace("-","");
-        var adminUrl="jdbc:postgresql://"+postgres.getHost()+":"+postgres.getMappedPort(5432)+"/postgres";
-        var databaseUrl="jdbc:postgresql://"+postgres.getHost()+":"+postgres.getMappedPort(5432)+"/"+databaseName;
-        try (var admin=DriverManager.getConnection(adminUrl,postgres.getUsername(),postgres.getPassword())) {
+        var adminUrl=RUNTIME.postgresUrl();
+        var databaseUrl=RUNTIME.postgresUrlFor(databaseName);
+        try (var admin=DriverManager.getConnection(adminUrl,RUNTIME.postgresUsername(),RUNTIME.postgresPassword())) {
             admin.createStatement().execute("CREATE DATABASE \""+databaseName+"\"");
         }
         try {
-            Flyway.configure().dataSource(databaseUrl,postgres.getUsername(),postgres.getPassword()).target("5").load().migrate();
+            Flyway.configure().dataSource(databaseUrl,RUNTIME.postgresUsername(),RUNTIME.postgresPassword()).target("5").load().migrate();
             var legacyUser=UUID.randomUUID();var legacyGroup=UUID.randomUUID();var legacyProject=UUID.randomUUID();
-            try (var connection=DriverManager.getConnection(databaseUrl,postgres.getUsername(),postgres.getPassword())) {
+            try (var connection=DriverManager.getConnection(databaseUrl,RUNTIME.postgresUsername(),RUNTIME.postgresPassword())) {
                 try (var group=connection.prepareStatement("INSERT INTO \"group\".erp_group(id,name) VALUES (?,?)");
                      var membership=connection.prepareStatement("INSERT INTO \"group\".group_member(group_id,user_account_id) VALUES (?,?)");
                      var project=connection.prepareStatement("INSERT INTO project.project(id,group_id,name) VALUES (?,?,?)");
@@ -439,8 +480,8 @@ class Phase1PersistenceIntegrationTest {
                     projectMember.setObject(1,legacyProject);projectMember.setObject(2,legacyUser);projectMember.executeUpdate();
                 }
             }
-            Flyway.configure().dataSource(databaseUrl,postgres.getUsername(),postgres.getPassword()).target("6").load().migrate();
-            try (var connection=DriverManager.getConnection(databaseUrl,postgres.getUsername(),postgres.getPassword())) {
+            Flyway.configure().dataSource(databaseUrl,RUNTIME.postgresUsername(),RUNTIME.postgresPassword()).target("6").load().migrate();
+            try (var connection=DriverManager.getConnection(databaseUrl,RUNTIME.postgresUsername(),RUNTIME.postgresPassword())) {
                 try (var role=connection.prepareStatement("SELECT role FROM \"group\".group_member WHERE group_id=? AND user_account_id=?")) {
                     role.setObject(1,legacyGroup);role.setObject(2,legacyUser);
                     try (var result=role.executeQuery()) { assertThat(result.next()).isTrue();assertThat(result.getObject(1)).isNull(); }
@@ -453,23 +494,23 @@ class Phase1PersistenceIntegrationTest {
                     .isInstanceOf(SQLException.class).satisfies(error -> assertThat(((SQLException)error).getSQLState()).isEqualTo("23514"));
             }
         } finally {
-            try (var admin=DriverManager.getConnection(adminUrl,postgres.getUsername(),postgres.getPassword())) {
+            try (var admin=DriverManager.getConnection(adminUrl,RUNTIME.postgresUsername(),RUNTIME.postgresPassword())) {
                 admin.createStatement().execute("DROP DATABASE IF EXISTS \""+databaseName+"\"");
             }
         }
     }
     @Test void v6ToV7UpgradeRetainsExplicitRolesAndLegacyEmailInvitation() throws Exception {
         var databaseName="aierp_v6_to_v7_"+UUID.randomUUID().toString().replace("-","");
-        var adminUrl="jdbc:postgresql://"+postgres.getHost()+":"+postgres.getMappedPort(5432)+"/postgres";
-        var databaseUrl="jdbc:postgresql://"+postgres.getHost()+":"+postgres.getMappedPort(5432)+"/"+databaseName;
-        try (var admin=DriverManager.getConnection(adminUrl,postgres.getUsername(),postgres.getPassword())) {
+        var adminUrl=RUNTIME.postgresUrl();
+        var databaseUrl=RUNTIME.postgresUrlFor(databaseName);
+        try (var admin=DriverManager.getConnection(adminUrl,RUNTIME.postgresUsername(),RUNTIME.postgresPassword())) {
             admin.createStatement().execute("CREATE DATABASE \""+databaseName+"\"");
         }
         var legacyUser=UUID.randomUUID(); var legacyGroup=UUID.randomUUID(); var legacyProject=UUID.randomUUID(); var invitationId=UUID.randomUUID();
         var token="legacy-"+UUID.randomUUID();
         try {
-            Flyway.configure().dataSource(databaseUrl,postgres.getUsername(),postgres.getPassword()).target("6").load().migrate();
-            try (var connection=DriverManager.getConnection(databaseUrl,postgres.getUsername(),postgres.getPassword())) {
+            Flyway.configure().dataSource(databaseUrl,RUNTIME.postgresUsername(),RUNTIME.postgresPassword()).target("6").load().migrate();
+            try (var connection=DriverManager.getConnection(databaseUrl,RUNTIME.postgresUsername(),RUNTIME.postgresPassword())) {
                 try (var group=connection.prepareStatement("INSERT INTO \"group\".erp_group(id,name) VALUES (?,?)");
                      var membership=connection.prepareStatement("INSERT INTO \"group\".group_member(group_id,user_account_id,role) VALUES (?,?,'OWNER')");
                      var project=connection.prepareStatement("INSERT INTO project.project(id,group_id,name) VALUES (?,?,?)");
@@ -482,8 +523,8 @@ class Phase1PersistenceIntegrationTest {
                     invitation.setObject(1,invitationId); invitation.setObject(2,legacyProject); invitation.setString(3,"legacy@example.test"); invitation.setString(4,token); invitation.setTimestamp(5,Timestamp.from(Instant.parse("2099-01-01T00:00:00Z"))); invitation.setObject(6,legacyUser); invitation.executeUpdate();
                 }
             }
-            Flyway.configure().dataSource(databaseUrl,postgres.getUsername(),postgres.getPassword()).target("7").load().migrate();
-            try (var connection=DriverManager.getConnection(databaseUrl,postgres.getUsername(),postgres.getPassword())) {
+            Flyway.configure().dataSource(databaseUrl,RUNTIME.postgresUsername(),RUNTIME.postgresPassword()).target("7").load().migrate();
+            try (var connection=DriverManager.getConnection(databaseUrl,RUNTIME.postgresUsername(),RUNTIME.postgresPassword())) {
                 try (var role=connection.prepareStatement("SELECT role FROM \"group\".group_member WHERE group_id=? AND user_account_id=?")) {
                     role.setObject(1,legacyGroup); role.setObject(2,legacyUser);
                     try (var result=role.executeQuery()) { result.next(); assertThat(result.getString(1)).isEqualTo("OWNER"); }
@@ -500,7 +541,7 @@ class Phase1PersistenceIntegrationTest {
                 try (var shareInvitations=connection.createStatement().executeQuery("SELECT count(*) FROM project.project_share_invitation")) { shareInvitations.next(); assertThat(shareInvitations.getInt(1)).isZero(); }
             }
         } finally {
-            try (var admin=DriverManager.getConnection(adminUrl,postgres.getUsername(),postgres.getPassword())) { admin.createStatement().execute("DROP DATABASE IF EXISTS \""+databaseName+"\""); }
+            try (var admin=DriverManager.getConnection(adminUrl,RUNTIME.postgresUsername(),RUNTIME.postgresPassword())) { admin.createStatement().execute("DROP DATABASE IF EXISTS \""+databaseName+"\""); }
         }
     }
     @Test void concurrentInvitationResolutionHasOneWinnerAndPreservesManagerRole() throws Exception {
@@ -538,4 +579,5 @@ class Phase1PersistenceIntegrationTest {
         assertThat(second.userId()).isEqualTo(first.userId());
         assertThat(jdbc.queryForObject("SELECT display_name FROM identity.user_account WHERE id=?",String.class,first.userId())).isEqualTo("Updated");
     }
+
 }
