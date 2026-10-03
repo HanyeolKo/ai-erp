@@ -174,7 +174,7 @@ export function Shell({
                   current.startsWith(`/projects/${project.id}/plan`) ? "page" : undefined
                 }
               >
-                계획
+                작업
               </Link>
               <Link
                 to={`/projects/${project.id}/schedules`}

@@ -18,3 +18,9 @@
 - The skill .agents/skills/ai-erp-implement/SKILL.md step4 and harness/workflows/DELEGATION-PROTOCOL.md7/7a cap total attempts at3. An explicit user exception is required before this attempt4; task continuation alone is not interpreted as an override.
 - A backend-only draft PR may collect actual PG evidence for the failed candidate and make the result reviewable. This is diagnostic evidence, not implementation acceptance. Frontend attempt3 remains independently in progress.
 
+## Diagnostic CI return
+- Draft PR26 commits exact failed candidate8fd669377b304f2d450366aee96186190715ad81; CI37115098605 completed FAIL. Harness and Compose configuration passed; deployment-contract stopped before PG due exact migration allowlist/count/checksum ending atV10. Parent inspected scripts/lib-deploy.sh123-132 and actual failed log, confirming approved V11 missing from deployment inputs.
+- Additional same-candidate key B1-DEPLOY-MIGRATION-CONTRACT: synchronize exact V11 filename/count/checksum and meaningful missing/checksum/tamper guards in lib-deploy.sh and deployment_contract.py; preserve existing controls. This compatibility correction is included in the proposed ONE extra attempt, not a separate reset. No actual PG execution yet.
+- Staged whitespace check discovered trailing EOF blanks in previously untracked PG and result files; unstaged check missed them. Preserve original metadata and include all candidate files in future check.
+- Full proposed bounded correction is backend-b1-exception-repair-contract.md; status approval-pending. No worker dispatch.
+
