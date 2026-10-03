@@ -76,6 +76,44 @@ class OpenApiContractTest {
         var preview=responseSchema("/api/v1/project-invitations/{code}","get");
         assertNullable(preview,"projectId"); assertNullable(preview,"projectName"); assertNullable(preview,"inviterName"); assertNullable(preview,"role");
     }
+    @Test void projectManagementPublishesTypedWritesWorkRelationsHistoryAndErrors() {
+        var definition="/api/v1/projects/{projectId}/management";
+        assertThat(operation(definition,"get").path("responses").has("200")).isTrue();
+        assertThat(operation(definition,"patch").path("responses").has("200")).isTrue();
+        assertThat(required(requestSchema(definition,"patch"))).contains("rowVersion","requestId");
+        assertThat(resolve(requestSchema(definition,"patch").path("properties").path("health")).path("enum").toString()).contains("ON_TRACK","WATCH","AT_RISK");
+        var task="/api/v1/projects/{projectId}/management/tasks/{itemId}";
+        assertThat(operation(task,"patch").path("responses").has("200")).isTrue();
+        assertThat(required(requestSchema(task,"patch"))).contains("rowVersion","requestId");
+        var work=resolve(responseSchema("/api/v1/me/work","get"));
+        assertThat(work.path("properties").propertyNames()).contains("items","observedCount","asOfDate","timeZone");
+        var workItem=resolve(work.path("properties").path("items").path("items"));
+        assertThat(workItem.path("properties").propertyNames()).contains("item","execution","blockingReason");
+        var item=resolve(workItem.path("properties").path("item"));
+        assertThat(item.path("properties").propertyNames()).contains("predecessorIds","successorIds","blockerIds","summary");
+        assertThat(operation("/api/v1/me/work","get").path("parameters").valueStream().map(p->p.path("name").asText()).toList())
+                .containsExactlyInAnyOrder("range","timeZone","projectId","assignee","page","limit","q");
+        assertThat(operation("/api/v1/me/work","get").path("parameters").valueStream()
+                .filter(p->p.path("name").asText().equals("range")).findFirst().orElseThrow().path("schema").path("enum").toString())
+                .contains("today","week","all");
+        assertThat(operation("/api/v1/me/work","get").path("parameters").valueStream()
+                .filter(p->p.path("name").asText().equals("assignee")).findFirst().orElseThrow().path("schema").path("enum").toString())
+                .contains("mine","unassigned");
+        var history=resolve(responseSchema("/api/v1/projects/{projectId}/management/history","get"));
+        var entry=resolve(history.path("properties").path("entries").path("items"));
+        assertThat(entry.path("properties").propertyNames()).contains("before","after","resourceType","resourceId");
+        assertThat(operation("/api/v1/projects/{projectId}/management/history","get").path("parameters").valueStream().map(p->p.path("name").asText()).toList())
+                .containsExactlyInAnyOrder("projectId","resourceType","resourceId","page","limit");
+        assertThat(operation("/api/v1/projects/{projectId}/management/tasks","get").path("parameters").valueStream().map(p->p.path("name").asText()).toList())
+                .containsExactlyInAnyOrder("projectId","itemIds");
+        assertThat(resolve(requestSchema(task,"patch")).path("properties").path("priority").path("enum").toString()).contains("HIGH","MEDIUM","LOW");
+        assertThat(resolve(responseSchema(task,"patch")).path("properties").path("priority").path("enum").toString()).contains("HIGH","MEDIUM","LOW");
+        assertThat(resolve(responseSchema(definition,"get")).path("properties").path("health").path("enum").toString()).contains("ON_TRACK","WATCH","AT_RISK");
+        assertThat(example(definition,"patch","project-management-definition-patch").path("health").asText()).isEqualTo("ON_TRACK");
+        for (var status: List.of("400","403","404","409")) assertThat(operation(definition,"patch").path("responses").has(status)).as("definition PATCH %s",status).isTrue();
+        for (var status: List.of("400","403","404","409")) assertThat(operation(task,"patch").path("responses").has(status)).as("task PATCH %s",status).isTrue();
+        assertThat(operation("/api/v1/projects/{projectId}/management/requests/{requestId}","get").path("responses").has("404")).isTrue();
+    }
     @Test void queryBoundsArePartOfTheGeneratedContract() {
         for(var path:List.of("/api/v1/projects","/api/v1/projects/creation-options","/api/v1/projects/{projectId}/members","/api/v1/notifications",base)) {
             var query=operation(path,"get").path("parameters").valueStream().filter(p->p.path("in").asText().equals("query")).toList();

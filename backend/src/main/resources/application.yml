@@ -29,6 +29,10 @@ spring:
       - google_workspace
     create-schemas: true
 
+app:
+  project-management:
+    enabled: ${APP_PROJECT_MANAGEMENT_ENABLED:true}
+
 server:
   servlet:
     session:
