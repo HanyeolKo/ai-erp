@@ -266,21 +266,27 @@ function TaskQuickCreate({ projectId, canEdit, onCreated, onForbidden }: { proje
     const reconcile = () => {
       const current = qc.getQueryData<TaskDraft>(draftKey);
       if (!current?.submitted || !current.attemptId) return;
-      const operation = qc.getMutationCache().getAll().filter((candidate) => {
-        const variables = candidate.state.variables as TaskCreateMutation | undefined;
-        return !!variables && variables.body.requestId === current.submitted?.requestId && variables.operationId === current.operationId && variables.attemptId === current.attemptId;
-      }).at(-1);
-      if (!operation || operation.state.status === "pending") return;
-      const variables = operation.state.variables as TaskCreateMutation;
+      const operation = qc.getMutationCache().getAll().flatMap((candidate) => {
+        if (JSON.stringify(candidate.options.mutationKey) !== JSON.stringify(operationKey)) return [];
+        const raw = candidate.state.variables;
+        if (!raw || typeof raw !== "object") return [];
+        const value = raw as Record<string, unknown>;
+        if (!value.body || typeof value.body !== "object") return [];
+        const body = value.body as Record<string, unknown>;
+        if (typeof body.requestId !== "string" || typeof value.operationId !== "string" || typeof value.attemptId !== "string" || typeof value.sessionGeneration !== "number") return [];
+        return [{ candidate, variables: { body: value.body as PlanItemWrite, operationId: value.operationId, attemptId: value.attemptId, sessionGeneration: value.sessionGeneration } satisfies TaskCreateMutation }];
+      }).filter(({ variables }) => variables.body.requestId === current.submitted?.requestId && variables.operationId === current.operationId && variables.attemptId === current.attemptId).at(-1);
+      if (!operation || operation.candidate.state.status === "pending") return;
+      const { candidate, variables } = operation;
       if (variables.sessionGeneration !== currentSessionGeneration() || current.sessionGeneration !== variables.sessionGeneration) return;
-      if (operation.state.status === "success" && current.phase === "sending") {
+      if (candidate.state.status === "success" && current.phase === "sending") {
         guard.markSaved();
         setTitle(""); setState("BACKLOG");
         qc.setQueryData<TaskDraft>(draftKey, { title: "", state: "BACKLOG", requestId: randomId(), sessionGeneration: currentSessionGeneration(), operationId: randomId(), attemptId: null, submitted: null, phase: "editable" });
         setMessage("TASK를 만들었습니다.");
         onCreated();
-      } else if (operation.state.status === "error" && current.phase === "sending") {
-        const error = operation.state.error;
+      } else if (candidate.state.status === "error" && current.phase === "sending") {
+        const error = candidate.state.error;
         if (error instanceof ApiError && error.status === 403) { qc.setQueryData<TaskDraft>(draftKey, { ...current, phase: "editable" }); onForbidden(); }
         else if (error instanceof ApiError && error.status === 409) { qc.setQueryData<TaskDraft>(draftKey, { ...current, phase: "editable" }); setMessage("다른 변경이 먼저 저장되었습니다. 입력을 확인한 뒤 다시 시도하세요."); }
         else { setTitle(variables.body.title); setState(variables.body.state); qc.setQueryData<TaskDraft>(draftKey, { ...current, phase: "uncertain" }); setMessage("저장 결과를 확인하지 못했습니다. 같은 요청 결과를 확인한 뒤 새 입력을 시작하세요."); }

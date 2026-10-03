@@ -8,7 +8,9 @@ import com.aierp.project.api.ProjectAccess;
 import com.aierp.projectplan.*;
 import com.aierp.projectplan.api.ProjectManagementController.*;
 import java.sql.*;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
 import java.util.concurrent.*;
@@ -84,8 +86,8 @@ class ProjectManagementFoundationPostgresIntegrationTest {
                 assertThat(scalar(db,"SELECT title FROM schedule.project_schedule WHERE id=?",legacySchedule)).isEqualTo("V10 Schedule");
                 assertThat(scalar(db,"SELECT status FROM schedule.project_schedule WHERE id=?",legacySchedule)).isEqualTo("CONFIRMED");
                 assertThat(scalar(db,"SELECT business_revision FROM schedule.project_schedule WHERE id=?",legacySchedule)).isEqualTo(3L);
-                assertThat(scalar(db,"SELECT starts_at FROM schedule.project_schedule WHERE id=?",legacySchedule).toString()).contains("2030-01-01 10:00:00");
-                assertThat(scalar(db,"SELECT ends_at FROM schedule.project_schedule WHERE id=?",legacySchedule).toString()).contains("2030-01-01 11:00:00");
+                assertThat(temporal(db,"SELECT starts_at FROM schedule.project_schedule WHERE id=?",legacySchedule).toInstant()).isEqualTo(Instant.parse("2030-01-01T10:00:00Z"));
+                assertThat(temporal(db,"SELECT ends_at FROM schedule.project_schedule WHERE id=?",legacySchedule).toInstant()).isEqualTo(Instant.parse("2030-01-01T11:00:00Z"));
                 assertThat(scalar(db,"SELECT scope FROM schedule.schedule_saved_view WHERE id=?",legacyView)).isEqualTo("PERSONAL");
                 assertThat(scalar(db,"SELECT owner_id FROM schedule.schedule_saved_view WHERE id=?",legacyView)).isEqualTo(legacyUser);
                 assertThat(scalar(db,"SELECT config = ?::jsonb FROM schedule.schedule_saved_view WHERE id=?","{\"columns\":[\"title\",\"status\"],\"density\":\"compact\"}",legacyView)).isEqualTo(true);
@@ -116,7 +118,11 @@ class ProjectManagementFoundationPostgresIntegrationTest {
         var failureRequest=UUID.randomUUID();var constraint="pm_test_receipt_reject_"+failureRequest.toString().replace("-","");
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> jdbc.update("ALTER TABLE project.management_mutation_receipt ADD CONSTRAINT \""+constraint+"\" CHECK (request_id <> '"+failureRequest+"'::uuid)"));
         try {
-            assertThatThrownBy(() -> management.updateTaskExecution(project,item,new TaskExecutionWrite(TaskPriority.LOW,"After failure",1L,failureRequest),user)).isInstanceOf(Throwable.class);
+            var failure=catchThrowable(() -> management.updateTaskExecution(project,item,new TaskExecutionWrite(TaskPriority.LOW,"After failure",1L,failureRequest),user));
+            assertThat(failure).isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+            var sqlFailure=deepestSqlException(failure);
+            assertThat(sqlFailure.getSQLState()).isEqualTo("23514");
+            assertThat(sqlFailure.getMessage()).contains(constraint);
             assertThat(jdbc.queryForMap("SELECT priority,completion_criterion,row_version,updated_at FROM project.task_execution WHERE item_id=?",item)).isEqualTo(before);
             assertThat(jdbc.queryForObject("SELECT count(*) FROM project.management_audit WHERE project_id=?",Integer.class,project)).isEqualTo(beforeAudit);
             assertThat(jdbc.queryForObject("SELECT count(*) FROM project.management_mutation_receipt WHERE project_id=?",Integer.class,project)).isEqualTo(beforeReceipts);
@@ -152,7 +158,7 @@ class ProjectManagementFoundationPostgresIntegrationTest {
          var beforeRevokeToday=management.work(WorkRange.TODAY,ZoneOffset.UTC,null,WorkAssignee.MINE,0,50,null,user);
          assertThat(beforeRevokeToday.totalCount()).isEqualTo(2L);assertThat(beforeRevokeToday.items()).extracting(row->row.projectId()).contains(project,otherProject);
          var titleMatch=management.work(WorkRange.ALL,ZoneOffset.UTC,null,WorkAssignee.MINE,0,50,"Task",user);
-         assertThat(titleMatch.totalCount()).isEqualTo(1L);assertThat(titleMatch.items()).extracting(row->row.item().id()).containsExactly(item);
+         assertThat(titleMatch.totalCount()).isEqualTo(2L);assertThat(titleMatch.items()).extracting(row->row.item().id()).containsExactlyInAnyOrder(item,otherItem);
          var descriptionMatch=management.work(WorkRange.ALL,ZoneOffset.UTC,null,WorkAssignee.MINE,0,50,"other task description",user);
          assertThat(descriptionMatch.totalCount()).isEqualTo(1L);assertThat(descriptionMatch.items()).extracting(row->row.item().id()).containsExactly(otherItem);
         jdbc.update("DELETE FROM project.project_member WHERE project_id=? AND user_account_id=?",otherProject,user);
@@ -198,6 +204,8 @@ class ProjectManagementFoundationPostgresIntegrationTest {
     }
     private static void execute(Connection db,String sql,Object... values)throws SQLException{try(var statement=db.prepareStatement(sql)){for(int i=0;i<values.length;i++)statement.setObject(i+1,values[i]);statement.executeUpdate();}}
     private static Object scalar(Connection db,String sql,Object... values)throws SQLException{try(var statement=db.prepareStatement(sql)){for(int i=0;i<values.length;i++)statement.setObject(i+1,values[i]);try(var result=statement.executeQuery()){return result.next()?result.getObject(1):null;}}}
+    private static OffsetDateTime temporal(Connection db,String sql,Object... values)throws SQLException{try(var statement=db.prepareStatement(sql)){for(int i=0;i<values.length;i++)statement.setObject(i+1,values[i]);try(var result=statement.executeQuery()){return result.next()?result.getObject(1,OffsetDateTime.class):null;}}}
+    private static SQLException deepestSqlException(Throwable failure){SQLException deepest=null;for(Throwable current=failure;current!=null;current=current.getCause())if(current instanceof SQLException sql)deepest=sql;if(deepest==null)throw new AssertionError("deepest SQL exception is missing",failure);return deepest;}
     private static String identifier(String value){return "\""+value.replace("\"","\"\"")+"\"";}
 }
 

@@ -55,6 +55,56 @@ class OpenApiWorkspaceSchemaNormalizerTest {
         assertThatThrownBy(()->OpenApiWorkspaceSchemaNormalizer.main(new String[]{path.toString()})).isInstanceOf(IllegalStateException.class).hasMessageContaining("default");assertThat(Files.readString(path)).isEqualTo(before);
     }
 
+    @Test void rejectsLimitMetadataDefault51Against50WithoutChangingArtifact() throws Exception {
+        var path=writeFixture(5,5);mutateMetadata(path,"project-management-work","limit",record->record.put("default",51));var before=Files.readAllBytes(path);
+        assertThatThrownBy(()->OpenApiWorkspaceSchemaNormalizer.main(new String[]{path.toString()})).isInstanceOf(IllegalStateException.class).hasMessageContaining("default");assertThat(Files.readAllBytes(path)).containsExactly(before);
+    }
+
+    @Test void rejectsFractionalMetadataMaxWithoutChangingArtifact() throws Exception {
+        var path=writeFixture(5,5);mutateMetadata(path,"project-management-work","limit",record->constraint(record,"Max").put("value",100.5));var before=Files.readAllBytes(path);
+        assertThatThrownBy(()->OpenApiWorkspaceSchemaNormalizer.main(new String[]{path.toString()})).isInstanceOf(IllegalStateException.class).hasMessageContaining("Non-integer");assertThat(Files.readAllBytes(path)).containsExactly(before);
+    }
+
+    @Test void rejectsFractionalMetadataDefaultWithoutChangingArtifact() throws Exception {
+        var path=writeFixture(5,5);mutateMetadata(path,"project-management-work","page",record->record.put("default",0.5));var before=Files.readAllBytes(path);
+        assertThatThrownBy(()->OpenApiWorkspaceSchemaNormalizer.main(new String[]{path.toString()})).isInstanceOf(IllegalStateException.class).hasMessageContaining("Non-integer");assertThat(Files.readAllBytes(path)).containsExactly(before);
+    }
+
+    @Test void rejectsConflictingDuplicateMetadataMaxWithoutChangingArtifact() throws Exception {
+        var path=writeFixture(5,5);mutateMetadata(path,"project-management-work","limit",record->{var attributes=(Map<String,Object>)record.get("attributes");var constraints=(List<Object>)attributes.get("validationConstraints");constraints.add(Map.of("name","Max","configuration",Map.of("value",99)));});var before=Files.readAllBytes(path);
+        assertThatThrownBy(()->OpenApiWorkspaceSchemaNormalizer.main(new String[]{path.toString()})).isInstanceOf(IllegalStateException.class).hasMessageContaining("Conflicting Max");assertThat(Files.readAllBytes(path)).containsExactly(before);
+    }
+
+    @Test void rejectsFractionalGeneratedMaximum100_5WithoutChangingArtifact() throws Exception {
+        var path=writeFixture(5,5);mutateParameter(path,"/api/v1/me/work","limit",parameter->parameterSchema(parameter).put("maximum",100.5));var before=Files.readAllBytes(path);
+        assertThatThrownBy(()->OpenApiWorkspaceSchemaNormalizer.main(new String[]{path.toString()})).isInstanceOf(IllegalStateException.class).hasMessageContaining("Non-integer");assertThat(Files.readAllBytes(path)).containsExactly(before);
+    }
+
+    @Test void rejectsFractionalGeneratedDefaultWithoutChangingArtifact() throws Exception {
+        var path=writeFixture(5,5);mutateParameter(path,"/api/v1/me/work","page",parameter->parameterSchema(parameter).put("default",0.5));var before=Files.readAllBytes(path);
+        assertThatThrownBy(()->OpenApiWorkspaceSchemaNormalizer.main(new String[]{path.toString()})).isInstanceOf(IllegalStateException.class).hasMessageContaining("Non-integer");assertThat(Files.readAllBytes(path)).containsExactly(before);
+    }
+
+    @Test void rejectsGeneratedNonIntegerTypeWithoutChangingArtifact() throws Exception {
+        var path=writeFixture(5,5);mutateParameter(path,"/api/v1/me/work","page",parameter->parameterSchema(parameter).put("type","string"));var before=Files.readAllBytes(path);
+        assertThatThrownBy(()->OpenApiWorkspaceSchemaNormalizer.main(new String[]{path.toString()})).isInstanceOf(IllegalStateException.class).hasMessageContaining("Unexpected management parameter metadata");assertThat(Files.readAllBytes(path)).containsExactly(before);
+    }
+
+    @Test void rejectsGeneratedRequiredTrueWithoutChangingArtifact() throws Exception {
+        var path=writeFixture(5,5);mutateParameter(path,"/api/v1/me/work","page",parameter->parameter.put("required",true));var before=Files.readAllBytes(path);
+        assertThatThrownBy(()->OpenApiWorkspaceSchemaNormalizer.main(new String[]{path.toString()})).isInstanceOf(IllegalStateException.class).hasMessageContaining("Unexpected management parameter metadata");assertThat(Files.readAllBytes(path)).containsExactly(before);
+    }
+
+    @Test void rejectsOneMissingMetadataRecordWithoutChangingArtifact() throws Exception {
+        var path=writeFixture(5,5);removeMetadata(path,"project-management-work","page");var before=Files.readAllBytes(path);
+        assertThatThrownBy(()->OpenApiWorkspaceSchemaNormalizer.main(new String[]{path.toString()})).isInstanceOf(IllegalStateException.class).hasMessageContaining("found 0");assertThat(Files.readAllBytes(path)).containsExactly(before);
+    }
+
+    @Test void rejectsOneMissingGeneratedQueryParameterWithoutChangingArtifact() throws Exception {
+        var path=writeFixture(5,5);removeParameter(path,"/api/v1/me/work","page");var before=Files.readAllBytes(path);
+        assertThatThrownBy(()->OpenApiWorkspaceSchemaNormalizer.main(new String[]{path.toString()})).isInstanceOf(IllegalStateException.class).hasMessageContaining("Missing OpenAPI query parameter");assertThat(Files.readAllBytes(path)).containsExactly(before);
+    }
+
     private Path writeFixture(int filterCount,int valueCount)throws Exception {
         var schemas=new ArrayList<Object>();
         for(int i=0;i<filterCount;i++)schemas.add(new LinkedHashMap<>(Map.of("type","object","description","String, number, boolean, or null according to field/operator","nullable",true)));
@@ -66,7 +116,9 @@ class OpenApiWorkspaceSchemaNormalizerTest {
     private static Map<String,Object> parameter(String name,int defaultValue){return Map.of("name",name,"in","query","required",false,"schema",Map.of("type","integer","default",defaultValue));}
     private static void writeBoundResource(Path path,int pageMin,int limitMin,int limitMax)throws Exception{Files.createDirectories(path.getParent());var page=Map.of("name","page","type","INTEGER","optional",true,"default",0,"attributes",Map.of("validationConstraints",List.of(Map.of("name","Min","configuration",Map.of("value",pageMin)))));var limit=Map.of("name","limit","type","INTEGER","optional",true,"default",50,"attributes",Map.of("validationConstraints",List.of(Map.of("name","Min","configuration",Map.of("value",limitMin)),Map.of("name","Max","configuration",Map.of("value",limitMax)))));Files.writeString(path,new Yaml().dump(Map.of("request",Map.of("queryParameters",List.of(page,limit)))));}
     @SuppressWarnings("unchecked") private static void mutateMetadata(Path path,String resource,String name,Consumer<Map<String,Object>> mutation)throws Exception{var file=path.getParent().resolve("generated-snippets").resolve(resource).resolve("resource.json");var root=(Map<String,Object>)new Yaml().load(Files.readString(file));var request=(Map<String,Object>)root.get("request");var parameters=(List<Map<String,Object>>)request.get("queryParameters");var record=parameters.stream().filter(value->name.equals(value.get("name"))).findFirst().orElseThrow();mutation.accept(record);Files.writeString(file,new Yaml().dump(root));}
+    @SuppressWarnings("unchecked") private static void removeMetadata(Path path,String resource,String name)throws Exception{var file=path.getParent().resolve("generated-snippets").resolve(resource).resolve("resource.json");var root=(Map<String,Object>)new Yaml().load(Files.readString(file));var request=(Map<String,Object>)root.get("request");var parameters=(List<Map<String,Object>>)request.get("queryParameters");parameters.removeIf(value->name.equals(value.get("name")));Files.writeString(file,new Yaml().dump(root));}
     @SuppressWarnings("unchecked") private static void mutateParameter(Path path,String route,String name,Consumer<Map<String,Object>> mutation)throws Exception{var root=(Map<String,Object>)new Yaml().load(Files.readString(path));var paths=(Map<String,Object>)root.get("paths");var routeMap=(Map<String,Object>)paths.get(route);var get=(Map<String,Object>)routeMap.get("get");var parameters=(List<Map<String,Object>>)get.get("parameters");var parameter=parameters.stream().filter(value->name.equals(value.get("name"))).findFirst().orElseThrow();mutation.accept(parameter);Files.writeString(path,new Yaml().dump(root));}
+    @SuppressWarnings("unchecked") private static void removeParameter(Path path,String route,String name)throws Exception{var root=(Map<String,Object>)new Yaml().load(Files.readString(path));var paths=(Map<String,Object>)root.get("paths");var routeMap=(Map<String,Object>)paths.get(route);var get=(Map<String,Object>)routeMap.get("get");var parameters=(List<Map<String,Object>>)get.get("parameters");parameters.removeIf(value->name.equals(value.get("name")));Files.writeString(path,new Yaml().dump(root));}
     @SuppressWarnings("unchecked") private static Map<String,Object> parameterSchema(Map<String,Object> parameter){return (Map<String,Object>)parameter.get("schema");}
     @SuppressWarnings("unchecked") private static Map<String,Object> constraint(Map<String,Object> record,String name){var attributes=(Map<String,Object>)record.get("attributes");var constraints=(List<Map<String,Object>>)attributes.get("validationConstraints");return constraints.stream().filter(value->name.equals(value.get("name"))).map(value->(Map<String,Object>)value.get("configuration")).findFirst().orElseThrow();}
     @SuppressWarnings("unchecked") private static Map<String,Object> schema(Map<String,Object> root,String name){return (Map<String,Object>)((Map<String,Object>)((Map<String,Object>)root.get("components")).get("schemas")).get(name);}

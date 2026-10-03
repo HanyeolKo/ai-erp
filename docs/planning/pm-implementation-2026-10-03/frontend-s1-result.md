@@ -92,3 +92,19 @@ overview plan read는 기존 access-denial boundary를 사용해 current 403에�
 현재 추가된 named regression은 21개 PM test와 8개 session-boundary test를 포함한다. 입력 즉시 보존, known 409 새 UUID, unknown 500 동일 UUID, 성공 후 새 UUID, 5분 초과 route 왕복, current 403 membership 재확인, TASK0+schedule1, unobserved predecessor, plan 500 독립성, remounted pending retry 잠금을 실제 App·session·HTTP primitives로 검증한다. 부모의 실제 Chrome 관찰, same-SHA CI, live ERP/Google provider, release와 최종 verdict는 실행하지 않았다. 최종 root test/typecheck/build 실행 후 이 결과의 상태를 갱신한다.
 
 최종 root 검증은 `root-test-final.meta.json`의 `pnpm frontend:test`, 30 files / 355 tests / exit 0, `root-typecheck-final.meta.json`의 `pnpm frontend:typecheck` / exit 0, `root-build-final.meta.json`의 `pnpm frontend:build` / exit 0으로 완료했다. 최종 whitespace scan도 exit 0이다. 따라서 이 구현 결과는 부모의 independent review와 same-SHA CI를 기다리는 **ready-for-review** 상태다.
+
+## repair attempt 6 결과
+
+부모 승인 attempt6에서 `ProjectPlan.tsx`의 TaskQuickCreate reconciliation만 보수했다. reconciliation은 현재 `operationKey`와 일치하는 mutation 후보만 보고, variables/body/requestId/operationId/attemptId/sessionGeneration의 런타임 shape를 확인한 뒤 기존 session·operation·attempt 비교를 수행한다. 기존 TASK 상태 PATCH의 body 없는 mutation이 cache에 남아 있어도 quick-create POST 성공 후 화면이 빈 상태가 되지 않는다. 변경 테스트는 실제 `http().on` PATCH 1회 → POST 1회 순서를 같은 App/QueryClient에서 실행하고 성공 문구·작업 화면 복귀를 확인한다.
+
+추가 회귀는 inactive route에서 Date와 실제 `setTimeout`/`clearTimeout` fake timer를 전진한 뒤 draft title을 보존하고, 현재 overview TASK 403에서 exact plan/member `removeQueries` 호출·project 재확인·TASK 작성 동작 잠금·같은 generation own draft 보존을 확인한다. session-boundary 회귀는 deferred TASK POST를 보유한 상태에서 기존 App 401 경계로 종료하고 old-generation draft 제거와 늦은 응답의 login UI 무영향을 확인한다.
+
+최종 실행은 아래 raw transcript에 보존했다.
+
+- `tmp/pm-implementation-2026-10-03/f1/exception-repair6/frontend-test-final.meta.txt`: `pnpm frontend:test`, exit 0, 30 files / 358 tests passed.
+- `tmp/pm-implementation-2026-10-03/f1/exception-repair6/frontend-typecheck-final.meta.txt`: `pnpm frontend:typecheck`, exit 0.
+- `tmp/pm-implementation-2026-10-03/f1/exception-repair6/frontend-build-final.meta.txt`: `pnpm frontend:build`, exit 0.
+- `tmp/pm-implementation-2026-10-03/f1/exception-repair6/p1-update-quick-create-final.meta.txt`: focused real TASK update PATCH → quick-create POST regression, 1 passed / 22 skipped, exit 0.
+- `tmp/pm-implementation-2026-10-03/f1/exception-repair6/mixed-cache-before-fix.md`: fresh baseline은 guard 편집 전 실행하지 않았으며 frozen R5의 실제 failure-before raw 경로를 연결한다.
+
+브라우저·same-SHA CI·live ERP/Google/provider·release는 부모 소유로 실행하지 않았다. Fixture와 이 검사는 offline-contract-only이며 live integration 성공을 의미하지 않는다. 지정된 named assertion 중 이 결과에서 새로 추가하지 않은 항목은 기존 유효 경로와 부모 검토가 필요하며, broad test count로 충족을 주장하지 않는다. 상태는 **ready-for-review**다.

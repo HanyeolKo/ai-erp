@@ -1,7 +1,9 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { QueryClient } from "@tanstack/react-query";
 import { afterEach, expect, test, vi } from "vitest";
 import App from "./App";
+import { currentSessionGeneration } from "./session";
 import { http, json, planSnapshot, project, taskSummary } from "./test/http";
 
 afterEach(() => { vi.restoreAllMocks(); window.location.hash = ""; sessionStorage.clear(); });
@@ -96,6 +98,24 @@ test("compact TASK creation rechecks the same request after an unknown outcome",
   expect(postCalls[0].body.requestId).toBe(postCalls[1].body.requestId);
 });
 
+test("quick create reconciles after a real TASK update mutation in the same cache", async () => {
+  const server = http();
+  server.on("PATCH", "/api/v1/projects/p1/plan/items/task-1", () => json({ ...planSnapshot.items[0], state: "IN_PROGRESS" }));
+  server.on("POST", "/api/v1/projects/p1/plan/items", (body) => json({ ...planSnapshot.items[0], title: body.title }));
+  const user = mount("/projects/p1/plan");
+  const state = await screen.findByLabelText("실행 TASK 상태");
+  await user.selectOptions(state, "IN_PROGRESS");
+  await screen.findByText("계획 항목을 저장했습니다.");
+  const title = screen.getByLabelText("제목");
+  await user.type(title, "연속 생성 TASK");
+  await user.click(screen.getByRole("button", { name: "TASK 만들기" }));
+  await screen.findByText("TASK를 만들었습니다.");
+  expect(screen.getByRole("heading", { name: "작업" })).toBeInTheDocument();
+  expect(server.calls.filter((call) => call.method === "PATCH" && call.url.endsWith("/plan/items/task-1"))).toHaveLength(1);
+  expect(server.calls.filter((call) => call.method === "POST" && call.url.endsWith("/plan/items"))).toHaveLength(1);
+  expect(screen.queryByText("Cannot read properties of undefined")).not.toBeInTheDocument();
+});
+
 test("remounted unknown retry stays locked while the new attempt is pending", async () => {
   const server = http(); let first = true; let finish!: (response: Response) => void;
   server.on("POST", "/api/v1/projects/p1/plan/items", () => { if (first) { first = false; return json({ code: "UNKNOWN_OUTCOME" }, 500); } return new Promise(resolve => { finish = resolve; }); });
@@ -174,9 +194,10 @@ test("successful TASK creation allocates a new UUID for the next creation", asyn
 
 test("compact TASK draft survives route return after more than five minutes", async () => {
   http(); const user = mount("/projects/p1/plan"); const title = await screen.findByLabelText("제목"); await user.type(title, "장기 보존 TASK");
-  vi.spyOn(window, "confirm").mockReturnValue(true); vi.advanceTimersByTime(5 * 60 * 1000 + 1);
-  window.location.hash = "#/projects/p1/schedules"; await screen.findByRole("heading", { name: "프로젝트 일정" }); window.location.hash = "#/projects/p1/plan";
-  expect(await screen.findByLabelText("제목")).toHaveValue("장기 보존 TASK");
+  vi.spyOn(window, "confirm").mockReturnValue(true); vi.advanceTimersByTime(5 * 60 * 1000 + 1); window.location.hash = "#/projects/p1/schedules"; await act(async () => { await Promise.resolve(); });
+  expect(window.location.hash).toBe("#/projects/p1/schedules");
+  vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] }); vi.advanceTimersByTime(5 * 60 * 1000 + 1); window.location.hash = "#/projects/p1/plan"; await act(async () => { await Promise.resolve(); });
+  expect(screen.getByLabelText("제목")).toHaveValue("장기 보존 TASK");
 });
 
 test("current TASK denial rechecks project membership and preserves the own draft namespace", async () => {
@@ -184,6 +205,40 @@ test("current TASK denial rechecks project membership and preserves the own draf
   server.on("GET", "/api/v1/projects", () => { projectReads += 1; return json([project]); });
   server.on("GET", "/api/v1/projects/p1/plan", () => json({ code: "PLAN_FORBIDDEN" }, 403));
   mount("/projects/p1"); await screen.findByText("PLAN_FORBIDDEN"); await waitFor(() => expect(projectReads).toBeGreaterThanOrEqual(2));
+});
+
+test("cached TASK success followed by overview 403 clears protected caches and keeps the own draft", async () => {
+  const server = http();
+  let forbidden = false;
+  let projectReads = 0;
+  let client: QueryClient | undefined;
+  const removedKeys: unknown[][] = [];
+  const removeQueries = QueryClient.prototype.removeQueries;
+  vi.spyOn(QueryClient.prototype, "removeQueries").mockImplementation(function (this: QueryClient, filters) {
+    client = this;
+    if (filters?.queryKey) removedKeys.push([...filters.queryKey]);
+    return removeQueries.call(this, filters);
+  });
+  server.on("GET", "/api/v1/projects", () => { projectReads += 1; return json([project]); });
+  server.on("GET", "/api/v1/projects/p1/plan", () => forbidden ? json({ code: "PLAN_FORBIDDEN" }, 403) : json(planSnapshot));
+  const user = mount("/projects/p1/plan");
+  const title = await screen.findByLabelText("제목");
+  await user.type(title, "내 보존 TASK");
+  const state = within(screen.getByRole("form", { name: "TASK 빠른 추가" })).getByRole("combobox");
+  await user.selectOptions(state, "IN_PROGRESS");
+  const generation = currentSessionGeneration();
+  forbidden = true;
+  vi.spyOn(window, "confirm").mockReturnValue(true);
+  vi.advanceTimersByTime(15_001);
+  window.location.hash = "#/projects/p1";
+  await screen.findByRole("heading", { name: "프로젝트 개요" });
+  await screen.findByText("PLAN_FORBIDDEN");
+  await waitFor(() => expect(projectReads).toBeGreaterThanOrEqual(2));
+  await waitFor(() => expect(client).toBeDefined());
+  expect(removedKeys).toEqual(expect.arrayContaining([["project-plan", "p1", ""], ["members", "p1"]]));
+  expect(client!.getQueryData(["project-task-draft", generation, "p1"])).toMatchObject({ title: "내 보존 TASK", state: "IN_PROGRESS" });
+  expect(screen.queryByRole("link", { name: "TASK 만들기" })).not.toBeInTheDocument();
+  expect(screen.getAllByRole("link", { name: "작업 열기" })).not.toHaveLength(0);
 });
 
 test("TASK zero keeps schedule dashboard sections when a schedule exists", async () => {

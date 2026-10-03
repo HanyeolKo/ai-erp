@@ -109,7 +109,7 @@ class OpenApiContractTest {
         assertThat(resolve(requestSchema(task,"patch")).path("properties").path("priority").path("enum").toString()).contains("HIGH","MEDIUM","LOW");
         assertThat(resolve(responseSchema(task,"patch")).path("properties").path("priority").path("enum").toString()).contains("HIGH","MEDIUM","LOW");
         assertThat(resolve(responseSchema(definition,"get")).path("properties").path("health").path("enum").toString()).contains("ON_TRACK","WATCH","AT_RISK");
-        var definitionExample=example(definition,"patch","project-management-definition-patch");
+        var definitionExample=requestExample(definition,"patch","project-management-definition-patch");
         assertThat(definitionExample.path("health").asText()).isEqualTo("ON_TRACK");
         assertThat(definitionExample.path("healthReason").asText()).isEqualTo("Reason");
         assertThat(definitionExample.path("healthAsOf").asText()).isEqualTo("2026-10-03");
@@ -190,6 +190,10 @@ class OpenApiContractTest {
     private static JsonNode resolve(JsonNode schema) {return schema.has("$ref")?document.at(schema.path("$ref").asText().substring(1)):schema;}
     private static JsonNode example(String path,String method,String name) {
         var value=operation(path,method).path("responses").path("200").path("content").path("application/json").path("examples").path(name).path("value");
+        return value.isString()?mapper.valueToTree(new Yaml().load(value.asText())):value;
+    }
+    private static JsonNode requestExample(String path,String method,String name) {
+        var value=operation(path,method).path("requestBody").path("content").path("application/json;charset=UTF-8").path("examples").path(name).path("value");
         return value.isString()?mapper.valueToTree(new Yaml().load(value.asText())):value;
     }
 }
