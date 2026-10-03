@@ -289,3 +289,26 @@ test("a stale create failure cannot mark the same group uncertain in a new sessi
   expect(createCalls).toBe(1);
   second.unmount();
 });
+
+test("a terminated TASK session removes its draft and ignores a late create response", async () => {
+  const server = http();
+  const cleanup = monitorSessionCleanup();
+  let finishCreate!: (response: Response) => void;
+  server.on("POST", "/api/v1/projects/p1/plan/items", () => new Promise(resolve => { finishCreate = resolve; }));
+  server.on("GET", "/api/v1/notifications", () => json({ code: "UNAUTHENTICATED" }, 401));
+  const { user } = mount("/projects/p1/plan");
+  const title = await screen.findByLabelText("제목");
+  await user.type(title, "이전 세션 TASK");
+  await user.click(screen.getByRole("button", { name: "TASK 만들기" }));
+  await waitFor(() => expect(finishCreate).toBeTypeOf("function"));
+  const oldGeneration = currentSessionGeneration();
+  await user.click(screen.getByRole("button", { name: "알림" }));
+  await screen.findByRole("link", { name: "Google로 로그인" });
+  await waitFor(() => expect(cleanup.client).toBeDefined());
+  expect(cleanup.client!.getQueryData(["project-task-draft", oldGeneration, "p1"])).toBeUndefined();
+
+  await act(async () => finishCreate(json({ ...schedule, title: "늦은 TASK 응답" })));
+  await waitFor(() => expect(cleanup.client!.getQueryCache().find({ queryKey: ["project-task-draft", oldGeneration, "p1"] })).toBeUndefined());
+  expect(screen.getByRole("link", { name: "Google로 로그인" })).toBeInTheDocument();
+  expect(screen.queryByText("늦은 TASK 응답")).not.toBeInTheDocument();
+});

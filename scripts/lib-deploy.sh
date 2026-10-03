@@ -122,14 +122,14 @@ verify_source() {
 }
 verify_migrations() {
   local path
-  for path in "$MIGRATION_DIR"/V1__create_module_schemas.sql "$MIGRATION_DIR"/V2__create_phase1_tables.sql "$MIGRATION_DIR"/V4__add_phase1_concurrency_guards.sql "$MIGRATION_DIR"/V5__add_bounded_read_indexes.sql "$MIGRATION_DIR"/V6__add_explicit_group_roles.sql "$MIGRATION_DIR"/V7__add_project_share_invitations.sql "$MIGRATION_DIR"/V8__add_google_workspace_integrations.sql "$MIGRATION_DIR"/V9__create_project_plan.sql "$MIGRATION_DIR"/V10__add_schedule_workspace.sql; do
+  for path in "$MIGRATION_DIR"/V1__create_module_schemas.sql "$MIGRATION_DIR"/V2__create_phase1_tables.sql "$MIGRATION_DIR"/V4__add_phase1_concurrency_guards.sql "$MIGRATION_DIR"/V5__add_bounded_read_indexes.sql "$MIGRATION_DIR"/V6__add_explicit_group_roles.sql "$MIGRATION_DIR"/V7__add_project_share_invitations.sql "$MIGRATION_DIR"/V8__add_google_workspace_integrations.sql "$MIGRATION_DIR"/V9__create_project_plan.sql "$MIGRATION_DIR"/V10__add_schedule_workspace.sql "$MIGRATION_DIR"/V11__add_project_management_foundation.sql; do
     no_symlinks "$path"
     [[ -s "$path" && -f "$path" ]] || fail 'required migration file missing'
   done
-  [[ "$(find "$MIGRATION_DIR" -mindepth 1 -maxdepth 1 | wc -l)" == 9 ]] || fail 'unexpected migration set'
+  [[ "$(find "$MIGRATION_DIR" -mindepth 1 -maxdepth 1 | wc -l)" == 10 ]] || fail 'unexpected migration set'
 }
 migration_checksum() {
-  (cd "$MIGRATION_DIR" && sha256sum V1__create_module_schemas.sql V2__create_phase1_tables.sql V4__add_phase1_concurrency_guards.sql V5__add_bounded_read_indexes.sql V6__add_explicit_group_roles.sql V7__add_project_share_invitations.sql V8__add_google_workspace_integrations.sql V9__create_project_plan.sql V10__add_schedule_workspace.sql) | sha256sum | awk '{print $1}'
+  (cd "$MIGRATION_DIR" && sha256sum V1__create_module_schemas.sql V2__create_phase1_tables.sql V4__add_phase1_concurrency_guards.sql V5__add_bounded_read_indexes.sql V6__add_explicit_group_roles.sql V7__add_project_share_invitations.sql V8__add_google_workspace_integrations.sql V9__create_project_plan.sql V10__add_schedule_workspace.sql V11__add_project_management_foundation.sql) | sha256sum | awk '{print $1}'
 }
 verify_resources() {
   local kind list name label expected

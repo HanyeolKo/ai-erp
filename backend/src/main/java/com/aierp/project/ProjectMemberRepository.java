@@ -4,6 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.domain.Pageable;
 public interface ProjectMemberRepository extends JpaRepository<ProjectMemberEntity, ProjectMemberEntity.Key> {
+    List<ProjectMemberEntity> findByUserAccountId(UUID userAccountId);
     List<ProjectMemberEntity> findByUserAccountId(UUID userAccountId, Pageable page);
     Optional<ProjectMemberEntity> findByProjectIdAndUserAccountId(UUID projectId, UUID userAccountId);
     List<ProjectMemberEntity> findByProjectId(UUID projectId, Pageable page);

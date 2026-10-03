@@ -1,0 +1,10 @@
+# Document assignment
+
+- Task ERP-PM-DOC-20261004, r1; parent root; recipient canonical librarian, actual pm_exception4_reader_archive default wrapper explicitly Sol/medium/forknone because native librarian is absent from callable role registry. Native model policy is preserved.
+- Operation save; exact C worktree docs/reports/ai-erp-project-management-implementation-2026-10-03.md and docs/planning/pm-implementation-2026-10-03/exception4-latest-document-result.md only. Local file remains canonical.
+- Root accepted source: independent exception4 B1/F1 FAIL records, exact9b4 CI37131323242 actual61/4PGFAIL and3causes diagnosed read-only, retained failed frontend raw344pass2fail, actual ASCII input loss and narrow >32minute same-request recovery, proposed unauthorized/unassigned attempt5 contracts. Preserve verdicts, S2/S3unimplemented and prior user merge authorization with gates unsatisfied. Parent followup corrects elapsed wording to >32minutes, not a rounded precise duration.
+- Same context AI ERP project-management implementation status, same continuing report/purpose. Reporting date2026-10-04KST; existing filename preserved, no separate revision page.
+- Archive target AI 생성문서 관리 database345de20d-f69b-4fe8-b79b-a204c819a7f8; readiness blocked prior404/readstatusUNKNOWN. Save local only, defer archive without repeated unchanged probes or duplicate page.
+- External mode offline-contract-only for source record, archive live dependency unknown. Reading status unknown; no archive mutation authorized without actual schema/status readiness. Required output path/hash/meaningpreserved/checksnotrun/Notiondeferred.
+- Mentions/quotes allowed; executable/tests/config/screen meanings/release permissions or commands/verdict changes excluded; no delete/rename/bulkmerge/share/permissionchange/provider/browser/Git mutation. Read full pinned fluent-korean before readerprose.
+- Acceptance check accurate candidate/CI/checkexecution distinction, preservedFAIL and pendingapproval, concise Korean, existing evidence links; scoped whitespace check. Return to root, no delegation or independent publication.

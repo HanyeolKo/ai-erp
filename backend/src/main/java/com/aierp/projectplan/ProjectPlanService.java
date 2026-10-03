@@ -36,10 +36,12 @@ public class ProjectPlanService {
         if (from!=null && to!=null && from.isAfter(to)) throw new ValidationFailure("to","Must be on or after from");
         var plan=plans.findById(projectId).orElseGet(() -> virtualPlan(projectId));
         var all=items.findByProjectIdOrderBySortOrderAscIdAsc(projectId);
-        var graph=new Graph(all,dependencies.findByItemIdIn(all.stream().map(i->i.id).toList()));
+        var allEdges=dependencies.findByItemIdIn(all.stream().map(i->i.id).toList());
+        var graph=new Graph(all,allEdges);
         var matched=all.stream().filter(i -> matches(i,graph,kind,state,includeCancelled,assigneeId,unassigned,scopeId,from,to,q,label)).toList();
         var asOf=LocalDate.now(ZoneOffset.UTC);
-        var responses=all.stream().map(i -> response(i,graph,all,asOf,plan.targetStart,plan.targetEnd)).toList();
+        var readContext=PlanItemReadModel.context(all,allEdges,true);
+        var responses=all.stream().map(i -> readContext.response(i,asOf,plan.targetStart,plan.targetEnd)).toList();
         var byId=responses.stream().collect(Collectors.toMap(ItemResponse::id,Function.identity()));
         return new Snapshot(projectId,plan.rowVersion,plan.targetStart,plan.targetEnd,asOf,responses,matched.stream().map(i->i.id).toList(),
             summary(all,all,graph,asOf,plan.targetStart,plan.targetEnd),true,all.size());
@@ -63,7 +65,7 @@ public class ProjectPlanService {
             String hash=hash(payload(input,predecessorIds)); var prior=requests.findByProjectIdAndActorIdAndRequestId(projectId,user,input.requestId());
             if(prior.isPresent()) { if(!hash.equals(prior.get().payloadHash)) throw new IllegalStateException("PLAN_CREATION_PAYLOAD_MISMATCH");
                 var all=items.findByProjectIdOrderBySortOrderAscIdAsc(projectId);var existing=items.findByIdAndProjectId(prior.get().itemId,projectId).orElseThrow(NoSuchElementException::new);
-                return response(existing,new Graph(all,dependencies.findByItemIdIn(all.stream().map(i->i.id).toList())),all,LocalDate.now(ZoneOffset.UTC),null,null); }
+                return PlanItemReadModel.context(all,dependencies.findByItemIdIn(all.stream().map(i->i.id).toList()),true).response(existing,LocalDate.now(ZoneOffset.UTC),null,null); }
         }
         var all=items.findByProjectIdOrderBySortOrderAscIdAsc(projectId); validateHierarchy(input.kind(),input.parentId(),null,all,projectId);
         access.requirePlanAssignee(projectId,input.assigneeId());
@@ -71,7 +73,7 @@ public class ProjectPlanService {
         var item=new PlanItemEntity();item.id=UUID.randomUUID();item.projectId=projectId;apply(item,input);item.createdBy=user;item.rowVersion=0;item.updatedAt=Instant.now();items.saveAndFlush(item);
         replaceDependencies(item.id,predecessorIds);recordHistory(item,user,input.reason(),null,values(item,predecessorIds));
         if(input.requestId()!=null) { var request=new PlanItemCreationRequestEntity();request.projectId=projectId;request.actorId=user;request.requestId=input.requestId();request.payloadHash=hash(payload(input,predecessorIds));request.itemId=item.id;request.createdAt=Instant.now();requests.save(request); }
-        var latest=items.findByProjectIdOrderBySortOrderAscIdAsc(projectId);return response(item,new Graph(latest,dependencies.findByItemIdIn(latest.stream().map(i->i.id).toList())),latest,LocalDate.now(ZoneOffset.UTC),null,null);
+        var latest=items.findByProjectIdOrderBySortOrderAscIdAsc(projectId);return PlanItemReadModel.context(latest,dependencies.findByItemIdIn(latest.stream().map(i->i.id).toList()),true).response(item,LocalDate.now(ZoneOffset.UTC),null,null);
     }
 
     @Transactional public ItemResponse update(UUID projectId,UUID itemId,ItemWrite input,UUID user) {
@@ -80,7 +82,7 @@ public class ProjectPlanService {
         if(item.rowVersion!=expected) throw stale(itemId);var all=items.findByProjectIdOrderBySortOrderAscIdAsc(projectId);
         validateHierarchy(input.kind(),input.parentId(),item,all,projectId);access.requirePlanAssignee(projectId,input.assigneeId());var predecessorIds=normalizeDependencies(input.predecessorIds());validateDependencies(projectId,item.id,input.kind(),predecessorIds,all);
         var beforeDeps=dependencies.findByItemId(item.id).stream().map(d->d.predecessorId).toList();Map<String,Object> before=values(item,beforeDeps);apply(item,input);item.rowVersion++;item.updatedAt=Instant.now();items.saveAndFlush(item);replaceDependencies(item.id,predecessorIds);recordHistory(item,user,input.reason(),before,values(item,predecessorIds));
-        var latest=items.findByProjectIdOrderBySortOrderAscIdAsc(projectId);return response(item,new Graph(latest,dependencies.findByItemIdIn(latest.stream().map(i->i.id).toList())),latest,LocalDate.now(ZoneOffset.UTC),null,null);
+        var latest=items.findByProjectIdOrderBySortOrderAscIdAsc(projectId);return PlanItemReadModel.context(latest,dependencies.findByItemIdIn(latest.stream().map(i->i.id).toList()),true).response(item,LocalDate.now(ZoneOffset.UTC),null,null);
     }
 
     public HistoryPage history(UUID projectId,UUID itemId,int page,int limit,UUID user) {
@@ -90,13 +92,6 @@ public class ProjectPlanService {
         return new HistoryPage(result.getContent().stream().map(h->new HistoryEntry(h.id,h.actorId,h.at,h.rowVersion,h.reason,h.beforeValues,h.afterValues)).toList(),result.hasNext(),page,limit);
     }
 
-    private ItemResponse response(PlanItemEntity i,Graph graph,List<PlanItemEntity> all,LocalDate asOf,LocalDate projectStart,LocalDate projectEnd) {
-        var pred=graph.predecessors.getOrDefault(i.id,Set.of());var succ=graph.successors.getOrDefault(i.id,Set.of());
-        var blockers=pred.stream().filter(id -> {var p=graph.byId.get(id);return p!=null && p.state!=PlanItemState.DONE && p.state!=PlanItemState.CANCELLED;}).toList();
-        var scope=new ArrayList<PlanItemEntity>();scope.add(i);scope.addAll(descendants(i.id,all));
-        return new ItemResponse(i.id,i.projectId,i.parentId,i.kind,i.title,i.description,i.assigneeId,i.state,i.targetStart,i.targetEnd,i.deadline,i.sortOrder,safeLabels(i.labels),i.rowVersion,i.createdBy,i.updatedAt,
-            new ArrayList<>(pred),new ArrayList<>(succ),blockers,summary(all,scope,graph,asOf,i.targetStart,i.targetEnd));
-    }
     private Summary summary(List<PlanItemEntity> all,List<PlanItemEntity> scope,Graph graph,LocalDate asOf,LocalDate manualStart,LocalDate manualEnd) {
         var tasks=scope.stream().filter(i->i.kind==PlanItemKind.TASK && i.state!=PlanItemState.CANCELLED).toList();
         long done=tasks.stream().filter(i->i.state==PlanItemState.DONE).count();long blocked=tasks.stream().filter(i->isBlocked(i,graph)).count();

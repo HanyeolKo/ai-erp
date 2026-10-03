@@ -1,0 +1,13 @@
+# Authorized bounded exception dispatch
+
+- Parent root; source 8d74efc37d34949053a974337128099ff8ce224b; branch codex/project-management-redesign-20261003; PR26 remains draft.
+- Human authorization: "원인명확하게 판단해서 작업하달해." This direct instruction follows the parent's concrete request for one additional same-Luna attempt for each failed B1/F1 candidate. It authorizes that proposed correction, not a model upgrade or a permanent attempt-policy change.
+- Original initial/repair2/repair3 source FAIL records remain unchanged. Each same canonical task receives attempt4 once. No renamed implementation task, count reset or fifth attempt is authorized.
+- Parent cause evidence: backend-b1-repair3-review.md, backend-b1-parent-self-review.md, frontend-s1-repair3-review.md, frontend-s1-parent-self-review.md, exact CI37115098605 failed log and actual R3 browser raws in the original workspace tmp/pm-implementation-2026-10-03/browser/f1-observations/.
+- Native invocation /root/pm_b1_exception4: ai-erp-implementer, gpt-5.6-luna/high; backend-b1-exception-repair-contract.md r2; six correction keys; backend/B1 tests and exact V11 deploy guard ownership.
+- Native invocation /root/pm_f1_exception4: ai-erp-implementer, gpt-5.6-luna/high; frontend-s1-exception-repair-contract.md r2; seven correction keys; frontend/scoped CSS/meaningful tests/owned diagnostic helper ownership.
+- Workers have no Git/release/delegation/verdict authority. Concurrent source ownership is disjoint. Maximum two active workers, depth one. Fresh bounded context rather than inherited full history; input budget <=14000 tokens each, return <=250 words plus evidence paths. Provider usage null.
+- Worker acknowledgment required before edits. Parent prepares requirements and observations; workers implement and run checks; native Astra/high independently judges evidence; parent acceptance is separate. Existing UI r3/visual r1/mapping r2 PASS is reused for the unchanged plan.
+- External mode offline-contract-only. Own fixtures prove local UI behavior only. Local JDK25/Node22/pnpm10 ready; local Docker absent. Actual PostgreSQL execution requires existing GitHub CI on the exact candidate SHA after the V11 migration guard is corrected. No external provider activation or credentials changes.
+- Return ready-for-review or blocked with exact commands/cwd/start/end/exits/raw and stable-key matrix. If attempt4 fails a required gate, preserve evidence and return to root; no automatic repair5. B2/F2 remain blocked until applicable source/browser/same-SHA integration evidence is accepted.
+- This is an intermediate operational record; no separate Notion reading page is required. The substantive reader report will be updated through the librarian with accepted current facts.

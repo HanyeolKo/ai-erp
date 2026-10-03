@@ -1,0 +1,9 @@
+# F1 parent self-review after attempt3
+- Task ERP-PM-IMPLEMENT-20261003-F1 initial+repair2+repair3=3. Actual native Astra/high repair3 source gate FAIL, parent acceptance withheld; diagnostic B1 commit8fd669, F1 source uncommitted. Original native reviewer report remains canonical and all attempts preserved.
+- Parent inspected current TaskQuickCreate199-223, DefaultTaskWorkspace230 and actual R3 bundle/DOM/AX output. Source review's five residual and two new keys are applicable, no disagreement or count reset.
+- Confirmed actual1280 single-line row68.5px; controls44px, labels visible, overflow0. Actual390 and640x450/DPR2 equivalent reflow preserve labels/ordinary overflow0; native browser zoom not claimed.
+- Actual VIEWER overview has only work-open and explicit read-only reason. Actual dashboard500 preserves TASK; plan500 preserves schedules. These improvements do not fix current taskPlan403 cached-role controls.
+- Actual blocked-facts fixture has existing TASKs plus zero schedules and still displays first-TASK onboarding. Container-only source does legitimately display noTASK. Nonempty incomplete and off-page known blockers are not modeled by current helper, so their source failures are not claimed as actual runtime reproductions.
+- Actual settled500 request75a4aa3c-c6fa-4dae-9c8b-cb17130e0728/resource task-created-1 retains frozen input across advanced/default and a short project-route return. These short successful observations do NOT disprove idle5min GC or in-flight remount gaps. Full browser gate remains pending.
+- A stale UID click during route check failed; raw r3-unknown-project-return.json remained an overview snapshot. Corrected actual return is r3-unknown-project-return-corrected.json plus DOM. Never use the failed-action filename as success.
+- No implementation attempt4, model change or downstream F2 dispatch. Root prepares a one-extra-attempt exception within the same Luna/high model and keeps independent review.

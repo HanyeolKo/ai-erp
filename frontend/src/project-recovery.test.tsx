@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, expect, test, vi } from "vitest";
 import { focusManager } from "@tanstack/react-query";
 import App from "./App";
-import { http, json, project, schedule } from "./test/http";
+import { http, json, planSnapshot, project, schedule } from "./test/http";
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); window.location.hash = ""; sessionStorage.clear(); focusManager.setFocused(undefined); });
 const mount = (path: string) => { window.location.hash = `#${path}`; render(<App />); return userEvent.setup(); };
@@ -14,7 +14,7 @@ test.each(["/projects/missing", "/projects/missing/schedules", "/projects/missin
   expect(await screen.findByText(/선택한 프로젝트가 삭제되었거나/)).toBeInTheDocument();
   expect(server.calls.some(c => c.url.startsWith("/api/v1/projects/missing/"))).toBe(false);
   server.on("GET", "/api/v1/projects", () => json([{ ...project, id: "missing" }]));
-  if (path === "/projects/missing") server.on("GET", "/api/v1/projects/missing/dashboard", () => json({ projectId: "missing", memberCount: 0, scheduleCount: 0, pendingAcknowledgementCount: 0, calendarRiskCount: 0, upcomingSchedules: [], actionQueue: [] }));
+  if (path === "/projects/missing") { server.on("GET", "/api/v1/projects/missing/dashboard", () => json({ projectId: "missing", memberCount: 0, scheduleCount: 0, pendingAcknowledgementCount: 0, calendarRiskCount: 0, upcomingSchedules: [], actionQueue: [] })); server.on("GET", "/api/v1/projects/missing/plan", () => json({ ...planSnapshot, projectId: "missing" })); }
   // Other destinations keep their retry actionable without making unrelated fixture requests.
   if (path !== "/projects/missing") return;
   await user.click(screen.getByRole("button", { name: "접근 상태 다시 확인" }));
