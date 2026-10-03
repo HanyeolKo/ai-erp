@@ -1,8 +1,8 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, test, vi } from "vitest";
 import App from "./App";
-import { http, json, planSnapshot, project } from "./test/http";
+import { http, json, planSnapshot, project, taskSummary } from "./test/http";
 
 afterEach(() => { vi.restoreAllMocks(); window.location.hash = ""; sessionStorage.clear(); });
 const mount = (path: string) => { window.location.hash = `#${path}`; render(<App />); return userEvent.setup(); };
@@ -96,6 +96,18 @@ test("compact TASK creation rechecks the same request after an unknown outcome",
   expect(postCalls[0].body.requestId).toBe(postCalls[1].body.requestId);
 });
 
+test("remounted unknown retry stays locked while the new attempt is pending", async () => {
+  const server = http(); let first = true; let finish!: (response: Response) => void;
+  server.on("POST", "/api/v1/projects/p1/plan/items", () => { if (first) { first = false; return json({ code: "UNKNOWN_OUTCOME" }, 500); } return new Promise(resolve => { finish = resolve; }); });
+  const user = mount("/projects/p1/plan"); const title = await screen.findByLabelText("제목"); await user.type(title, "재시도 잠금 TASK"); await user.click(screen.getByRole("button", { name: "TASK 만들기" }));
+  expect(await screen.findByRole("button", { name: "같은 요청 결과 확인" })).toBeInTheDocument();
+  vi.spyOn(window, "confirm").mockReturnValue(true); window.location.hash = "#/projects/p1/schedules"; await screen.findByRole("heading", { name: "프로젝트 일정" }); window.location.hash = "#/projects/p1/plan";
+  const remountedTitle = await screen.findByLabelText("제목"); expect(remountedTitle).toBeDisabled(); await user.click(screen.getByRole("button", { name: "같은 요청 결과 확인" }));
+  await waitFor(() => expect(server.calls.filter((call) => call.method === "POST" && call.url.endsWith("/plan/items"))).toHaveLength(2));
+  expect(screen.getByRole("button", { name: "저장 중…" })).toBeDisabled(); expect(screen.getByLabelText("제목")).toBeDisabled();
+  finish(json(planSnapshot.items[0])); await waitFor(() => expect(screen.getByLabelText("제목")).toHaveValue(""));
+});
+
 test("in-flight compact TASK remains locked across a route remount and resolves once", async () => {
   const server = http(); let finish!: (response: Response) => void;
   server.on("GET", "/api/v1/projects/p1/plan", () => json(planSnapshot));
@@ -132,4 +144,61 @@ test("overview keeps schedule-empty copy separate from TASK onboarding", async (
 test("current TASK plan denial freezes cached-role create actions", async () => {
   const server = http(); server.on("GET", "/api/v1/projects/p1/plan", () => json({ code: "PLAN_FORBIDDEN" }, 403)); mount("/projects/p1");
   expect(await screen.findByText("PLAN_FORBIDDEN")).toBeInTheDocument(); expect(screen.queryByRole("link", { name: "TASK 만들기" })).not.toBeInTheDocument();
+});
+
+test("compact TASK input keeps the complete ASCII value synchronously", async () => {
+  http(); mount("/projects/p1/plan"); const title = await screen.findByLabelText("제목");
+  fireEvent.change(title, { target: { value: "R4 durable draft a12345" } });
+  expect(title).toHaveValue("R4 durable draft a12345");
+});
+
+test("known TASK conflict lets edited recovery send a new UUID and payload", async () => {
+  const server = http(); let first = true;
+  server.on("POST", "/api/v1/projects/p1/plan/items", (body) => { if (first) { first = false; return json({ code: "CONFLICT" }, 409); } return json({ ...planSnapshot.items[0], title: body.title }); });
+  const user = mount("/projects/p1/plan"); const title = await screen.findByLabelText("제목");
+  await user.type(title, "초기 제목"); await user.click(screen.getByRole("button", { name: "TASK 만들기" }));
+  expect(await screen.findByText("다른 변경이 먼저 저장되었습니다. 입력을 확인한 뒤 다시 시도하세요.")).toBeInTheDocument();
+  await user.clear(title); await user.type(title, "수정된 제목"); await user.click(screen.getByRole("button", { name: "TASK 만들기" }));
+  await screen.findByText("TASK를 만들었습니다.");
+  const posts = server.calls.filter((call) => call.method === "POST");
+  expect(posts[1].body.title).toBe("수정된 제목"); expect(posts[1].body.requestId).not.toBe(posts[0].body.requestId);
+});
+
+test("successful TASK creation allocates a new UUID for the next creation", async () => {
+  const server = http(); server.on("POST", "/api/v1/projects/p1/plan/items", (body) => json({ ...planSnapshot.items[0], title: body.title }));
+  const user = mount("/projects/p1/plan"); const title = await screen.findByLabelText("제목");
+  await user.type(title, "첫 TASK"); await user.click(screen.getByRole("button", { name: "TASK 만들기" })); await screen.findByText("TASK를 만들었습니다.");
+  await user.type(title, "둘째 TASK"); await user.click(screen.getByRole("button", { name: "TASK 만들기" })); await waitFor(() => expect(server.calls.filter((call) => call.method === "POST")).toHaveLength(2));
+  const posts = server.calls.filter((call) => call.method === "POST"); expect(posts[1].body.requestId).not.toBe(posts[0].body.requestId);
+});
+
+test("compact TASK draft survives route return after more than five minutes", async () => {
+  http(); const user = mount("/projects/p1/plan"); const title = await screen.findByLabelText("제목"); await user.type(title, "장기 보존 TASK");
+  vi.spyOn(window, "confirm").mockReturnValue(true); vi.advanceTimersByTime(5 * 60 * 1000 + 1);
+  window.location.hash = "#/projects/p1/schedules"; await screen.findByRole("heading", { name: "프로젝트 일정" }); window.location.hash = "#/projects/p1/plan";
+  expect(await screen.findByLabelText("제목")).toHaveValue("장기 보존 TASK");
+});
+
+test("current TASK denial rechecks project membership and preserves the own draft namespace", async () => {
+  const server = http(); let projectReads = 0;
+  server.on("GET", "/api/v1/projects", () => { projectReads += 1; return json([project]); });
+  server.on("GET", "/api/v1/projects/p1/plan", () => json({ code: "PLAN_FORBIDDEN" }, 403));
+  mount("/projects/p1"); await screen.findByText("PLAN_FORBIDDEN"); await waitFor(() => expect(projectReads).toBeGreaterThanOrEqual(2));
+});
+
+test("TASK zero keeps schedule dashboard sections when a schedule exists", async () => {
+  const server = http(); const empty = { ...planSnapshot, totalCount: 0, matchedIds: [], items: [], summary: { ...taskSummary, taskCount: 0, progressPercent: null, forecastState: "EMPTY" } };
+  server.on("GET", "/api/v1/projects/p1/plan", () => json(empty)); mount("/projects/p1");
+  expect(await screen.findByRole("heading", { name: "예정된 일정" })).toBeInTheDocument(); expect(await screen.findByRole("heading", { name: "선택한 일정 카드" })).toBeInTheDocument();
+});
+
+test("partial TASK with an unobserved predecessor reports unknown status", async () => {
+  const server = http(); const partial = { ...planSnapshot, complete: false, items: [{ ...planSnapshot.items[0], predecessorIds: ["off-page"], blockerIds: [] }] };
+  server.on("GET", "/api/v1/projects/p1/plan", () => json(partial)); mount("/projects/p1/plan");
+  expect(await screen.findByText("선행 상태 확인 필요")).toBeInTheDocument(); expect(screen.queryByText("차단 없음")).not.toBeInTheDocument();
+});
+
+test("plan 500 remains independent while dashboard schedules remain visible", async () => {
+  const server = http(); server.on("GET", "/api/v1/projects/p1/plan", () => json({ code: "PLAN_TEMPORARY" }, 500)); mount("/projects/p1");
+  expect(await screen.findByText("PLAN_TEMPORARY")).toBeInTheDocument(); expect(screen.getByRole("heading", { name: "예정된 일정" })).toBeInTheDocument();
 });

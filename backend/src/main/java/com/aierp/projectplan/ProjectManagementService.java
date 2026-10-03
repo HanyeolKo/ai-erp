@@ -84,9 +84,9 @@ public class ProjectManagementService {
         if (zone == null) throw new ValidationFailure("timeZone", "A valid IANA timeZone is required");
         if (page < 0) throw new ValidationFailure("page", "page must be non-negative");
         if (limit < 1 || limit > 100) throw new ValidationFailure("limit", "limit must be between 1 and 100");
-        var normalizedQuery = query == null ? null : query.trim();
-        if (normalizedQuery != null && normalizedQuery.length() > 200) throw new ValidationFailure("q", "q must be at most 200 characters");
-        if (normalizedQuery != null && normalizedQuery.isBlank()) normalizedQuery=null;
+        var normalizedQuery = query == null ? "" : query.trim();
+        if (normalizedQuery.length() > 200) throw new ValidationFailure("q", "q must be at most 200 characters");
+        if (normalizedQuery.isBlank()) normalizedQuery="";
         var projects = projectId == null ? access.readableProjects(actor) : List.of(access.readableProject(projectId,actor));
         var ids = projects.stream().map(ReadableProject::projectId).toList();
         var today = LocalDate.now(zone);

@@ -13,7 +13,7 @@ public interface PlanItemRepository extends JpaRepository<PlanItemEntity,UUID> {
         + "where i.projectId in :projectIds and i.kind = com.aierp.projectplan.PlanItemKind.TASK "
         + "and i.state not in (com.aierp.projectplan.PlanItemState.DONE, com.aierp.projectplan.PlanItemState.CANCELLED) "
         + "and ((:unassigned = true and i.assigneeId is null) or (:unassigned = false and i.assigneeId = :actor)) "
-        + "and (:query is null or lower(i.title) like lower(concat('%', :query, '%')) or lower(coalesce(i.description,'')) like lower(concat('%', :query, '%'))) "
+        + "and (:query = '' or lower(i.title) like lower(concat('%', :query, '%')) or lower(coalesce(i.description,'')) like lower(concat('%', :query, '%'))) "
         + "and ((i.deadline is not null and i.deadline < :asOfDate) or (coalesce(i.targetStart,i.targetEnd) <= :toDate and coalesce(i.targetEnd,i.targetStart) >= :fromDate) or (i.deadline is not null and i.deadline >= :fromDate and i.deadline <= :toDate)) "
         + "order by case when i.state = com.aierp.projectplan.PlanItemState.BLOCKED or (i.deadline is not null and i.deadline < :asOfDate) or exists (select d.itemId from PlanItemDependencyEntity d, PlanItemEntity p where d.itemId = i.id and p.id = d.predecessorId and p.projectId = i.projectId and p.state not in (com.aierp.projectplan.PlanItemState.DONE, com.aierp.projectplan.PlanItemState.CANCELLED)) then 0 else 1 end, "
         + "case when e.priority = com.aierp.projectplan.TaskExecutionPriority.HIGH then 0 when e.priority = com.aierp.projectplan.TaskExecutionPriority.MEDIUM then 1 when e.priority = com.aierp.projectplan.TaskExecutionPriority.LOW then 2 else 3 end, "
@@ -24,7 +24,7 @@ public interface PlanItemRepository extends JpaRepository<PlanItemEntity,UUID> {
     @Query("select count(i) from PlanItemEntity i where i.projectId in :projectIds and i.kind = com.aierp.projectplan.PlanItemKind.TASK "
         + "and i.state not in (com.aierp.projectplan.PlanItemState.DONE, com.aierp.projectplan.PlanItemState.CANCELLED) "
         + "and ((:unassigned = true and i.assigneeId is null) or (:unassigned = false and i.assigneeId = :actor)) "
-        + "and (:query is null or lower(i.title) like lower(concat('%', :query, '%')) or lower(coalesce(i.description,'')) like lower(concat('%', :query, '%'))) "
+        + "and (:query = '' or lower(i.title) like lower(concat('%', :query, '%')) or lower(coalesce(i.description,'')) like lower(concat('%', :query, '%'))) "
         + "and ((i.deadline is not null and i.deadline < :asOfDate) or (coalesce(i.targetStart,i.targetEnd) <= :toDate and coalesce(i.targetEnd,i.targetStart) >= :fromDate) or (i.deadline is not null and i.deadline >= :fromDate and i.deadline <= :toDate))")
     long countWorkWindow(Collection<UUID> projectIds, UUID actor, boolean unassigned, String query,
                          java.time.LocalDate fromDate, java.time.LocalDate toDate, java.time.LocalDate asOfDate);
@@ -32,7 +32,7 @@ public interface PlanItemRepository extends JpaRepository<PlanItemEntity,UUID> {
         + "where i.projectId in :projectIds and i.kind = com.aierp.projectplan.PlanItemKind.TASK "
         + "and i.state not in (com.aierp.projectplan.PlanItemState.DONE, com.aierp.projectplan.PlanItemState.CANCELLED) "
         + "and ((:unassigned = true and i.assigneeId is null) or (:unassigned = false and i.assigneeId = :actor)) "
-        + "and (:query is null or lower(i.title) like lower(concat('%', :query, '%')) or lower(coalesce(i.description,'')) like lower(concat('%', :query, '%'))) "
+        + "and (:query = '' or lower(i.title) like lower(concat('%', :query, '%')) or lower(coalesce(i.description,'')) like lower(concat('%', :query, '%'))) "
         + "order by case when i.state = com.aierp.projectplan.PlanItemState.BLOCKED or (i.deadline is not null and i.deadline < :asOfDate) or exists (select d.itemId from PlanItemDependencyEntity d, PlanItemEntity p where d.itemId = i.id and p.id = d.predecessorId and p.projectId = i.projectId and p.state not in (com.aierp.projectplan.PlanItemState.DONE, com.aierp.projectplan.PlanItemState.CANCELLED)) then 0 else 1 end, "
         + "case when e.priority = com.aierp.projectplan.TaskExecutionPriority.HIGH then 0 when e.priority = com.aierp.projectplan.TaskExecutionPriority.MEDIUM then 1 when e.priority = com.aierp.projectplan.TaskExecutionPriority.LOW then 2 else 3 end, "
         + "case when i.deadline is null then 1 else 0 end, i.deadline asc, i.title asc, i.id asc")
@@ -41,6 +41,6 @@ public interface PlanItemRepository extends JpaRepository<PlanItemEntity,UUID> {
     @Query("select count(i) from PlanItemEntity i where i.projectId in :projectIds and i.kind = com.aierp.projectplan.PlanItemKind.TASK "
         + "and i.state not in (com.aierp.projectplan.PlanItemState.DONE, com.aierp.projectplan.PlanItemState.CANCELLED) "
         + "and ((:unassigned = true and i.assigneeId is null) or (:unassigned = false and i.assigneeId = :actor)) "
-        + "and (:query is null or lower(i.title) like lower(concat('%', :query, '%')) or lower(coalesce(i.description,'')) like lower(concat('%', :query, '%')))")
+        + "and (:query = '' or lower(i.title) like lower(concat('%', :query, '%')) or lower(coalesce(i.description,'')) like lower(concat('%', :query, '%')))")
     long countWorkAll(Collection<UUID> projectIds, UUID actor, boolean unassigned, String query);
 }

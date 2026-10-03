@@ -109,7 +109,10 @@ class OpenApiContractTest {
         assertThat(resolve(requestSchema(task,"patch")).path("properties").path("priority").path("enum").toString()).contains("HIGH","MEDIUM","LOW");
         assertThat(resolve(responseSchema(task,"patch")).path("properties").path("priority").path("enum").toString()).contains("HIGH","MEDIUM","LOW");
         assertThat(resolve(responseSchema(definition,"get")).path("properties").path("health").path("enum").toString()).contains("ON_TRACK","WATCH","AT_RISK");
-        assertThat(example(definition,"patch","project-management-definition-patch").path("health").asText()).isEqualTo("ON_TRACK");
+        var definitionExample=example(definition,"patch","project-management-definition-patch");
+        assertThat(definitionExample.path("health").asText()).isEqualTo("ON_TRACK");
+        assertThat(definitionExample.path("healthReason").asText()).isEqualTo("Reason");
+        assertThat(definitionExample.path("healthAsOf").asText()).isEqualTo("2026-10-03");
         for (var status: List.of("400","403","404","409")) assertThat(operation(definition,"patch").path("responses").has(status)).as("definition PATCH %s",status).isTrue();
         for (var status: List.of("400","403","404","409")) assertThat(operation(task,"patch").path("responses").has(status)).as("task PATCH %s",status).isTrue();
         assertThat(operation("/api/v1/projects/{projectId}/management/requests/{requestId}","get").path("responses").has("404")).isTrue();

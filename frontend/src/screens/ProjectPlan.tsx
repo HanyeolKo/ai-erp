@@ -201,10 +201,14 @@ type TaskDraft = {
   title: string;
   state: PlanState;
   requestId: string;
+  sessionGeneration: number;
+  operationId: string;
+  attemptId: string | null;
   submitted: Readonly<PlanItemWrite> | null;
   phase: TaskDraftPhase;
 };
 const taskDraftKey = (projectId: string) => ["project-task-draft", currentSessionGeneration(), projectId] as const;
+type TaskCreateMutation = { body: PlanItemWrite; operationId: string; attemptId: string; sessionGeneration: number };
 function TaskQuickCreate({ projectId, canEdit, onCreated, onForbidden }: { projectId: string; canEdit: boolean; onCreated: () => void; onForbidden: () => void }) {
   const qc = useQueryClient();
   const draftKey = taskDraftKey(projectId);
@@ -214,53 +218,91 @@ function TaskQuickCreate({ projectId, canEdit, onCreated, onForbidden }: { proje
     enabled: false,
     gcTime: Infinity,
   });
-  const savedDraft = draftQuery.data;
-  const initialDraft = useRef(savedDraft);
+  const initialDraft = useRef<TaskDraft | undefined>(undefined);
+  if (!initialDraft.current) {
+    initialDraft.current = qc.getQueryData<TaskDraft>(draftKey) ?? {
+      title: "", state: "BACKLOG", requestId: randomId(), sessionGeneration: currentSessionGeneration(),
+      operationId: randomId(), attemptId: null, submitted: null, phase: "editable",
+    };
+  }
   useEffect(() => {
     if (!qc.getQueryData<TaskDraft>(draftKey)) {
-      qc.setQueryData<TaskDraft>(draftKey, initialDraft.current ?? { title: "", state: "BACKLOG", requestId: randomId(), submitted: null, phase: "editable" });
+      qc.setQueryData<TaskDraft>(draftKey, initialDraft.current!);
     }
   }, [draftKey, initialDraft, qc]);
-  const draft = savedDraft ?? qc.getQueryData<TaskDraft>(draftKey) ?? { title: "", state: "BACKLOG" as PlanState, requestId: randomId(), submitted: null, phase: "editable" as const };
-  const { title, state, requestId, submitted, phase } = draft;
+  const draft = draftQuery.data ?? qc.getQueryData<TaskDraft>(draftKey) ?? initialDraft.current!;
+  const [title, setTitle] = useState(draft.title);
+  const [state, setState] = useState<PlanState>(draft.state);
+  const [, setDraftRevision] = useState(0);
   const [message, setMessage] = useState("");
-  const persist = (next: Partial<TaskDraft>) => qc.setQueryData<TaskDraft>(draftKey, (current) => ({ ...(current ?? draft), ...next }));
-  const matches = (context: unknown, id: string) => isSessionContextActive(context) && qc.getQueryData<TaskDraft>(draftKey)?.submitted?.requestId === id;
-  const dirty = phase !== "editable" || title.trim().length > 0;
+  useEffect(() => qc.getQueryCache().subscribe((event) => {
+    if (event.type !== "updated" || JSON.stringify(event.query.queryKey) !== JSON.stringify(draftKey)) return;
+    const next = qc.getQueryData<TaskDraft>(draftKey);
+    if (!next) return;
+    setDraftRevision((value) => value + 1);
+    setTitle(next.phase === "uncertain" && next.submitted ? next.submitted.title : next.title);
+    setState(next.phase === "uncertain" && next.submitted ? next.submitted.state : next.state);
+  }), [draftKey, qc]);
+  const persist = (next: Partial<TaskDraft>) => qc.setQueryData<TaskDraft>(draftKey, (current) => ({ ...(current ?? initialDraft.current!), ...next }));
+  const matches = (context: unknown, variables: TaskCreateMutation) => {
+    const current = qc.getQueryData<TaskDraft>(draftKey);
+    return isSessionContextActive(context) && !!current && current.sessionGeneration === variables.sessionGeneration
+      && current.operationId === variables.operationId && current.attemptId === variables.attemptId
+      && current.submitted?.requestId === variables.body.requestId;
+  };
+  const { submitted, phase } = draft;
+  const dirty = phase !== "editable" || title.trim().length > 0 || state !== "BACKLOG";
   const guard = useUnsavedChanges(dirty);
   const operationKey = ["project-task-create", ...draftKey] as const;
   const create = useMutation({
     mutationKey: operationKey,
     gcTime: Infinity,
-    mutationFn: (body: PlanItemWrite) => api.createPlanItem(projectId, body),
-    onMutate: (variables) => { persist({ submitted: variables, phase: "sending" }); return { ...captureSession(), requestId: variables.requestId! }; },
-    onSuccess: async (_value, variables, context) => { if (!matches(context, variables.requestId!)) return; guard.markSaved(); qc.setQueryData<TaskDraft>(draftKey, { title: "", state: "BACKLOG", requestId: randomId(), submitted: null, phase: "editable" }); setMessage("TASK를 만들었습니다."); await qc.invalidateQueries({ queryKey: keys.plan(projectId) }); onCreated(); },
-    onError: (error, variables, context) => { if (!matches(context, variables.requestId!)) return; if (error instanceof ApiError && error.status === 403) { persist({ submitted: variables, phase: "editable" }); onForbidden(); return; } if (error instanceof ApiError && error.status === 409) { persist({ submitted: variables, phase: "editable" }); setMessage("다른 변경이 먼저 저장되었습니다. 입력을 확인한 뒤 다시 시도하세요."); return; } persist({ submitted: variables, phase: "uncertain" }); setMessage("저장 결과를 확인하지 못했습니다. 같은 요청 결과를 확인한 뒤 새 입력을 시작하세요."); },
+    mutationFn: ({ body }: TaskCreateMutation) => api.createPlanItem(projectId, body),
+    onMutate: (variables) => { const context = captureSession(); persist({ submitted: variables.body, phase: "sending", sessionGeneration: context.sessionGeneration, operationId: variables.operationId, attemptId: variables.attemptId }); return context; },
+    onSuccess: async (_value, variables, context) => { if (!matches(context, variables)) return; guard.markSaved(); setTitle(""); setState("BACKLOG"); persist({ title: "", state: "BACKLOG", requestId: randomId(), operationId: randomId(), attemptId: null, submitted: null, phase: "editable" }); setMessage("TASK를 만들었습니다."); await qc.invalidateQueries({ queryKey: keys.plan(projectId) }); onCreated(); },
+    onError: (error, variables, context) => { if (!matches(context, variables)) return; if (error instanceof ApiError && error.status === 403) { persist({ submitted: variables.body, phase: "editable" }); onForbidden(); return; } if (error instanceof ApiError && error.status === 409) { persist({ submitted: variables.body, phase: "editable" }); setMessage("다른 변경이 먼저 저장되었습니다. 입력을 확인한 뒤 다시 시도하세요."); return; } setTitle(variables.body.title); setState(variables.body.state); persist({ submitted: variables.body, phase: "uncertain" }); setMessage("저장 결과를 확인하지 못했습니다. 같은 요청 결과를 확인한 뒤 새 입력을 시작하세요."); },
   });
   useEffect(() => {
     const reconcile = () => {
       const current = qc.getQueryData<TaskDraft>(draftKey);
-      const operation = qc.getMutationCache().find({ mutationKey: operationKey, exact: true });
-      const operationId = (operation?.state.variables as PlanItemWrite | undefined)?.requestId;
-      if (!current?.submitted || operationId !== current.submitted.requestId || operation?.state.status === "pending") return;
-      if (operation?.state.status === "success" && current.phase === "sending") {
+      if (!current?.submitted || !current.attemptId) return;
+      const operation = qc.getMutationCache().getAll().filter((candidate) => {
+        const variables = candidate.state.variables as TaskCreateMutation | undefined;
+        return !!variables && variables.body.requestId === current.submitted?.requestId && variables.operationId === current.operationId && variables.attemptId === current.attemptId;
+      }).at(-1);
+      if (!operation || operation.state.status === "pending") return;
+      const variables = operation.state.variables as TaskCreateMutation;
+      if (variables.sessionGeneration !== currentSessionGeneration() || current.sessionGeneration !== variables.sessionGeneration) return;
+      if (operation.state.status === "success" && current.phase === "sending") {
         guard.markSaved();
-        qc.setQueryData<TaskDraft>(draftKey, { title: "", state: "BACKLOG", requestId: randomId(), submitted: null, phase: "editable" });
+        setTitle(""); setState("BACKLOG");
+        qc.setQueryData<TaskDraft>(draftKey, { title: "", state: "BACKLOG", requestId: randomId(), sessionGeneration: currentSessionGeneration(), operationId: randomId(), attemptId: null, submitted: null, phase: "editable" });
         setMessage("TASK를 만들었습니다.");
         onCreated();
-      } else if (operation?.state.status === "error" && current.phase === "sending") {
+      } else if (operation.state.status === "error" && current.phase === "sending") {
         const error = operation.state.error;
         if (error instanceof ApiError && error.status === 403) { qc.setQueryData<TaskDraft>(draftKey, { ...current, phase: "editable" }); onForbidden(); }
         else if (error instanceof ApiError && error.status === 409) { qc.setQueryData<TaskDraft>(draftKey, { ...current, phase: "editable" }); setMessage("다른 변경이 먼저 저장되었습니다. 입력을 확인한 뒤 다시 시도하세요."); }
-        else { qc.setQueryData<TaskDraft>(draftKey, { ...current, phase: "uncertain" }); setMessage("저장 결과를 확인하지 못했습니다. 같은 요청 결과를 확인한 뒤 새 입력을 시작하세요."); }
+        else { setTitle(variables.body.title); setState(variables.body.state); qc.setQueryData<TaskDraft>(draftKey, { ...current, phase: "uncertain" }); setMessage("저장 결과를 확인하지 못했습니다. 같은 요청 결과를 확인한 뒤 새 입력을 시작하세요."); }
       }
     };
     reconcile();
     return qc.getMutationCache().subscribe(reconcile);
   }, [draftKey, guard, onCreated, onForbidden, operationKey, qc]);
-  const submit = () => { if (!canEdit || phase === "sending") return; if (phase === "uncertain" && submitted) { create.mutate(submitted as PlanItemWrite); return; } const body: PlanItemWrite = { requestId, parentId: null, kind: "TASK", title: title.trim(), description: "", assigneeId: null, state, targetStart: null, targetEnd: null, deadline: null, sortOrder: 0, labels: [], predecessorIds: [] }; create.mutate(body); };
+  const updateEditable = (next: Partial<Pick<TaskDraft, "title" | "state">>) => {
+    const current = qc.getQueryData<TaskDraft>(draftKey) ?? draft;
+    const changedSubmitted = current.phase === "editable" && !!current.submitted
+      && ((next.title !== undefined && next.title !== current.submitted.title) || (next.state !== undefined && next.state !== current.submitted.state));
+    persist(changedSubmitted ? { ...next, submitted: null, requestId: randomId(), operationId: randomId(), attemptId: null } : next);
+  };
+  const submit = () => {
+    if (!canEdit || phase === "sending") return;
+    const current = qc.getQueryData<TaskDraft>(draftKey) ?? draft;
+    const body: PlanItemWrite = phase === "uncertain" && submitted ? submitted as PlanItemWrite : { requestId: current.requestId, parentId: null, kind: "TASK", title: title.trim(), description: "", assigneeId: null, state, targetStart: null, targetEnd: null, deadline: null, sortOrder: 0, labels: [], predecessorIds: [] };
+    create.mutate({ body, operationId: current.operationId, attemptId: randomId(), sessionGeneration: current.sessionGeneration });
+  };
   return <form className="task-quick-create" aria-label="TASK 빠른 추가" onSubmit={(event) => { event.preventDefault(); submit(); }}>
-    <div className="task-quick-create-fields"><label>제목<input required maxLength={200} value={title} disabled={!canEdit || phase !== "editable"} onChange={(event) => persist({ title: event.target.value })} placeholder="실행할 작업" /></label><label>상태<select value={state} disabled={!canEdit || phase !== "editable"} onChange={(event) => persist({ state: event.target.value as PlanState })}>{states.map((value) => <option key={value} value={value}>{stateLabel[value]}</option>)}</select></label><button className="button button-primary" type="submit" disabled={!canEdit || (phase === "editable" && !title.trim()) || phase === "sending"}>{phase === "sending" ? "저장 중…" : phase === "uncertain" ? "같은 요청 결과 확인" : "TASK 만들기"}</button></div>
+    <div className="task-quick-create-fields"><label>제목<input required maxLength={200} value={title} disabled={!canEdit || phase !== "editable"} onChange={(event) => { setTitle(event.target.value); updateEditable({ title: event.target.value }); }} placeholder="실행할 작업" /></label><label>상태<select value={state} disabled={!canEdit || phase !== "editable"} onChange={(event) => { const next = event.target.value as PlanState; setState(next); updateEditable({ state: next }); }}>{states.map((value) => <option key={value} value={value}>{stateLabel[value]}</option>)}</select></label><button className="button button-primary" type="submit" disabled={!canEdit || (phase === "editable" && !title.trim()) || phase === "sending"}>{phase === "sending" ? "저장 중…" : phase === "uncertain" ? "같은 요청 결과 확인" : "TASK 만들기"}</button></div>
     {message && <p className="plan-live" role="status">{message}</p>}
   </form>;
 }
@@ -269,6 +311,7 @@ function DefaultTaskWorkspace({ projectId, items, allItems, totalCount, hasFilte
   const active = items.filter((item) => item.kind === "TASK");
   const byId = new Map(allItems.map((item) => [item.id, item]));
   const unfinishedPredecessors = (item: PlanItem) => item.predecessorIds.filter((id) => { const predecessor = byId.get(id); return predecessor && predecessor.state !== "DONE" && predecessor.state !== "CANCELLED"; });
+  const unknownPredecessors = (item: PlanItem) => !complete ? item.predecessorIds.filter((id) => !byId.has(id)) : [];
   const isCurrentBlocked = (item: PlanItem) => item.state !== "DONE" && item.state !== "CANCELLED" && (item.state === "BLOCKED" || item.blockerIds.length > 0 || unfinishedPredecessors(item).length > 0);
   const blocked = active.filter(isCurrentBlocked).length;
   const open = active.filter((item) => item.state !== "DONE" && item.state !== "CANCELLED").length;
@@ -277,7 +320,7 @@ function DefaultTaskWorkspace({ projectId, items, allItems, totalCount, hasFilte
     <TaskQuickCreate projectId={projectId} canEdit={canEdit} onCreated={onCreated} onForbidden={onForbidden} />
     <div className="task-default-summary" aria-label="TASK 실행 요약"><div><span>실행 TASK</span><strong>{active.length}</strong><small>{complete ? "현재 조회 범위" : "관측된 TASK 범위"}</small></div><div><span>진행 중</span><strong>{open}</strong><small>완료·취소 제외</small></div><div><span>차단</span><strong>{blocked}</strong><small>확인된 차단 사실</small></div></div>
     {!complete && active.length > 0 && <p className="plan-live" role="status">현재 응답은 일부 TASK만 관측한 결과입니다. 전체 프로젝트 수치로 해석하지 마세요.</p>}
-    {active.length === 0 ? <p className="plan-empty">{emptyMessage}</p> : <div className="plan-semantic-table-wrap"><table className="plan-semantic-table task-default-table"><caption className="sr-only">TASK 목록</caption><thead><tr><th>작업</th><th>담당자</th><th>상태</th><th>대상일</th><th>마감</th><th>차단 설명</th><th>동작</th></tr></thead><tbody>{active.map((item) => { const unfinished = unfinishedPredecessors(item); const blockerCount = new Set([...item.blockerIds, ...unfinished]).size; const blockingText = item.state === "BLOCKED" && blockerCount ? `직접 차단됨 · 차단 원인 ${blockerCount}건` : item.state === "BLOCKED" ? "직접 차단됨" : item.blockerIds.length ? `차단 원인 ${blockerCount}건` : unfinished.length ? `미완료 선행 ${blockerCount}건` : "차단 없음"; return <tr key={item.id}><td data-label="작업"><button className="plan-title" type="button" onClick={() => onOpen(item)}>{item.title}</button></td><td data-label="담당자">{assigneeText(item)}</td><td data-label="상태"><select aria-label={`${item.title} 상태`} disabled={!canEdit} value={item.state} onChange={(event) => onQuickEdit(item, "state", event.target.value)}>{states.map((value) => <option key={value} value={value}>{stateLabel[value]}</option>)}</select></td><td data-label="대상일">{item.targetStart && item.targetEnd && item.targetStart !== item.targetEnd ? `${item.targetStart} – ${item.targetEnd}` : dateText(item.targetStart || item.targetEnd)}</td><td data-label="마감">{dateText(item.deadline)}</td><td data-label="차단 설명">{blockingText}</td><td data-label="동작"><button className="text-button" type="button" onClick={() => onOpen(item)}>세부 정보</button></td></tr>; })}</tbody></table></div>}
+    {active.length === 0 ? <p className="plan-empty">{emptyMessage}</p> : <div className="plan-semantic-table-wrap"><table className="plan-semantic-table task-default-table"><caption className="sr-only">TASK 목록</caption><thead><tr><th>작업</th><th>담당자</th><th>상태</th><th>대상일</th><th>마감</th><th>차단 설명</th><th>동작</th></tr></thead><tbody>{active.map((item) => { const unfinished = unfinishedPredecessors(item); const unknown = unknownPredecessors(item); const blockerCount = new Set([...item.blockerIds, ...unfinished]).size; const blockingText = item.state === "BLOCKED" && blockerCount ? `직접 차단됨 · 차단 원인 ${blockerCount}건` : item.state === "BLOCKED" ? "직접 차단됨" : item.blockerIds.length ? `차단 원인 ${blockerCount}건` : unfinished.length ? `미완료 선행 ${blockerCount}건` : unknown.length ? "선행 상태 확인 필요" : "차단 없음"; return <tr key={item.id}><td data-label="작업"><button className="plan-title" type="button" onClick={() => onOpen(item)}>{item.title}</button></td><td data-label="담당자">{assigneeText(item)}</td><td data-label="상태"><select aria-label={`${item.title} 상태`} disabled={!canEdit} value={item.state} onChange={(event) => onQuickEdit(item, "state", event.target.value)}>{states.map((value) => <option key={value} value={value}>{stateLabel[value]}</option>)}</select></td><td data-label="대상일">{item.targetStart && item.targetEnd && item.targetStart !== item.targetEnd ? `${item.targetStart} – ${item.targetEnd}` : dateText(item.targetStart || item.targetEnd)}</td><td data-label="마감">{dateText(item.deadline)}</td><td data-label="차단 설명">{blockingText}</td><td data-label="동작"><button className="text-button" type="button" onClick={() => onOpen(item)}>세부 정보</button></td></tr>; })}</tbody></table></div>}
     <p className="help">제목과 상태 외의 담당자·날짜·설명·선행 항목은 TASK 세부 정보에서 확인하고 수정할 수 있습니다.</p>
   </section>;
 }
