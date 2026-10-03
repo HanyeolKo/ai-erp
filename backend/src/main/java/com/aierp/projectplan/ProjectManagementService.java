@@ -103,22 +103,33 @@ public class ProjectManagementService {
         var projectById=projects.stream().collect(Collectors.toMap(ReadableProject::projectId,Function.identity()));
         var rowIds=rows.stream().map(i->i.id).toList();
         var metadata=executions.findByItemIdIn(rowIds).stream().collect(Collectors.toMap(e->e.itemId,Function.identity()));
-        if (rows.isEmpty()) return new WorkPage(List.of(),page,limit,false,total==0?total:null,true,0,today,zone.getId(),Instant.now());
+        if (rows.isEmpty()) return new WorkPage(List.of(),page,limit,false,total,true,0,today,zone.getId(),Instant.now());
         var incomingSlice=dependencies.findByItemIdIn(rowIds,PageRequest.of(0,10001));
         var incoming=incomingSlice.getContent();
         var edgeMap=incoming.stream().collect(Collectors.toMap(edge->edge.itemId+":"+edge.predecessorId,Function.identity(),(a,b)->a,LinkedHashMap::new));
         boolean relationOverflow=incomingSlice.hasNext() || incoming.size()>10000;
         var remaining=Math.max(0,10000-incoming.size());
-        if (!relationOverflow && remaining>0) {
-            var outgoingSlice=dependencies.findByPredecessorIdIn(rowIds,PageRequest.of(0,remaining+1));
+        if (!relationOverflow) {
+            // At the exact incoming cap the opposite direction is still unobserved.
+            // Probe one outgoing edge so an additional unique relation cannot be reported complete.
+            var outgoingSlice=dependencies.findByPredecessorIdIn(rowIds,PageRequest.of(0,Math.max(1,remaining+1)));
             outgoingSlice.getContent().forEach(edge->edgeMap.putIfAbsent(edge.itemId+":"+edge.predecessorId,edge));
             relationOverflow=outgoingSlice.hasNext() || edgeMap.size()>10000;
         }
         List<PlanItemDependencyEntity> edges=new ArrayList<>(edgeMap.values());
-        var neighborIds=edges.stream().flatMap(edge->java.util.stream.Stream.of(edge.itemId,edge.predecessorId)).filter(id->!rowIds.contains(id)).collect(Collectors.toCollection(LinkedHashSet::new));
+        var visibleProjectByItem=rows.stream().collect(Collectors.toMap(i->i.id,i->i.projectId,(a,b)->a));
+        var neighborIdsByProject=new LinkedHashMap<UUID,LinkedHashSet<UUID>>();
+        for (var edge: edges) {
+            var visibleItemProject=visibleProjectByItem.get(edge.itemId);
+            if (visibleItemProject!=null && !rowIds.contains(edge.predecessorId))
+                neighborIdsByProject.computeIfAbsent(visibleItemProject,k->new LinkedHashSet<>()).add(edge.predecessorId);
+            var visiblePredecessorProject=visibleProjectByItem.get(edge.predecessorId);
+            if (visiblePredecessorProject!=null && !rowIds.contains(edge.itemId))
+                neighborIdsByProject.computeIfAbsent(visiblePredecessorProject,k->new LinkedHashSet<>()).add(edge.itemId);
+        }
         var relatedRows=new ArrayList<PlanItemEntity>(rows);
         for (var project: projects) {
-            var missing=neighborIds.stream().filter(id->!rowIds.contains(id)).toList();
+            var missing=new ArrayList<>(neighborIdsByProject.getOrDefault(project.projectId(),new LinkedHashSet<>()));
             for (int offset=0; offset<missing.size(); offset+=100) {
                 var batch=missing.subList(offset,Math.min(offset+100,missing.size()));
                 var loaded=items.findByProjectIdAndIdIn(project.projectId(),batch);
@@ -158,7 +169,7 @@ public class ProjectManagementService {
     private static void requireVersion(long current, Long expected) { if (expected==null || expected<0) throw new ValidationFailure("rowVersion","rowVersion is required and must be non-negative"); if(current!=expected) throw new org.springframework.orm.ObjectOptimisticLockingFailureException("STALE_ROW_VERSION",null); }
     private static void validateTask(TaskExecutionWrite input) { length(input.completionCriterion(),2000,"completionCriterion"); if(input.requestId()==null) throw new ValidationFailure("requestId","requestId is required"); }
     private static void length(String value,int max,String field) { if(value!=null && value.trim().length()>max) throw new ValidationFailure(field,field+" is too long"); }
-    private static String trimOrNull(String value) { if(value==null) return null; var v=value.trim(); return v.isBlank()?null:v; }
+    private static String trimOrNull(String value) { return ManagementRequestCanonicalizer.normalize(value); }
     private static Set<UUID> normalizeIds(Collection<UUID> ids) { return ids==null?Set.of():ids.stream().filter(Objects::nonNull).collect(Collectors.toCollection(LinkedHashSet::new)); }
     private static Map<String,Object> taskValues(TaskExecutionEntity row) { var m=new LinkedHashMap<String,Object>();m.put("priority",row.priority==null?null:row.priority.name());m.put("completionCriterion",row.completionCriterion);m.put("rowVersion",row.rowVersion);return m; }
     private static TaskExecution toTaskExecution(UUID id,TaskExecutionEntity row,boolean canEdit) { return row==null?new TaskExecution(id,null,null,0,canEdit):new TaskExecution(id,row.priority==null?null:TaskPriority.valueOf(row.priority.name()),row.completionCriterion,row.rowVersion,canEdit); }

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ApiError, api, PAGE_SIZE, type Dashboard as DashboardData, type PropertyOption, type ScheduleProperty, type ScheduleWorkspaceRecord, type Schedules as Rows, type WorkspaceConfig } from "../api/client";
-import { accessKey, accessRead, acknowledgement, capabilities, clearAccessDenial, isAccessError, keys, recordAccessDenial, refreshSchedule, useMe, useProject } from "../state";
+import { accessKey, accessRead, accessReadCanClear, acknowledgement, capabilities, clearAccessDenial, isAccessError, keys, recordAccessDenial, refreshSchedule, useAccessDenied, useMe, useProject } from "../state";
 import { captureSession, isSessionContextActive } from "../session";
 import { Dialog, Link, ProjectMissing, QueryState, Shell } from "../ui";
 import { useUnsavedChanges } from "../unsaved-changes";
@@ -52,17 +52,21 @@ export function Dashboard({ id }: { id: string }) {
     const project = useProject(id);
     const me = useMe();
     const dashboard = useQuery({ queryKey: keys.dashboard(id), queryFn: () => api.dashboard(id), enabled: project.isSuccess && !!project.data });
-    const taskPlan = useQuery({ queryKey: keys.plan(id, "kind=TASK"), queryFn: () => api.plan(id, "kind=TASK"), enabled: project.isSuccess && !project.isFetching && !!project.data });
+    const taskAccessKey = accessKey("project-plan", id, "overview");
+    const taskPlanDenied = useAccessDenied(taskAccessKey);
+    const taskPlan = useQuery({ queryKey: keys.plan(id, "kind=TASK"), queryFn: () => accessRead(taskAccessKey, () => api.plan(id, "kind=TASK")), staleTime: taskPlanDenied ? 0 : 15000, enabled: !taskPlanDenied && project.isSuccess && !project.isFetching && !!project.data });
+    useEffect(() => { if (taskPlan.isSuccess && !taskPlan.isFetching && accessReadCanClear(taskAccessKey)) clearAccessDenial(taskAccessKey); }, [taskAccessKey, taskPlan.isFetching, taskPlan.isSuccess]);
     if (!project.isSuccess) return <Shell><QueryState query={project} loadingMessage="프로젝트를 불러오는 중입니다." errorMessage="프로젝트를 불러오지 못했습니다." /></Shell>;
     if (!project.data) return <Shell><ProjectMissing onRetry={() => project.refetch()} isFetching={project.isFetching} /></Shell>;
     if (isAccessError(dashboard.error)) return <Shell><h1>대시보드를 불러올 수 없습니다</h1><QueryState query={dashboard} /></Shell>;
+    const taskAccessAllowed = !taskPlanDenied && !isAccessError(taskPlan.error);
     const canCreate = dashboard.isSuccess && capabilities(project.data, me.data!.id).create;
-    const canManageTasks = project.data.role === "MANAGER" || project.data.role === "MEMBER";
-    const taskItems = taskPlan.data?.items.filter((item) => item.kind === "TASK") ?? [];
+    const canManageTasks = taskAccessAllowed && (project.data.role === "MANAGER" || project.data.role === "MEMBER");
+    const taskItems = taskAccessAllowed ? taskPlan.data?.items.filter((item) => item.kind === "TASK") ?? [] : [];
     const visibleTaskItems = taskPlan.data ? taskItems.filter((item) => taskPlan.data.matchedIds.includes(item.id)) : [];
     const taskTrulyEmpty = taskPlan.isSuccess && taskItems.length === 0 && taskPlan.data.complete;
     const taskFilteredEmpty = taskPlan.isSuccess && taskItems.length > 0 && visibleTaskItems.length === 0;
-    const isEmpty = dashboard.isSuccess && dashboard.data.scheduleCount === 0 && !dashboard.data.upcomingSchedules.length && !dashboard.data.actionQueue.length;
+    const isEmpty = dashboard.isSuccess && taskTrulyEmpty;
     const manager = project.data.role === "MANAGER";
     const onboardingTitle = manager
         ? "구성원을 초대하고 첫 작업을 만들어보세요."
@@ -88,13 +92,13 @@ export function Dashboard({ id }: { id: string }) {
             </header>
             <QueryState query={dashboard} />
             {!canManageTasks && <p className="task-readonly-reason" role="status">현재 권한은 읽기 전용입니다. 작업 작성은 관리자에게 요청하세요.</p>}
-            <section className="schedule-section task-overview" aria-labelledby="task-overview-title"><div className="section-heading"><div><p className="eyebrow">기본 작업</p><h2 id="task-overview-title">TASK 실행</h2></div><div className="action-row">{canManageTasks && <Link className="button button-primary" to={`/projects/${id}/plan`}>TASK 만들기</Link>}<Link className="button button-secondary" to={`/projects/${id}/plan`}>작업 열기</Link></div></div>{taskPlan.isError ? <QueryState query={taskPlan} errorMessage="TASK 요약을 불러오지 못했습니다. 일정 정보와 별도로 다시 시도할 수 있습니다." /> : taskPlan.isPending ? <p role="status">TASK 요약을 불러오는 중입니다.</p> : <><div className="task-overview-summary"><div><span>실행 TASK</span><strong>{taskItems.length}</strong></div><div><span>완료</span><strong>{taskPlan.data.summary.doneCount}</strong></div><div><span>차단</span><strong>{taskPlan.data.summary.blockedCount}</strong></div><div><span>기한 지남</span><strong>{taskPlan.data.summary.overdueCount}</strong></div></div>{visibleTaskItems.length ? <ul className="task-overview-list">{visibleTaskItems.slice(0, 5).map((item) => <li key={item.id}><Link to={`/projects/${id}/plan?itemId=${encodeURIComponent(item.id)}`}>{item.title}</Link><span>{taskStateLabels[item.state] ?? "상태 확인 필요"}</span></li>)}</ul> : taskTrulyEmpty ? <p className="schedule-empty">아직 TASK가 없습니다. TASK 만들기에서 첫 작업을 시작하세요.</p> : taskFilteredEmpty ? <p className="schedule-empty">조건에 맞는 TASK가 없습니다. 작업 열기에서 필터를 조정하세요.</p> : <p className="schedule-empty">현재 확인된 TASK가 없지만 전체 계획을 아직 확인하는 중입니다.</p>}</>}</section>
+            <section className="schedule-section task-overview" aria-labelledby="task-overview-title"><div className="section-heading"><div><p className="eyebrow">기본 작업</p><h2 id="task-overview-title">TASK 실행</h2></div><div className="action-row">{canManageTasks && <Link className="button button-primary" to={`/projects/${id}/plan`}>TASK 만들기</Link>}<Link className="button button-secondary" to={`/projects/${id}/plan`}>작업 열기</Link></div></div>{taskPlan.isError ? <QueryState query={taskPlan} errorMessage="TASK 요약을 불러오지 못했습니다. 일정 정보와 별도로 다시 시도할 수 있습니다." /> : taskPlan.isPending ? <p role="status">TASK 요약을 불러오는 중입니다.</p> : <><div className="task-overview-summary"><div><span>실행 TASK</span><strong>{taskItems.length}</strong><small>{taskPlan.data.complete ? "현재 조회 범위" : "관측된 TASK 범위"}</small></div><div><span>완료</span><strong>{taskPlan.data.summary.doneCount}</strong><small>{taskPlan.data.complete ? "현재 조회 범위" : "관측된 TASK 범위"}</small></div><div><span>차단</span><strong>{taskPlan.data.summary.blockedCount}</strong><small>{taskPlan.data.complete ? "현재 조회 범위" : "관측된 TASK 범위"}</small></div><div><span>기한 지남</span><strong>{taskPlan.data.summary.overdueCount}</strong><small>{taskPlan.data.complete ? "현재 조회 범위" : "관측된 TASK 범위"}</small></div></div>{!taskPlan.data.complete && <p role="status" className="schedule-inline-alert">현재 응답은 관측된 TASK 범위만 포함합니다. 전체 프로젝트 수치가 아닙니다.</p>}{visibleTaskItems.length ? <ul className="task-overview-list">{visibleTaskItems.slice(0, 5).map((item) => <li key={item.id}><Link to={`/projects/${id}/plan?itemId=${encodeURIComponent(item.id)}`}>{item.title}</Link><span>{taskStateLabels[item.state] ?? "상태 확인 필요"}</span></li>)}</ul> : taskTrulyEmpty ? <p className="schedule-empty">아직 TASK가 없습니다. TASK 만들기에서 첫 작업을 시작하세요.</p> : taskFilteredEmpty ? <p className="schedule-empty">조건에 맞는 TASK가 없습니다. 작업 열기에서 필터를 조정하세요.</p> : <p className="schedule-empty">현재 확인된 TASK가 없지만 전체 계획을 아직 확인하는 중입니다.</p>}</>}</section>
             {dashboard.isSuccess && <>
                 {isEmpty ? <section className="schedule-onboarding" aria-labelledby="onboarding-title"><p className="eyebrow">첫 단계</p><h2 id="onboarding-title">{onboardingTitle}</h2><p>{onboardingDescription}</p></section> : <>
                     <section aria-labelledby="upcoming-title" className="schedule-section"><div className="section-heading"><div><p className="eyebrow">다음 2주</p><h2 id="upcoming-title">예정된 일정</h2></div><Link to={`/projects/${id}/schedules`}>전체 일정 보기</Link></div><TimedList rows={dashboard.data.upcomingSchedules} /></section>
                     <section aria-labelledby="queue-title" className="schedule-section"><div className="section-heading"><div><p className="eyebrow">확인이 필요한 항목</p><h2 id="queue-title">처리 대기</h2></div></div>{dashboard.data.actionQueue.length ? <TimedList rows={dashboard.data.actionQueue} /> : <p className="schedule-empty">처리할 항목이 없습니다.</p>}</section>
                     <section aria-labelledby="overview-signal-title" className="schedule-signal-section"><div className="section-heading"><div><p className="eyebrow">현재 신호</p><h2 id="overview-signal-title">이번 프로젝트의 흐름</h2></div></div><div className="schedule-radar"><div><span>전체 일정</span><strong>{dashboard.data.scheduleCount}</strong></div><div><span>확인 대기</span><strong>{dashboard.data.pendingAcknowledgementCount}</strong></div><div><span>Calendar 확인 필요</span><strong>{dashboard.data.calendarRiskCount}</strong></div></div></section>
-                    <ScheduleDashboardSection id={id} />
+                    {dashboard.data.scheduleCount > 0 && <ScheduleDashboardSection id={id} />}
                 </>}
             </>}
         </div>

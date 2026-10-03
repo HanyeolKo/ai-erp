@@ -4,6 +4,15 @@
 - Worktree/branch: `C:/Users/USER/.codex/worktrees/project-management-redesign/AI ERP` / `codex/project-management-redesign-20261003`; base `b6603269800352073e68c6e76fe4bedf516c5ba6`.
 - Runtime: session-only JDK 25 at `.tools/jdk-25.0.4.1+1`, Gradle 9.2; authorized Luna/high execution. Status: `ready-for-review`; parent review remains authoritative.
 
+## Attempt4 exception addendum
+
+- Task/source: `ERP-PM-IMPLEMENT-20261003-B1`, attempt4/one human-authorized extra attempt, source `8d74efc37d34949053a974337128099ff8ce224`, native `ai-erp-implementer` Luna/high. External mode is `offline-contract-only`; JDK25 ready, local Docker absent, same-SHA PostgreSQL CI remains unchecked.
+- `B1-CANONICAL-REQUEST-HASH`: shared `ManagementRequestCanonicalizer.normalize` now matches persistence `trim` + `isBlank`; service replay regression proves null then U+2003 uses one save/audit/receipt (`focused-final1.*`).
+- `B1-READ-GRAPH-BOUNDS` / `B1-WORK-EMPTY-PAGE-COVERAGE`: exact-cap outgoing probe, visible-project-only batches, and known empty-page totals have focused regressions (`focused-after.*`, `focused-final1.*`).
+- `B1-OPENAPI-CONTRACT`: REST Docs typed descriptors emit four `validationConstraints` records; existing normalizer reads generated `resource.json` and projects bounds. Unit metadata/idempotence/missing-record tests and generated-spec assertions pass (`openapi-focused9.*`; `backend/build/generated-snippets/*/resource.json`; `backend/build/api-spec/openapi3.yaml`).
+- `B1-PG-REGRESSION-COVERAGE`: migration field preservation, rollback fixture, ACL/revocation, disabled replay, and Monday/Sunday boundaries were added to `ProjectManagementFoundationPostgresIntegrationTest`; `integration-compile.*` exit0 only. Live PG remains pending exact-SHA CI.
+- `B1-DEPLOY-MIGRATION-CONTRACT`: V11 filename/count/checksum and missing/tamper guards added to `scripts/lib-deploy.sh` and `scripts/tests/deployment_contract.py`; Python AST syntax passed. Windows deployment harness was unavailable/stalled due WSL prerequisite; no Flyway/PG success claimed.
+
 ## Implemented repair3 evidence
 
 - `B1-CANONICAL-REQUEST-HASH`: project-owned structured canonical fields now trim text and normalize blank to null; operation/resource identity and named fields remain unambiguous. Unit coverage includes delimiter collision and blank/null plus surrounding-space equivalence.
@@ -25,6 +34,15 @@ The original Flyway namespace and semantics remain intact. The authorized projec
 - Final `git diff --check` ran from the worktree at `2026-10-03T18:49:48.3838061+09:00`–`2026-10-03T18:49:48.5296101+09:00`, exit `0`; evidence is recorded in `repair3-diffcheck-final.meta.txt`, `repair3-diffcheck-final.stdout.log`, and `repair3-diffcheck-final.stderr.log`.
 
 ## Not run / limitations
+
+## Attempt4 checks
+
+- Meaningful failure-before evidence: `tmp/pm-implementation-2026-10-03/b1/exception-repair4/failure-before.meta.txt` records exit `1` with four targeted regressions. Focused repairs then passed in `focused-after.*` and `focused-final1.*` (exit `0`).
+- REST Docs metadata and normalizer follow r3: `openapi-focused9.meta.txt` records exit `0`; the generated `resource.json` files are the bounds source, and `OpenApiWorkspaceSchemaNormalizerTest` covers four records, missing metadata rejection, idempotence, unrelated-schema preservation, and conflict validation.
+- Required final command: `backend/gradlew.bat test compileIntegrationTestJava openapi3 bootJar --no-daemon`, `final-suite.meta.txt`, exit `0` (2026-10-03 23:32:53–23:34:25 +09:00).
+- Deployment Python AST check: `deployment-syntax.meta/stdout/stderr`, exit `0`; deployment contract execution remains unavailable/stalled because WSL is unavailable (`deployment-contract.*`, `deployment-contract-direct.meta.txt`).
+- Scoped whitespace check and `git diff --check` both exit `0`; no old SQL migration, frontend, generated, harness/workflow, or config expansion was made by this attempt.
+- Attempt4 status is `ready-for-review`; verdict ownership remains with the parent/reviewer. Actual PostgreSQL, same-SHA CI, Flyway, ACL, rollback, disabled replay, and WEEK-boundary execution remain unchecked locally.
 
 - `integrationTest` was not run because Docker is unavailable locally. The V10/V11 migration, ACL, concurrency, FK, and rollback scenarios are compile-only locally and require the draft PR CI environment for live PostgreSQL evidence; no local PG success is claimed.
 

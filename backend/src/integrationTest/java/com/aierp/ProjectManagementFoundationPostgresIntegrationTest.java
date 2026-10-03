@@ -3,6 +3,8 @@ package com.aierp;
 import com.aierp.googleworkspace.GoogleHttpClient;
 import com.aierp.identity.api.GoogleAuthorizationService;
 import com.aierp.project.api.ProjectManagementDefinitionAccess;
+import com.aierp.project.api.ManagementMutationAccess;
+import com.aierp.project.api.ProjectAccess;
 import com.aierp.projectplan.*;
 import com.aierp.projectplan.api.ProjectManagementController.*;
 import java.sql.*;
@@ -18,6 +20,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -32,6 +36,7 @@ class ProjectManagementFoundationPostgresIntegrationTest {
     @Container static final GenericContainer<?> REDIS=new GenericContainer<>(DockerImageName.parse("redis:8.2.9")).withExposedPorts(6379);
     @DynamicPropertySource static void properties(DynamicPropertyRegistry r){r.add("spring.datasource.url",POSTGRES::getJdbcUrl);r.add("spring.datasource.username",POSTGRES::getUsername);r.add("spring.datasource.password",POSTGRES::getPassword);r.add("spring.data.redis.url",()->"redis://%s:%d".formatted(REDIS.getHost(),REDIS.getMappedPort(6379)));r.add("spring.flyway.locations",()->"classpath:db/migration,classpath:db/integration-migration");}
     @Autowired JdbcTemplate jdbc; @Autowired ProjectManagementDefinitionAccess definitions; @Autowired ProjectManagementService management;
+    @Autowired TaskExecutionRepository executions; @Autowired PlanItemRepository planItems; @Autowired PlanItemDependencyRepository dependencies; @Autowired ManagementMutationAccess mutations; @Autowired ProjectAccess projectAccess; @Autowired PlatformTransactionManager transactionManager;
     @MockitoBean GoogleAuthorizationService googleAuthorization; @MockitoBean GoogleHttpClient googleHttp;
     UUID project,user,group,item;
     @BeforeEach void fixture(){user=UUID.randomUUID();project=UUID.randomUUID();group=UUID.randomUUID();item=UUID.randomUUID();jdbc.update("INSERT INTO identity.user_account(id,email,display_name) VALUES (?,?,?)",user,user+"@example.test","PM User");jdbc.update("INSERT INTO \"group\".erp_group(id,name) VALUES (?,?)",group,"PM Group");jdbc.update("INSERT INTO \"group\".group_member(group_id,user_account_id) VALUES (?,?)",group,user);jdbc.update("INSERT INTO project.project(id,group_id,name) VALUES (?,?,?)",project,group,"PM Project");jdbc.update("INSERT INTO project.project_member(project_id,user_account_id,role) VALUES (?,?,'MANAGER')",project,user);jdbc.update("INSERT INTO project.plan_item(id,project_id,kind,title,state,sort_order,labels,row_version,created_by) VALUES (?,?,'TASK','Task','READY',0,'[]'::jsonb,0,?)",item,project,user);}
@@ -65,7 +70,24 @@ class ProjectManagementFoundationPostgresIntegrationTest {
                 assertThat(scalar(db,"SELECT title FROM project.plan_item WHERE id=?",legacyItem)).isEqualTo("V10 TASK");
             }
             Flyway.configure().dataSource(databaseUrl,POSTGRES.getUsername(),POSTGRES.getPassword()).locations("classpath:db/migration").target("11").load().migrate();
-            try(var db=DriverManager.getConnection(databaseUrl,POSTGRES.getUsername(),POSTGRES.getPassword())) { assertThat(scalar(db,"SELECT title FROM project.plan_item WHERE id=?",legacyItem)).isEqualTo("V10 TASK");assertThat(scalar(db,"SELECT target_start FROM project.project_plan WHERE project_id=?",legacyProject)).isEqualTo(java.sql.Date.valueOf("2030-01-01"));assertThat(scalar(db,"SELECT count(*) FROM schedule.schedule_saved_view WHERE id=?",legacyView)).isEqualTo(1L);assertThat(scalar(db,"SELECT count(*) FROM project.management_definition")).isEqualTo(0L);assertThat(scalar(db,"SELECT count(*) FROM project.task_execution")).isEqualTo(0L); }
+            try(var db=DriverManager.getConnection(databaseUrl,POSTGRES.getUsername(),POSTGRES.getPassword())) {
+                assertThat(scalar(db,"SELECT title FROM project.plan_item WHERE id=?",legacyItem)).isEqualTo("V10 TASK");
+                assertThat(scalar(db,"SELECT state FROM project.plan_item WHERE id=?",legacyItem)).isEqualTo("IN_PROGRESS");
+                assertThat(scalar(db,"SELECT target_start FROM project.plan_item WHERE id=?",legacyItem)).isEqualTo(java.sql.Date.valueOf("2030-01-02"));
+                assertThat(scalar(db,"SELECT target_end FROM project.plan_item WHERE id=?",legacyItem)).isEqualTo(java.sql.Date.valueOf("2030-01-05"));
+                assertThat(scalar(db,"SELECT labels FROM project.plan_item WHERE id=?",legacyItem).toString()).contains("legacy");
+                assertThat(scalar(db,"SELECT row_version FROM project.plan_item WHERE id=?",legacyItem)).isEqualTo(8);
+                assertThat(scalar(db,"SELECT target_start FROM project.project_plan WHERE project_id=?",legacyProject)).isEqualTo(java.sql.Date.valueOf("2030-01-01"));
+                assertThat(scalar(db,"SELECT target_end FROM project.project_plan WHERE project_id=?",legacyProject)).isEqualTo(java.sql.Date.valueOf("2030-01-31"));
+                assertThat(scalar(db,"SELECT row_version FROM project.project_plan WHERE project_id=?",legacyProject)).isEqualTo(7);
+                assertThat(scalar(db,"SELECT title FROM schedule.project_schedule WHERE id=?",legacySchedule)).isEqualTo("V10 Schedule");
+                assertThat(scalar(db,"SELECT status FROM schedule.project_schedule WHERE id=?",legacySchedule)).isEqualTo("CONFIRMED");
+                assertThat(scalar(db,"SELECT business_revision FROM schedule.project_schedule WHERE id=?",legacySchedule)).isEqualTo(3);
+                assertThat(scalar(db,"SELECT scope FROM schedule.schedule_saved_view WHERE id=?",legacyView)).isEqualTo("PERSONAL");
+                assertThat(scalar(db,"SELECT owner_id FROM schedule.schedule_saved_view WHERE id=?",legacyView)).isEqualTo(legacyUser);
+                assertThat(scalar(db,"SELECT config FROM schedule.schedule_saved_view WHERE id=?",legacyView).toString()).contains("{}");
+                assertThat(scalar(db,"SELECT count(*) FROM project.management_definition")).isEqualTo(0L);assertThat(scalar(db,"SELECT count(*) FROM project.task_execution")).isEqualTo(0L);
+            }
         } finally { try(var admin=DriverManager.getConnection(adminUrl,POSTGRES.getUsername(),POSTGRES.getPassword())){admin.createStatement().execute("DROP DATABASE IF EXISTS "+identifier(database));} }
     }
 
@@ -81,6 +103,49 @@ class ProjectManagementFoundationPostgresIntegrationTest {
         assertThat(jdbc.queryForObject("SELECT count(*) FROM project.management_audit WHERE project_id=? AND resource_id=?",Integer.class,project,item)).isEqualTo(1);
         jdbc.update("UPDATE project.project_member SET role='VIEWER' WHERE project_id=? AND user_account_id=?",project,user);
         assertThatThrownBy(()->management.updateTaskExecution(project,item,input,user)).isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+    }
+
+    @Test void sourceAndLedgerRollbackTogetherWhenLedgerWriteFailsAfterSourceWrite(){
+        var beforeTitle=jdbc.queryForObject("SELECT title FROM project.plan_item WHERE id=?",String.class,item);
+        var beforeAudit=jdbc.queryForObject("SELECT count(*) FROM project.management_audit WHERE project_id=?",Integer.class,project);
+        var beforeReceipts=jdbc.queryForObject("SELECT count(*) FROM project.management_mutation_receipt WHERE project_id=?",Integer.class,project);
+        assertThatThrownBy(() -> new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            jdbc.update("UPDATE project.plan_item SET title=? WHERE id=?", "test-only-mutated", item);
+            jdbc.update("INSERT INTO project.management_audit(id,project_id,actor_id,resource_type,resource_id,row_version,operation,before_values,after_values) VALUES (?,?,?,'TASK_EXECUTION',?,1,'TEST_FAILURE','{}'::jsonb,'{}'::jsonb)", UUID.randomUUID(),project,user,item);
+            throw new IllegalStateException("TEST_LEDGER_FAILURE");
+        })).isInstanceOf(IllegalStateException.class).hasMessage("TEST_LEDGER_FAILURE");
+        assertThat(jdbc.queryForObject("SELECT title FROM project.plan_item WHERE id=?",String.class,item)).isEqualTo(beforeTitle);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM project.management_audit WHERE project_id=?",Integer.class,project)).isEqualTo(beforeAudit);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM project.management_mutation_receipt WHERE project_id=?",Integer.class,project)).isEqualTo(beforeReceipts);
+    }
+
+    @Test void disabledServiceCannotReplayStoredReceipt(){
+        var request=UUID.randomUUID();
+        management.updateTaskExecution(project,item,new TaskExecutionWrite(TaskPriority.HIGH,"Replay guard",0L,request),user);
+        var disabled=new ProjectManagementService(executions,mutations,planItems,dependencies,projectAccess,false);
+        assertThatThrownBy(() -> disabled.updateTaskExecution(project,item,new TaskExecutionWrite(TaskPriority.HIGH,"Replay guard",0L,request),user))
+                .isInstanceOf(IllegalStateException.class).hasMessage("PROJECT_MANAGEMENT_DISABLED");
+        assertThat(jdbc.queryForObject("SELECT row_version FROM project.task_execution WHERE item_id=?",Integer.class,item)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM project.management_audit WHERE resource_id=?",Integer.class,item)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM project.management_mutation_receipt WHERE request_id=?",Integer.class,request)).isEqualTo(1);
+    }
+
+    @Test void workPageExcludesUnrelatedAndRevokedProjectsBeforeCount(){
+        var otherProject=UUID.randomUUID(); var otherGroup=UUID.randomUUID(); var otherItem=UUID.randomUUID();
+        jdbc.update("INSERT INTO \"group\".erp_group(id,name) VALUES (?,?)",otherGroup,"Unrelated");
+        jdbc.update("INSERT INTO project.project(id,group_id,name) VALUES (?,?,?)",otherProject,otherGroup,"Unrelated Project");
+        jdbc.update("INSERT INTO project.plan_item(id,project_id,kind,title,state,assignee_id,sort_order,labels,row_version,created_by) VALUES (?,?,'TASK','Hidden','READY',?,0,'[]'::jsonb,0,?)",otherItem,otherProject,user,user);
+        var scoped=management.work(WorkRange.ALL,ZoneOffset.UTC,null,WorkAssignee.MINE,0,50,null,user);
+        assertThat(scoped.items()).extracting(row->row.projectId()).containsOnly(project);
+        assertThat(scoped.totalCount()).isEqualTo((long)scoped.items().size());
+        jdbc.update("INSERT INTO project.project_member(project_id,user_account_id,role) VALUES (?,?,'MEMBER')",otherProject,user);
+        var visible=management.work(WorkRange.ALL,ZoneOffset.UTC,null,WorkAssignee.MINE,0,50,null,user);
+        assertThat(visible.items()).extracting(row->row.projectId()).contains(otherProject);
+        jdbc.update("DELETE FROM project.project_member WHERE project_id=? AND user_account_id=?",otherProject,user);
+        var revoked=management.work(WorkRange.ALL,ZoneOffset.UTC,null,WorkAssignee.MINE,0,50,null,user);
+        assertThat(revoked.items()).extracting(row->row.projectId()).doesNotContain(otherProject);
+        assertThatThrownBy(() -> management.work(WorkRange.ALL,ZoneOffset.UTC,otherProject,WorkAssignee.MINE,0,50,null,user))
+                .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
     }
 
     @Test void concurrentDistinctRequestsHaveOneVersionWinnerAndNoLoserLedgerRows() throws Exception {
@@ -109,7 +174,7 @@ class ProjectManagementFoundationPostgresIntegrationTest {
         jdbc.update("INSERT INTO project.plan_item_dependency(item_id,predecessor_id) VALUES (?,?)",dependent,predecessor);jdbc.update("INSERT INTO project.task_execution(item_id,project_id,priority) VALUES (?,?,?)",dependent,project,"LOW");
         var all=management.work(WorkRange.ALL,ZoneOffset.UTC,project,WorkAssignee.MINE,0,50,null,user);assertThat(all.items().get(0).item().id()).isEqualTo(dependent);assertThat(all.items().get(0).blockingReason()).isEqualTo("Blocked by an incomplete predecessor");
         var todayWork=management.work(WorkRange.TODAY,ZoneOffset.UTC,project,WorkAssignee.MINE,0,50,null,user);var todayIds=todayWork.items().stream().map(row->row.item().id()).toList();assertThat(todayIds).contains(endOnlyToday,startOnlyToday,dependent,enclosing,overdue).doesNotContain(endOnlyPast,startOnlyPast);assertThat(todayWork.totalCount()).isEqualTo((long)todayIds.size());
-        var monday=today.with(java.time.DayOfWeek.MONDAY);var sunday=monday.plusDays(6);var previousSunday=UUID.randomUUID();var followingMonday=UUID.randomUUID();insertTask(previousSunday,"Previous Sunday",PlanItemState.READY,null,monday.minusDays(1),null);insertTask(followingMonday,"Following Monday",PlanItemState.READY,null,monday.plusDays(7),null);var week=management.work(WorkRange.WEEK,ZoneOffset.UTC,project,WorkAssignee.MINE,0,100,null,user);var weekIds=week.items().stream().map(row->row.item().id()).toList();assertThat(weekIds).doesNotContain(previousSunday,followingMonday);
+        var monday=today.with(java.time.DayOfWeek.MONDAY);var sunday=monday.plusDays(6);var previousSunday=UUID.randomUUID();var followingMonday=UUID.randomUUID();var mondayTask=UUID.randomUUID();var sundayTask=UUID.randomUUID();insertTask(previousSunday,"Previous Sunday",PlanItemState.READY,null,monday.minusDays(1),null);insertTask(followingMonday,"Following Monday",PlanItemState.READY,null,monday.plusDays(7),null);insertTask(mondayTask,"Monday boundary",PlanItemState.READY,monday,monday,null);insertTask(sundayTask,"Sunday boundary",PlanItemState.READY,sunday,sunday,null);var week=management.work(WorkRange.WEEK,ZoneOffset.UTC,project,WorkAssignee.MINE,0,100,null,user);var weekIds=week.items().stream().map(row->row.item().id()).toList();assertThat(weekIds).contains(mondayTask,sundayTask).doesNotContain(previousSunday,followingMonday);assertThat(week.totalCount()).isEqualTo((long)weekIds.size());
     }
 
     private void insertTask(UUID id,String title,PlanItemState state,LocalDate start,LocalDate end,LocalDate deadline){

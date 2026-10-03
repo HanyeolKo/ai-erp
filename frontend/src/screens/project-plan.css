@@ -201,7 +201,7 @@
 .task-default-summary span, .task-overview-summary span { color: var(--muted); font-size: 13px; }
 .task-default-summary strong, .task-overview-summary strong { font-size: 24px; }
 .task-default-summary small { color: var(--muted); }
-.task-default-table td, .task-default-table th { vertical-align: middle; }
+.task-default-table td, .task-default-table th { vertical-align: middle; padding: 6px 8px; }
 .task-default-table .plan-title { text-align: left; }
 .task-default-workspace .plan-title, .task-default-workspace .text-button, .task-default-workspace select { min-height: 44px; }
 .task-default-workspace .task-quick-create input,
@@ -213,6 +213,7 @@
 .plan-screen > .page-heading .action-row .button { min-height: 44px; }
 .plan-filter-bar--compact label { font-size: 13px !important; }
 .plan-filter-bar--compact .filter-label { display: flex !important; }
+.task-overview-list a { display: inline-flex; align-items: center; min-height: 44px; }
 
 @media (max-width: 700px) {
   .task-quick-create-fields { grid-template-columns: 1fr; }

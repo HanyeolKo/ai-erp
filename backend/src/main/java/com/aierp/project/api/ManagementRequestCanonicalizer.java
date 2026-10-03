@@ -53,10 +53,10 @@ public final class ManagementRequestCanonicalizer {
         else out.append('"').append(escape(String.valueOf(value))).append('"');
     }
 
-    private static String normalize(String value) {
+    public static String normalize(String value) {
         if (value == null) return null;
         var trimmed = value.trim();
-        return trimmed.isEmpty() ? null : trimmed;
+        return trimmed.isBlank() ? null : trimmed;
     }
     private static String escape(String value) {
         return value.replace("\\", "\\\\").replace("\"", "\\\"")

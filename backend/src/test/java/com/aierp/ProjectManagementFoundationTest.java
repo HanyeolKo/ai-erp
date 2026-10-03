@@ -11,6 +11,8 @@ import com.aierp.project.ProjectManagementDefinitionRepository;
 import com.aierp.projectplan.*;
 import com.aierp.projectplan.api.ProjectManagementController.*;
 import java.util.*;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
@@ -35,7 +37,64 @@ class ProjectManagementFoundationTest {
     @Test void disabledFeatureBlocksWritesBeforePersistence(){service=new ProjectManagementService(executions,mutations,items,dependencies,access,false);assertThatThrownBy(()->service.updateTaskExecution(project,itemId,new TaskExecutionWrite(TaskPriority.HIGH,"Done",0L,requestId),actor)).isInstanceOf(IllegalStateException.class).hasMessage("PROJECT_MANAGEMENT_DISABLED");verify(executions,never()).saveAndFlush(any());}
     @Test void canonicalRequestSeparatesCommaAndFieldBoundaryValues(){var left=ManagementRequestCanonicalizer.definition("DEFINITION_UPDATE",project,"a, successCriteria=b","c",null,null,null,null,0L);var right=ManagementRequestCanonicalizer.definition("DEFINITION_UPDATE",project,"a","b, successCriteria=c",null,null,null,null,0L);assertThat(left).isNotEqualTo(right);}
     @Test void canonicalRequestNormalizesBlankAndSurroundingWhitespace(){var blank=ManagementRequestCanonicalizer.definition("DEFINITION_UPDATE",project,"   "," Criteria ",null,null,"\t",null,0L);var cleared=ManagementRequestCanonicalizer.definition("DEFINITION_UPDATE",project,null,"Criteria",null,null,null,null,0L);assertThat(blank).isEqualTo(cleared);var task=ManagementRequestCanonicalizer.taskExecution("TASK_EXECUTION_UPDATE",itemId,"HIGH","  Done  ",0L);var trimmed=ManagementRequestCanonicalizer.taskExecution("TASK_EXECUTION_UPDATE",itemId," HIGH ","Done",0L);assertThat(task).isEqualTo(trimmed);}
+    @Test void canonicalRequestUsesPersistenceBlankSemanticsForUnicodeWhitespace(){
+        assertThat(ManagementRequestCanonicalizer.definition("DEFINITION_UPDATE",project,"\u2003",null,null,null,"\u2003",null,0L))
+                .isEqualTo(ManagementRequestCanonicalizer.definition("DEFINITION_UPDATE",project,null,null,null,null,null,null,0L));
+        assertThat(ManagementRequestCanonicalizer.taskExecution("TASK_EXECUTION_UPDATE",itemId,"\u2003", "\u2003",0L))
+                .isEqualTo(ManagementRequestCanonicalizer.taskExecution("TASK_EXECUTION_UPDATE",itemId,null,null,0L));
+    }
+    @Test void serviceReplayTreatsUnicodeBlankAsSameMutationAndKeepsSingleLedgerRow(){
+        var task=new PlanItemEntity();task.id=itemId;task.projectId=project;task.kind=PlanItemKind.TASK;
+        when(items.lockByIdAndProjectId(itemId,project)).thenReturn(Optional.of(task));
+        when(executions.lockByItemIdAndProjectId(itemId,project)).thenReturn(Optional.empty());
+        when(mutations.lock(project,actor,requestId)).thenReturn(Optional.empty(),Optional.of(new ManagementMutationAccess.MutationReceipt(hash(ManagementRequestCanonicalizer.taskExecution("TASK_EXECUTION_UPDATE",itemId,null,null,0L)),"TASK_EXECUTION",itemId,1,"APPLIED")));
+        when(items.findByIdAndProjectId(itemId,project)).thenReturn(Optional.of(task));
+        when(executions.findByItemIdAndProjectId(itemId,project)).thenReturn(Optional.empty());
+        service.updateTaskExecution(project,itemId,new TaskExecutionWrite(null,null,0L,requestId),actor);
+        service.updateTaskExecution(project,itemId,new TaskExecutionWrite(null,"\u2003",0L,requestId),actor);
+        verify(executions,times(1)).saveAndFlush(any());verify(mutations,times(1)).audit(any(),any(),any(),any(),anyLong(),any(),any(),any());verify(mutations,times(1)).saveReceipt(any(),any(),any(),any(),any(),any(),anyLong(),any());
+    }
     @Test void disabledFeatureRemovesEditCapabilityFromReads(){service=new ProjectManagementService(executions,mutations,items,dependencies,access,false);var task=new PlanItemEntity();task.id=itemId;task.projectId=project;task.kind=PlanItemKind.TASK;when(items.findAllById(anyCollection())).thenReturn(List.of(task));when(executions.findByItemIdIn(anyCollection())).thenReturn(List.of());assertThat(service.taskExecutions(project,List.of(itemId),actor).items()).singleElement().extracting(TaskExecution::canEdit).isEqualTo(false);}
     @Test void auditPortDeepCopiesInputsAndReturnsUnmodifiableSnapshots(){var port=new ManagementMutationAccess(null,auditRows);var labels=new ArrayList<Object>(List.of("before"));var before=new LinkedHashMap<String,Object>();before.put("nested",labels);var after=new LinkedHashMap<String,Object>();after.put("value","after");port.audit(project,actor,"DEFINITION",project,1,"UPDATE",before,after);labels.set(0,"mutated");var saved=ArgumentCaptor.forClass(ManagementAuditEntity.class);verify(auditRows).save(saved.capture());assertThat(((List<?>)saved.getValue().beforeValues.get("nested")).get(0)).isEqualTo("before");when(auditRows.findByProjectIdAndResourceTypeAndResourceIdOrderByOccurredAtDescIdDesc(eq(project),eq("DEFINITION"),eq(project),any())).thenReturn(new PageImpl<>(List.of(saved.getValue())));var entry=port.history(project,"DEFINITION",project,0,10).entries().get(0);assertThatThrownBy(()->entry.before().put("new","value")).isInstanceOf(UnsupportedOperationException.class);assertThatThrownBy(()->((List<Object>)entry.before().get("nested")).add("x")).isInstanceOf(UnsupportedOperationException.class);}
     @Test void allWorkCarriesObservedCountAndActualPredecessorAttention(){var predecessor=new PlanItemEntity();predecessor.id=UUID.randomUUID();predecessor.projectId=project;predecessor.kind=PlanItemKind.TASK;predecessor.state=PlanItemState.IN_PROGRESS;var task=new PlanItemEntity();task.id=itemId;task.projectId=project;task.kind=PlanItemKind.TASK;task.state=PlanItemState.READY;task.title="Overdue task";task.deadline=java.time.LocalDate.now(java.time.ZoneOffset.UTC).minusDays(1);when(access.readableProjects(actor)).thenReturn(List.of(new ProjectAccess.ReadableProject(project,"ERP",ProjectRole.MANAGER)));when(items.findWorkAll(anyCollection(),eq(actor),eq(false),isNull(),any(),any())).thenReturn(List.of(task));when(items.countWorkAll(anyCollection(),eq(actor),eq(false),isNull())).thenReturn(1L);when(executions.findByItemIdIn(anyCollection())).thenReturn(List.of());when(dependencies.findByItemIdIn(anyCollection(),any())).thenReturn(new SliceImpl<>(List.of(new PlanItemDependencyEntity(itemId,predecessor.id))));when(dependencies.findByPredecessorIdIn(anyCollection(),any())).thenReturn(new SliceImpl<>(List.of()));when(items.findByProjectIdAndIdIn(eq(project),anyCollection())).thenReturn(List.of(predecessor));var result=service.work(WorkRange.ALL,java.time.ZoneId.of("UTC"),null,WorkAssignee.MINE,0,50,null,actor);assertThat(result.observedCount()).isEqualTo(1);assertThat(result.items()).singleElement().satisfies(row->{assertThat(row.blockingReason()).isEqualTo("Blocked by an incomplete predecessor");assertThat(row.nextSchedule()).isNull();});verify(items,never()).findByProjectIdOrderBySortOrderAscIdAsc(any());verify(items).findByProjectIdAndIdIn(eq(project),argThat(ids->ids.contains(predecessor.id)));}
+    @Test void exactIncomingCapStillProbesOutgoingRelations(){
+        var task=new PlanItemEntity(); task.id=itemId; task.projectId=project; task.kind=PlanItemKind.TASK; task.state=PlanItemState.READY; task.title="Capped";
+        var incoming=new ArrayList<PlanItemDependencyEntity>();
+        for (var i=0; i<10000; i++) incoming.add(new PlanItemDependencyEntity(itemId,UUID.randomUUID()));
+        var extra=new PlanItemDependencyEntity(UUID.randomUUID(),itemId);
+        when(access.readableProjects(actor)).thenReturn(List.of(new ProjectAccess.ReadableProject(project,"ERP",ProjectRole.MANAGER)));
+        when(items.findWorkAll(anyCollection(),eq(actor),eq(false),isNull(),any(),any())).thenReturn(List.of(task));
+        when(items.countWorkAll(anyCollection(),eq(actor),eq(false),isNull())).thenReturn(1L);
+        when(executions.findByItemIdIn(anyCollection())).thenReturn(List.of());
+        when(dependencies.findByItemIdIn(anyCollection(),any())).thenReturn(new SliceImpl<>(incoming));
+        when(dependencies.findByPredecessorIdIn(anyCollection(),any())).thenReturn(new SliceImpl<>(List.of(extra)));
+        var result=service.work(WorkRange.ALL,java.time.ZoneId.of("UTC"),null,WorkAssignee.MINE,0,50,null,actor);
+        assertThat(result.complete()).isFalse(); assertThat(result.totalCount()).isNull();
+        verify(dependencies).findByPredecessorIdIn(eq(List.of(itemId)),any());
+    }
+    @Test void relationNeighborsAreQueriedOnlyForVisibleProjects(){
+        var other=UUID.randomUUID(); var neighbor=UUID.randomUUID();
+        var first=new PlanItemEntity(); first.id=itemId; first.projectId=project; first.kind=PlanItemKind.TASK; first.state=PlanItemState.READY; first.title="Visible";
+        var predecessor=new PlanItemEntity(); predecessor.id=neighbor; predecessor.projectId=project; predecessor.kind=PlanItemKind.TASK; predecessor.state=PlanItemState.IN_PROGRESS;
+        when(access.readableProjects(actor)).thenReturn(List.of(new ProjectAccess.ReadableProject(project,"A",ProjectRole.MANAGER),new ProjectAccess.ReadableProject(other,"B",ProjectRole.MEMBER)));
+        when(items.findWorkAll(anyCollection(),eq(actor),eq(false),isNull(),any(),any())).thenReturn(List.of(first));
+        when(items.countWorkAll(anyCollection(),eq(actor),eq(false),isNull())).thenReturn(1L);
+        when(executions.findByItemIdIn(anyCollection())).thenReturn(List.of());
+        when(dependencies.findByItemIdIn(anyCollection(),any())).thenReturn(new SliceImpl<>(List.of(new PlanItemDependencyEntity(itemId,neighbor))));
+        when(dependencies.findByPredecessorIdIn(anyCollection(),any())).thenReturn(new SliceImpl<>(List.of()));
+        when(items.findByProjectIdAndIdIn(project,List.of(neighbor))).thenReturn(List.of(predecessor));
+        service.work(WorkRange.ALL,java.time.ZoneId.of("UTC"),null,WorkAssignee.MINE,0,50,null,actor);
+        verify(items).findByProjectIdAndIdIn(project,List.of(neighbor));
+        verify(items,never()).findByProjectIdAndIdIn(eq(other),anyCollection());
+    }
+    @Test void emptyWorkPagePreservesKnownTotalWithoutGraphReads(){
+        when(access.readableProjects(actor)).thenReturn(List.of(new ProjectAccess.ReadableProject(project,"ERP",ProjectRole.MANAGER)));
+        when(items.findWorkAll(anyCollection(),eq(actor),eq(false),isNull(),any(),any())).thenReturn(List.of());
+        when(items.countWorkAll(anyCollection(),eq(actor),eq(false),isNull())).thenReturn(1L);
+        when(executions.findByItemIdIn(anyCollection())).thenReturn(List.of());
+        var result=service.work(WorkRange.ALL,java.time.ZoneId.of("UTC"),null,WorkAssignee.MINE,1,1,null,actor);
+        assertThat(result.items()).isEmpty(); assertThat(result.totalCount()).isEqualTo(1L); assertThat(result.complete()).isTrue();
+        verifyNoInteractions(dependencies); verify(items,never()).findByProjectIdAndIdIn(any(),anyCollection());
+    }
+    private static String hash(String value){try{return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8)));}catch(Exception e){throw new IllegalStateException(e);}}
 }

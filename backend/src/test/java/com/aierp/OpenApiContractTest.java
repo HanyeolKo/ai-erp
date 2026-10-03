@@ -113,6 +113,27 @@ class OpenApiContractTest {
         for (var status: List.of("400","403","404","409")) assertThat(operation(definition,"patch").path("responses").has(status)).as("definition PATCH %s",status).isTrue();
         for (var status: List.of("400","403","404","409")) assertThat(operation(task,"patch").path("responses").has(status)).as("task PATCH %s",status).isTrue();
         assertThat(operation("/api/v1/projects/{projectId}/management/requests/{requestId}","get").path("responses").has("404")).isTrue();
+        var workOperation=operation("/api/v1/me/work","get");
+        assertQuery(workOperation,"range",false,"today","string");
+        assertQuery(workOperation,"timeZone",false,"UTC","string");
+        assertQuery(workOperation,"assignee",false,"mine","string");
+        assertQuery(workOperation,"page",false,"0","integer");
+        assertThat(queryParameter(workOperation,"page").path("schema").path("minimum").asInt()).isEqualTo(0);
+        assertQuery(workOperation,"limit",false,"50","integer");
+        assertThat(queryParameter(workOperation,"limit").path("schema").path("minimum").asInt()).isEqualTo(1);
+        assertThat(queryParameter(workOperation,"limit").path("schema").path("maximum").asInt()).isEqualTo(100);
+        assertQuery(workOperation,"projectId",false,null,"string");
+        assertQuery(workOperation,"q",false,null,"string");
+        var historyOperation=operation("/api/v1/projects/{projectId}/management/history","get");
+        assertQuery(historyOperation,"resourceType",true,null,"string");
+        assertQuery(historyOperation,"resourceId",true,null,"string");
+        assertQuery(historyOperation,"page",false,"0","integer");
+        assertThat(queryParameter(historyOperation,"page").path("schema").path("minimum").asInt()).isEqualTo(0);
+        assertQuery(historyOperation,"limit",false,"50","integer");
+        assertThat(queryParameter(historyOperation,"limit").path("schema").path("minimum").asInt()).isEqualTo(1);
+        assertThat(queryParameter(historyOperation,"limit").path("schema").path("maximum").asInt()).isEqualTo(100);
+        var workSchema=resolve(responseSchema("/api/v1/me/work","get"));
+        assertThat(workSchema.path("properties").path("complete").path("description").asText()).contains("10000");
     }
     @Test void queryBoundsArePartOfTheGeneratedContract() {
         for(var path:List.of("/api/v1/projects","/api/v1/projects/creation-options","/api/v1/projects/{projectId}/members","/api/v1/notifications",base)) {
@@ -154,6 +175,13 @@ class OpenApiContractTest {
     private static JsonNode requestSchema(String path,String method) {return resolve(operation(path,method).path("requestBody").path("content").path("application/json;charset=UTF-8").path("schema"));}
     private static JsonNode responseSchema(String path,String method) {return resolve(operation(path,method).path("responses").path("200").path("content").path("application/json").path("schema"));}
     private static List<String> required(JsonNode schema){return schema.path("required").valueStream().map(JsonNode::asText).toList();}
+    private static void assertQuery(JsonNode operation,String name,boolean required,String defaultValue,String type){
+        var parameter=queryParameter(operation,name);
+        assertThat(parameter.path("required").asBoolean()).as(name+" required").isEqualTo(required);
+        assertThat(parameter.path("schema").path("type").asText()).as(name+" type").isEqualTo(type);
+        if(defaultValue!=null) assertThat(parameter.path("schema").path("default").asText()).as(name+" default").isEqualTo(defaultValue);
+    }
+    private static JsonNode queryParameter(JsonNode operation,String name){return operation.path("parameters").valueStream().filter(p->p.path("in").asText().equals("query")&&p.path("name").asText().equals(name)).findFirst().orElseThrow();}
     private static void assertTypedMap(JsonNode schema){assertThat(schema.path("type").asText()).isEqualTo("object");assertScalarUnion(schema.path("additionalProperties"));}
     private static void assertScalarUnion(JsonNode schema){assertThat(schema.has("type")).isFalse();assertThat(schema.has("nullable")).isFalse();var alternatives=schema.path("oneOf").valueStream().toList();assertThat(alternatives).extracting(n->n.path("type").asText()).containsExactlyInAnyOrder("string","number","boolean");assertThat(alternatives.stream().filter(n->n.path("nullable").asBoolean()).count()).isEqualTo(1);assertThat(alternatives.stream().filter(n->n.path("nullable").asBoolean()).findFirst().orElseThrow().path("type").asText()).isEqualTo("string");}
     private static JsonNode resolve(JsonNode schema) {return schema.has("$ref")?document.at(schema.path("$ref").asText().substring(1)):schema;}
