@@ -120,16 +120,29 @@ export function ProjectOverview({ id }: { id: string }) {
       const next = overviewContext(`?period=${previous.period}&zone=${encodeURIComponent(previous.zone)}`, new Date());
       return next.date === previous.date && next.monday === previous.monday ? previous : next;
     });
-    const schedule = () => { const boundary = overviewNextBoundary(new Date(), overviewContext(window.location.hash.split("?", 2)[1] ?? "").zone); timer = window.setTimeout(() => { refresh(); schedule(); }, Math.max(1000, Date.parse(boundary) - Date.now() + 50)); };
+    const schedule = () => { const boundary = overviewNextBoundary(new Date(), context.zone); timer = window.setTimeout(() => { refresh(); schedule(); }, Math.max(1000, Date.parse(boundary) - Date.now() + 50)); };
     const resume = () => { refresh(); if (timer !== undefined) window.clearTimeout(timer); schedule(); };
     document.addEventListener("visibilitychange", resume); window.addEventListener("focus", resume); schedule();
     return () => { document.removeEventListener("visibilitychange", resume); window.removeEventListener("focus", resume); if (timer !== undefined) window.clearTimeout(timer); };
-  }, []);
+  }, [context.zone]);
   const contextEpoch = `${context.date}:${context.zone}:${context.weekFrom}:${context.weekTo}`;
   const plan = useQuery({ queryKey: [...overviewQueryPrefix("overview-plan"), contextEpoch], queryFn: () => accessRead(`overview-plan:${id}:${sessionGeneration}:${overviewRevision}:${contextEpoch}`, () => api.plan(id)), enabled: project.isSuccess && !!project.data && !accessFailure });
   const dashboard = useQuery({ queryKey: [...overviewQueryPrefix("overview-dashboard"), contextEpoch], queryFn: () => accessRead(`overview-dashboard:${id}:${sessionGeneration}:${overviewRevision}:${contextEpoch}`, () => api.dashboard(id)), enabled: project.isSuccess && !!project.data && !accessFailure });
   const schedules = useQuery({ queryKey: [...overviewQueryPrefix("overview-schedules"), contextEpoch], queryFn: () => readOverviewSchedules(id, context.weekFrom, context.weekTo), enabled: project.isSuccess && !!project.data && !accessFailure });
-  useEffect(() => { const observe = () => { const denied = queryClient.getQueryCache().getAll().some(query => isProjectProtectedQuery(query) && isOverviewProjectAccessError(query.state.error)); if (denied) { clearOverviewQueries(); setWorkspaceAccessFailure(true); setAccessFailure(true); } }; observe(); return queryClient.getQueryCache().subscribe(observe); }, [id, queryClient]);
+  useEffect(() => {
+    const isCurrentProtectedQuery = (query: { queryKey: readonly unknown[]; getObserversCount: () => number }) => {
+      if (!isProjectProtectedQuery(query)) return false;
+      const [name, projectId, generation, revision, epoch] = query.queryKey;
+      if (String(name).startsWith("overview-")) return projectId === id && generation === sessionGeneration && revision === overviewRevision && epoch === contextEpoch;
+      return query.getObserversCount() > 0;
+    };
+    const observe = () => {
+      const denied = queryClient.getQueryCache().getAll().some(query => isCurrentProtectedQuery(query) && isOverviewProjectAccessError(query.state.error));
+      if (denied) { clearOverviewQueries(); setWorkspaceAccessFailure(true); setAccessFailure(true); }
+    };
+    observe();
+    return queryClient.getQueryCache().subscribe(observe);
+  }, [contextEpoch, id, overviewRevision, queryClient, sessionGeneration]);
   const protectedAccessFailure = accessFailure || workspaceAccessFailure || (project.isError && isOverviewProjectAccessError(project.error)) || (plan.isError && isOverviewProjectAccessError(plan.error)) || (schedules.isError && isOverviewProjectAccessError(schedules.error)) || (dashboard.isError && isOverviewProjectAccessError(dashboard.error));
   useEffect(() => { if ((project.isError && isOverviewProjectAccessError(project.error)) || (plan.isError && isOverviewProjectAccessError(plan.error)) || (schedules.isError && isOverviewProjectAccessError(schedules.error)) || (dashboard.isError && isOverviewProjectAccessError(dashboard.error))) { clearOverviewQueries(); setOverviewRevision(value => value + 1); setAccessFailure(true); } }, [project.isError, project.error, plan.isError, plan.error, schedules.isError, schedules.error, dashboard.isError, dashboard.error]);
   const retry = async () => {

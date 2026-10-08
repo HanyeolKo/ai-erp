@@ -10,7 +10,7 @@ afterEach(() => { cleanup(); vi.unstubAllGlobals(); window.location.hash = ""; s
 const mount = (path: string) => { window.location.hash = `#${path}`; render(<App />); return userEvent.setup(); };
 
 test.each(["/projects/missing", "/projects/missing/schedules", "/projects/missing/schedules/new", "/projects/missing/schedules/s1", "/projects/missing/schedules/s1/edit"])("missing project exposes a real membership retry without child requests: %s", async path => {
-  const server = http(); installOverviewFixtures(server, "missing"); server.on("GET", "/api/v1/projects", () => json([]));
+  const server = http(); if (path === "/projects/missing") installOverviewFixtures(server, "missing"); server.on("GET", "/api/v1/projects", () => json([]));
   const user = mount(path);
   expect(await screen.findByText(/선택한 프로젝트가 삭제되었거나/)).toBeInTheDocument();
   expect(server.calls.some(c => c.url.startsWith("/api/v1/projects/missing/"))).toBe(false);

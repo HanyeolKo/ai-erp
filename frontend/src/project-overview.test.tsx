@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 import App from "./App";
 import { http, json } from "./test/http";
@@ -100,6 +100,32 @@ test("uses a new same-week request epoch after the Seoul civil midnight timer", 
   await new Promise(resolve => setTimeout(resolve, 1200));
   await waitFor(() => expect(scheduleRequests()).toBe(2));
   expect(window.location.hash).toContain("period=today");
+});
+
+test("reschedules the midnight timer when the zone changes within the same civil date", async () => {
+  const server = http();
+  const timerSpy = vi.spyOn(window, "setTimeout");
+  vi.setSystemTime(new Date("2090-09-10T10:00:00Z"));
+  server.on("GET", "/api/v1/projects/p1/plan", () => json(plan));
+  server.on("GET", "/api/v1/projects/p1/dashboard", () => json(dashboard));
+  server.on("GET", "/api/v1/projects/p1/schedules", () => json([schedule]));
+  server.on("GET", "/api/v1/projects/p1/schedule-workspace", () => json({ properties: [], views: [], dashboardViewId: null, dashboardRowVersion: 0 }));
+  window.location.hash = "#/projects/p1?period=today&zone=America%2FLos_Angeles";
+  render(<App />);
+  await screen.findByRole("heading", { name: "프로젝트 진척" });
+  const scheduleRequests = () => server.calls.filter(call => call.method === "GET" && call.url.startsWith("/api/v1/projects/p1/schedules?")).length;
+  await waitFor(() => expect(scheduleRequests()).toBe(1));
+  await act(async () => {
+    window.location.hash = "#/projects/p1?period=today&zone=America%2FNew_York";
+    window.dispatchEvent(new HashChangeEvent("hashchange"));
+  });
+  await waitFor(() => expect(scheduleRequests()).toBe(2));
+  const midnightTimer = timerSpy.mock.calls.find(([, delay]) => Number(delay) > 64_000_000 && Number(delay) < 66_000_000)?.[0] as (() => void) | undefined;
+  expect(midnightTimer).toBeDefined();
+  vi.setSystemTime(new Date("2090-09-11T04:00:01Z"));
+  await act(async () => { midnightTimer!(); });
+  await waitFor(() => expect(scheduleRequests()).toBe(3));
+  expect(server.calls.some(call => call.url.includes("from=2090-09-11T04%3A00%3A00.000Z"))).toBe(true);
 });
 
 test.each([
