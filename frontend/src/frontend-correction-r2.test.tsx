@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, expect, test, vi } from "vitest";
 import App from "./App";
 import { http, json, schedule } from "./test/http";
+import { installOverviewFixtures } from "./test/project-overview-fixtures";
 
 afterEach(() => { vi.unstubAllGlobals(); window.location.hash = ""; sessionStorage.clear(); focusManager.setFocused(undefined); });
 
@@ -116,7 +117,7 @@ test("custom-only Form route departure keeps its draft when declined", async () 
 });
 
 test("dashboard denial locks an already-open value editor", async () => {
-  const server = http();
+  const server = http(); installOverviewFixtures(server);
   const property = { id: "notes", name: "메모", type: "TEXT", position: 0, archived: false, rowVersion: 1, options: [] };
   const view = { id: "shared-cards", name: "공유 카드", scope: "SHARED", ownerId: "u1", rowVersion: 1, archived: false, config: { type: "CARDS", filters: [], sorts: [], groupBy: null, legendBy: null, visibleFields: ["title", "property:notes"] } };
   let denied = false;
@@ -128,7 +129,7 @@ test("dashboard denial locks an already-open value editor", async () => {
   await user.click(await screen.findByRole("button", { name: "속성 바로 수정" }));
   denied = true;
   await act(async () => { vi.setSystemTime(new Date("2090-09-10T00:01:00Z")); focusManager.setFocused(false); focusManager.setFocused(true); });
-  await screen.findByText(/대시보드 접근 권한을 다시 확인해야 합니다/);
+  await screen.findByText(/이 프로젝트의 개요에 접근할 수 없습니다/);
   expect(screen.queryByRole("button", { name: "속성 저장" })).not.toBeInTheDocument();
   expect(server.calls.filter(call => call.method === "PATCH" && call.url.endsWith("/values"))).toHaveLength(0);
 });

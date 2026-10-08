@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, expect, test } from "vitest";
 import App from "./App";
 import { http, json } from "./test/http";
+import { installOverviewFixtures } from "./test/project-overview-fixtures";
 
 afterEach(() => {
   window.location.hash = "";
@@ -26,7 +27,7 @@ test("notification popup keeps schedule context and restores trigger focus", asy
 });
 
 test("notification popup follows validated schedule links and direct route retains full content", async () => {
-  const server = http();
+  const server = http(); installOverviewFixtures(server);
   server.on("GET", "/api/v1/notifications", () => json([]));
   window.location.hash = "#/projects/p1";
   render(<App />);

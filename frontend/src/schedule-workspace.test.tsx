@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, expect, test, vi } from "vitest";
 import App from "./App";
 import { http, json, schedule } from "./test/http";
+import { installOverviewFixtures } from "./test/project-overview-fixtures";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -217,7 +218,7 @@ test("list time action opens the shared time flow and preserves the workspace re
 });
 
 test("dashboard clean refetch adopts server values while dirty conflict preserves the draft until cancel", async () => {
-  const server = http();
+  const server = http(); installOverviewFixtures(server);
   const property = { id: "notes", name: "메모", type: "TEXT", position: 0, archived: false, rowVersion: 1, options: [] };
   const view = { id: "shared-cards", name: "공유 카드", scope: "SHARED", ownerId: "u1", rowVersion: 1, archived: false, config: { type: "CARDS", filters: [], sorts: [], groupBy: null, legendBy: null, visibleFields: ["title", "property:notes"] } };
   let externalValue = "alpha";

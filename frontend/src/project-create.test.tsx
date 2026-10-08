@@ -3,12 +3,13 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, expect, test, vi } from "vitest";
 import App from "./App";
 import { http, json, project } from "./test/http";
+import { installOverviewFixtures } from "./test/project-overview-fixtures";
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); window.history.replaceState(null, "", "/"); sessionStorage.clear(); });
 const mount = () => { window.location.hash = "#/"; render(<App />); return userEvent.setup(); };
 
 test("a verified account creates a project without loading groups", async () => {
-  const server = http(); let created = false;
+  const server = http(); installOverviewFixtures(server); let created = false;
   server.on("GET", "/api/v1/projects", () => json(created ? [project] : []));
   server.on("POST", "/api/v1/projects", body => { expect(body.groupId).toBeUndefined(); expect(body.name).toBe("새 프로젝트"); expect(body.requestId).toMatch(/^[0-9a-f-]{36}$/i); created = true; return json(project); });
   const user = mount(); await user.click(await screen.findByRole("button", { name: "새 프로젝트" }));
@@ -26,7 +27,7 @@ test("invalid project names stay in the dialog and focus the field", async () =>
 });
 
 test("uncertain create result keeps the same request until explicitly resolved", async () => {
-  const server = http(); let calls = 0; const bodies: any[] = [];
+  const server = http(); installOverviewFixtures(server); let calls = 0; const bodies: any[] = [];
   server.on("POST", "/api/v1/projects", body => { bodies.push(body); calls += 1; return calls === 1 ? json({ code: "RESULT_UNKNOWN" }, 500) : json(project); });
   const user = mount(); await user.click(await screen.findByRole("button", { name: "새 프로젝트" })); await user.type(screen.getByLabelText("프로젝트 이름"), "보존할 이름"); await user.click(screen.getByRole("button", { name: "프로젝트 만들기" }));
   await screen.findByText(/결과를 확인하지 못했습니다/); expect(bodies).toHaveLength(1); const requestId = bodies[0].requestId;

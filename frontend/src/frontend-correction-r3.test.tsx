@@ -5,6 +5,7 @@ import { afterEach, expect, test, vi } from "vitest";
 import App from "./App";
 import { civilDateBoundary } from "./time";
 import { http, json, project, schedule } from "./test/http";
+import { installOverviewFixtures } from "./test/project-overview-fixtures";
 
 afterEach(() => { vi.unstubAllGlobals(); window.location.hash = ""; sessionStorage.clear(); focusManager.setFocused(undefined); });
 
@@ -155,7 +156,7 @@ test("property writes stay locked through failed recovery and re-enable only aft
 });
 
 test("dashboard writes stay locked through failed recovery and use fresh values after successful recovery", async () => {
-  const server = http();
+  const server = http(); installOverviewFixtures(server);
   const property = { id: "notes", name: "메모", type: "TEXT", position: 0, archived: false, rowVersion: 1, options: [] };
   const view = { id: "shared", name: "공유 카드", scope: "SHARED", ownerId: "u1", rowVersion: 1, archived: false, config: { type: "CARDS", filters: [], sorts: [], groupBy: null, legendBy: null, visibleFields: ["title", "property:notes"] } };
   let denied = false;
@@ -171,14 +172,14 @@ test("dashboard writes stay locked through failed recovery and use fresh values 
   await user.click(await screen.findByRole("button", { name: "속성 바로 수정" }));
   denied = true;
   await act(async () => { vi.setSystemTime(new Date("2090-09-10T00:01:00Z")); focusManager.setFocused(false); focusManager.setFocused(true); });
-  await screen.findByText(/대시보드 접근 권한을 다시 확인해야 합니다/);
+  await screen.findByText(/이 프로젝트의 개요에 접근할 수 없습니다/);
   expect(screen.queryByRole("button", { name: "속성 저장" })).not.toBeInTheDocument();
-  await user.click(screen.getByRole("button", { name: "접근 상태 다시 확인" }));
-  await screen.findByText("접근 상태를 확인하지 못해 보호된 대시보드 작업을 잠갔습니다.");
+  await user.click(screen.getByRole("button", { name: "다시 시도" }));
+  await screen.findByText(/이 프로젝트의 개요에 접근할 수 없습니다/);
   expect(writes).toHaveLength(0);
   denied = false; version = 5; value = "fresh";
-  await user.click(screen.getByRole("button", { name: "접근 상태 다시 확인" }));
-  await screen.findByText("접근 상태를 다시 확인했습니다.");
+  await user.click(screen.getByRole("button", { name: "다시 시도" }));
+  await screen.findByRole("button", { name: "속성 바로 수정" });
   await user.click(await screen.findByRole("button", { name: "속성 바로 수정" }));
   const input = screen.getByLabelText("메모");
   expect(input).toHaveValue("fresh");

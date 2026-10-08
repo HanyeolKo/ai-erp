@@ -4,12 +4,13 @@ import { afterEach, expect, test, vi } from "vitest";
 import { focusManager } from "@tanstack/react-query";
 import App from "./App";
 import { http, json, project, schedule } from "./test/http";
+import { installOverviewFixtures } from "./test/project-overview-fixtures";
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); window.location.hash = ""; sessionStorage.clear(); focusManager.setFocused(undefined); });
 const mount = (path: string) => { window.location.hash = `#${path}`; render(<App />); return userEvent.setup(); };
 
 test.each(["/projects/missing", "/projects/missing/schedules", "/projects/missing/schedules/new", "/projects/missing/schedules/s1", "/projects/missing/schedules/s1/edit"])("missing project exposes a real membership retry without child requests: %s", async path => {
-  const server = http(); server.on("GET", "/api/v1/projects", () => json([]));
+  const server = http(); if (path === "/projects/missing") installOverviewFixtures(server, "missing"); server.on("GET", "/api/v1/projects", () => json([]));
   const user = mount(path);
   expect(await screen.findByText(/선택한 프로젝트가 삭제되었거나/)).toBeInTheDocument();
   expect(server.calls.some(c => c.url.startsWith("/api/v1/projects/missing/"))).toBe(false);
@@ -22,23 +23,22 @@ test.each(["/projects/missing", "/projects/missing/schedules", "/projects/missin
 });
 
 test("project query retry stays disabled while one retry is in flight", async () => {
-  const server = http(); server.on("GET", "/api/v1/projects", () => json({ code: "UPSTREAM" }, 500));
+  const server = http(); installOverviewFixtures(server); server.on("GET", "/api/v1/projects", () => json({ code: "UPSTREAM" }, 500));
   const user = mount("/projects/p1");
   expect(await screen.findByRole("alert")).toHaveTextContent(/불러오지 못|처리하지 못/);
   let complete!: (value: Response) => void;
   server.on("GET", "/api/v1/projects", () => new Promise(resolve => { complete = resolve; }));
   await user.click(screen.getByRole("button", { name: "다시 시도" }));
-  const retry = screen.getByRole("button", { name: "다시 시도" });
-  expect(retry).toBeDisabled(); await user.click(retry);
+  expect(screen.queryByRole("button", { name: "다시 시도" })).not.toBeInTheDocument();
   expect(server.calls.filter(c => c.url.startsWith("/api/v1/projects?"))).toHaveLength(2);
   await act(async () => complete(json([])));
   expect(await screen.findByText(/선택한 프로젝트가 삭제되었거나/)).toBeInTheDocument();
 });
 
 test("dashboard 403 overrides cached Manager capability and offers project selection", async () => {
-  const server = http(); server.on("GET", "/api/v1/projects/p1/dashboard", () => json({ code: "FORBIDDEN" }, 403));
+  const server = http(); installOverviewFixtures(server); server.on("GET", "/api/v1/projects/p1/dashboard", () => json({ code: "FORBIDDEN" }, 403));
   mount("/projects/p1");
-  expect(await screen.findByRole("alert")).toHaveTextContent(/접근 권한/);
+  expect(await screen.findByRole("alert")).toHaveTextContent(/접근할 수 없습니다/);
   expect(screen.queryByRole("link", { name: "일정 만들기" })).not.toBeInTheDocument();
   expect(screen.queryByRole("link", { name: "구성원 초대" })).not.toBeInTheDocument();
   expect(screen.getByRole("link", { name: "AI ERP" })).toHaveAttribute("href", "#/");
@@ -128,7 +128,7 @@ test("protected mutation 401 enters the login flow without replaying the command
 });
 
 test("deliberate route change focuses the new heading after its async load", async () => {
-  http(); const user = mount("/projects/p1"); await screen.findByRole("heading", { name: "프로젝트 개요" });
+  const server = http(); installOverviewFixtures(server); const user = mount("/projects/p1"); await screen.findByRole("heading", { name: "프로젝트 개요" });
   await user.click(screen.getByRole("link", { name: "일정" }));
   const heading = await screen.findByRole("heading", { name: "프로젝트 일정" });
   await waitFor(() => expect(heading).toHaveFocus());

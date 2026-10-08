@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ApiError, api, PAGE_SIZE, type Dashboard as DashboardData, type PropertyOption, type ScheduleProperty, type ScheduleWorkspaceRecord, type Schedules as Rows, type WorkspaceConfig } from "../api/client";
+import { ApiError, api, PAGE_SIZE, type PropertyOption, type ScheduleProperty, type ScheduleWorkspaceRecord, type Schedules as Rows, type WorkspaceConfig } from "../api/client";
 import { accessKey, accessRead, acknowledgement, capabilities, clearAccessDenial, isAccessError, keys, recordAccessDenial, refreshSchedule, useMe, useProject } from "../state";
 import { captureSession, isSessionContextActive } from "../session";
 import { Dialog, Link, ProjectMissing, QueryState, Shell } from "../ui";
@@ -10,7 +10,7 @@ import { civilDateBoundary, dateInZone, displayTime, navigateDate, shiftDate, ut
 import { executeScheduleTimeMutation, preserveScheduleTimeInstants } from "../schedule-time-mutation";
 import { applyMonthChange, applyWeekMove, applyWeekResize, editBody, eventDayMinute, eventSpan as directEventSpan, isValidChange, previewText, weekLaneLayout, type CalendarChange, type CalendarSchedule, type LocalPoint } from "./calendar-direct-manipulation";
 import "./schedules.css";
-import { ScheduleDashboardSection } from "./ScheduleWorkspace";
+import { ProjectOverview } from "./ProjectOverview";
 
 const statusLabels: Record<string, string> = {
     ALL: "전체 상태",
@@ -27,60 +27,8 @@ const ackLabels: Record<string, string> = {
 const statusLabel = (value: string) => statusLabels[value] ?? "상태 확인 필요";
 const ackLabel = (value: string) => ackLabels[value] ?? "확인 상태 확인 필요";
 
-function TimedList({ rows }: { rows: DashboardData["upcomingSchedules"] }) {
-    if (!rows.length) return <p className="schedule-empty">예정된 일정이 없습니다.</p>;
-    return <ul className="schedule-list schedule-list--overview">
-        {rows.map(schedule => <li key={schedule.id}>
-            <Link to={`/projects/${schedule.projectId}/schedules/${schedule.id}`}>{schedule.title}</Link>
-            <span className="schedule-status">{statusLabel(schedule.status)}</span>
-            <time dateTime={schedule.startsAt}>{displayTime(schedule.startsAt)}</time>
-            <span aria-hidden="true">~</span>
-            <time dateTime={schedule.endsAt}>{displayTime(schedule.endsAt)}</time>
-        </li>)}
-    </ul>;
-}
-
 export function Dashboard({ id }: { id: string }) {
-    const project = useProject(id);
-    const me = useMe();
-    const dashboard = useQuery({ queryKey: keys.dashboard(id), queryFn: () => api.dashboard(id), enabled: project.isSuccess && !!project.data });
-    if (!project.isSuccess) return <Shell><QueryState query={project} loadingMessage="프로젝트를 불러오는 중입니다." errorMessage="프로젝트를 불러오지 못했습니다." /></Shell>;
-    if (!project.data) return <Shell><ProjectMissing onRetry={() => project.refetch()} isFetching={project.isFetching} /></Shell>;
-    if (isAccessError(dashboard.error)) return <Shell><h1>대시보드를 불러올 수 없습니다</h1><QueryState query={dashboard} /></Shell>;
-    const canCreate = dashboard.isSuccess && capabilities(project.data, me.data!.id).create;
-    const isEmpty = dashboard.isSuccess && dashboard.data.scheduleCount === 0 && !dashboard.data.upcomingSchedules.length && !dashboard.data.actionQueue.length;
-    const manager = project.data.role === "MANAGER";
-    const onboardingTitle = manager
-        ? "구성원을 초대하고 첫 일정을 만들어보세요."
-        : canCreate
-            ? "첫 일정을 만들어보세요."
-            : "아직 일정이 없습니다.";
-    const onboardingDescription = manager
-        ? "프로젝트에 함께할 사람을 초대한 뒤 필요한 일정을 등록할 수 있습니다."
-        : canCreate
-            ? "필요한 일정을 등록해 프로젝트의 다음 작업을 시작하세요."
-            : "조회 권한으로 일정 내용을 확인할 수 있습니다. 일정 작성은 관리자에게 요청하세요.";
-    return <Shell project={project.data}>
-        <div className="schedule-screen schedule-overview">
-            <header className="schedule-heading">
-                <div><p className="eyebrow">{project.data.name}</p><h1>프로젝트 개요</h1><p className="lead">다가오는 일정과 확인이 필요한 작업을 한 곳에서 살펴보세요.</p></div>
-                <div className="schedule-actions">
-                    {isEmpty && manager && <Link className="button button-primary" to={`/projects/${id}/invitations/new`}>구성원 초대</Link>}
-                    {canCreate && <Link className={`button ${isEmpty && manager ? "button-secondary" : "button-primary"}`} to={`/projects/${id}/schedules/new`}>일정 만들기</Link>}
-                    {!isEmpty && manager && <Link className="button button-secondary" to={`/projects/${id}/invitations/new`}>구성원 초대</Link>}
-                </div>
-            </header>
-            <QueryState query={dashboard} />
-            {dashboard.isSuccess && <>
-                {isEmpty ? <section className="schedule-onboarding" aria-labelledby="onboarding-title"><p className="eyebrow">첫 단계</p><h2 id="onboarding-title">{onboardingTitle}</h2><p>{onboardingDescription}</p></section> : <>
-                    <section aria-labelledby="upcoming-title" className="schedule-section"><div className="section-heading"><div><p className="eyebrow">다음 2주</p><h2 id="upcoming-title">예정된 일정</h2></div><Link to={`/projects/${id}/schedules`}>전체 일정 보기</Link></div><TimedList rows={dashboard.data.upcomingSchedules} /></section>
-                    <section aria-labelledby="queue-title" className="schedule-section"><div className="section-heading"><div><p className="eyebrow">확인이 필요한 항목</p><h2 id="queue-title">처리 대기</h2></div></div>{dashboard.data.actionQueue.length ? <TimedList rows={dashboard.data.actionQueue} /> : <p className="schedule-empty">처리할 항목이 없습니다.</p>}</section>
-                    <section aria-labelledby="overview-signal-title" className="schedule-signal-section"><div className="section-heading"><div><p className="eyebrow">현재 신호</p><h2 id="overview-signal-title">이번 프로젝트의 흐름</h2></div></div><div className="schedule-radar"><div><span>전체 일정</span><strong>{dashboard.data.scheduleCount}</strong></div><div><span>확인 대기</span><strong>{dashboard.data.pendingAcknowledgementCount}</strong></div><div><span>Calendar 확인 필요</span><strong>{dashboard.data.calendarRiskCount}</strong></div></div></section>
-                    <ScheduleDashboardSection id={id} />
-                </>}
-            </>}
-        </div>
-    </Shell>;
+    return <ProjectOverview id={id} />;
 }
 
 const weekdays = ["월", "화", "수", "목", "금", "토", "일"];

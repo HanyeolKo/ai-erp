@@ -1,0 +1,52 @@
+.project-overview-screen { min-width: 0; }
+.project-overview-screen button { min-height: 44px; }
+.project-overview-screen a { min-height: 44px; }
+.overview-macro { margin-top: 28px; border: 1px solid var(--divider); border-radius: var(--radius-surface); background: var(--surface); overflow: hidden; }
+.overview-macro > section, .overview-domain-grid > section, .project-overview-screen > section { min-width: 0; padding: 24px; }
+.overview-progress { border-bottom: 1px solid var(--divider); }
+.overview-section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; min-width: 0; }
+.overview-section-heading h2 { margin: 4px 0 0; font-size: 20px; line-height: 1.4; overflow-wrap: anywhere; }
+.overview-section-heading > a { display: inline-flex; flex-shrink: 0; align-items: center; min-height: 44px; padding-top: 10px; color: var(--accent); font-size: 13px; text-align: right; white-space: nowrap; }
+.overview-count { white-space: nowrap; font-variant-numeric: tabular-nums; font-size: .75em; font-weight: 600; color: var(--text-secondary); }
+.overview-progress-main { display: flex; flex-wrap: wrap; align-items: baseline; gap: 12px; margin-top: 18px; }
+.overview-progress-main > div { display: flex; flex-wrap: wrap; align-items: baseline; gap: 12px; width: 100%; }
+.overview-ratio { font-size: 28px; line-height: 1.2; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.overview-percent { font-size: 20px; line-height: 1.4; font-variant-numeric: tabular-nums; }
+.overview-percent-separator { color: var(--text-secondary); }
+.overview-progress-label { flex-basis: 100%; color: var(--text-secondary); font-size: 13px; overflow-wrap: anywhere; }
+.overview-partial, .overview-range, .overview-meta, .overview-path { color: var(--text-secondary); overflow-wrap: anywhere; }
+.overview-progress-main > p { flex-basis: 100%; margin: 0; }
+.overview-as-of { margin: 12px 0 0; color: var(--text-secondary); font-size: 13px; overflow-wrap: anywhere; }
+.overview-facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 20px 0 0; }
+.overview-facts > div { min-width: 0; padding-top: 12px; border-top: 1px solid var(--divider); }
+.overview-facts dt { color: var(--text-secondary); font-size: 13px; }
+.overview-facts dd { margin: 4px 0 0; font-weight: 700; overflow-wrap: anywhere; }
+.overview-domain-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; }
+.overview-domain-grid > section + section { border-left: 1px solid var(--divider); }
+.overview-list { display: flex; flex-direction: column; gap: 0; padding: 0; margin: 16px 0 0; list-style: none; }
+.overview-list li { display: flex; min-width: 0; flex-direction: column; gap: 4px; padding: 12px 0; border-top: 1px solid var(--divider); }
+.overview-list li strong, .overview-list li a { min-width: 0; color: var(--text); font-size: 15px; line-height: 1.5; overflow-wrap: anywhere; }
+.overview-list li a { display: flex; align-items: center; min-height: 44px; text-decoration: none; }
+.overview-list li a.overview-record-link { align-items: flex-start; flex-direction: column; gap: 4px; width: 100%; }
+.overview-record-link .overview-meta { font-size: 13px; }
+.overview-list li a:hover strong, .overview-list li a:focus-visible strong { text-decoration: underline; }
+.overview-empty, .overview-state { color: var(--text-secondary); overflow-wrap: anywhere; }
+.overview-state { margin: 24px 0; }
+.overview-state[role="alert"] { color: var(--danger); }
+.overview-period-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.overview-period-controls button { min-height: 44px; }
+.overview-period-controls button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent); color: var(--surface); }
+.overview-schedule-list { margin-top: 8px; }
+.project-overview-screen > section { margin-top: 32px; padding-inline: 0; }
+.project-overview-screen > section .overview-section-heading { padding-inline: 0; }
+.project-overview-screen > section > .overview-list, .project-overview-screen > section > .overview-empty, .project-overview-screen > section > .overview-state, .project-overview-screen > section > .overview-partial, .project-overview-screen > section > .overview-range, .project-overview-screen > section > .overview-period-controls { margin-inline: 0; }
+.project-overview-screen > section > .overview-list li { padding-inline: 16px; border: 1px solid var(--divider); border-top: 0; background: var(--surface); }
+.project-overview-screen > section > .overview-list li:first-child { border-top: 1px solid var(--divider); border-radius: var(--radius-control) var(--radius-control) 0 0; }
+.project-overview-screen > section > .overview-list li:last-child { border-radius: 0 0 var(--radius-control) var(--radius-control); }
+.project-overview-screen > section > .overview-list li:only-child { border-radius: var(--radius-control); }
+.project-overview-screen > section > .overview-empty, .project-overview-screen > section > .overview-state, .project-overview-screen > section > .overview-partial, .project-overview-screen > section > .overview-range { margin-top: 16px; }
+.project-overview-screen .workspace-dashboard-section { padding-inline: 0; }
+.project-overview-screen .workspace-dashboard-section > * { max-width: 100%; }
+@media (min-width: 769px) and (max-width: 1099px) { .overview-domain-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .overview-domain-grid > section + section { border-left: 0; } .overview-domain-grid > section:nth-child(2) { border-left: 1px solid var(--divider); } .overview-domain-grid > section:nth-child(3) { border-top: 1px solid var(--divider); } }
+@media (max-width: 768px) { .overview-domain-grid { grid-template-columns: 1fr; } .overview-domain-grid > section + section { border-top: 1px solid var(--divider); border-left: 0; } .overview-macro > section, .overview-domain-grid > section, .project-overview-screen > section { padding: 20px 16px; } .overview-facts { grid-template-columns: 1fr; gap: 8px; } .overview-section-heading { display: block; } .overview-section-heading > a { display: inline-flex; align-items: center; padding-top: 8px; } }
+@media (max-width: 390px) { .overview-macro { margin-top: 20px; } .overview-ratio { font-size: 24px; } .overview-progress-main { gap: 8px; } }
