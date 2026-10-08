@@ -67,6 +67,27 @@ test("keeps a failed membership recovery blocked and retries fresh membership", 
   expect(screen.queryByRole("heading", { name: "프로젝트 진척" })).not.toBeInTheDocument();
 });
 
+test("fresh recovery reveals only the newly resolved Plan while other regions remain pending", async () => {
+  const server = http();
+  let projectCalls = 0; let planCalls = 0; let resolvePlan!: (value: Response) => void;
+  let resolveDashboard!: (value: Response) => void; let resolveSchedules!: (value: Response) => void;
+  server.on("GET", "/api/v1/projects", () => ++projectCalls === 1 ? json([{ id: "p1", groupId: "g1", name: "Planning", role: "MANAGER" }]) : json([{ id: "p1", groupId: "g1", name: "Planning", role: "MANAGER" }]));
+  server.on("GET", "/api/v1/projects/p1/plan", () => ++planCalls === 1 ? json(plan) : new Promise<Response>(resolve => { resolvePlan = resolve; }));
+  server.on("GET", "/api/v1/projects/p1/dashboard", () => planCalls < 2 ? json({ ...dashboard, actionQueue: [{ ...schedule, title: "old dashboard" }] }) : new Promise<Response>(resolve => { resolveDashboard = resolve; }));
+  server.on("GET", "/api/v1/projects/p1/schedules", () => planCalls < 2 ? json([{ ...schedule, title: "old schedule" }]) : new Promise<Response>(resolve => { resolveSchedules = resolve; }));
+  server.on("GET", "/api/v1/projects/p1/schedule-workspace", () => json({ properties: [], views: [], dashboardViewId: null, dashboardRowVersion: 0 }));
+  let cardCalls = 0; server.on("POST", "/api/v1/projects/p1/schedule-workspace/query", () => ++cardCalls === 1 ? json({ code: "PROJECT_ACCESS_DENIED" }, 403) : json({ records: [], total: 0, hasMore: false, page: 0, size: 20, groups: [], queriedAt: "2090-09-10T00:00:00Z" }));
+  window.location.hash = "#/projects/p1"; render(<App />);
+  expect(await screen.findByRole("alert")).toHaveTextContent("접근할 수 없습니다");
+  fireEvent.click(screen.getByRole("button", { name: "다시 시도" }));
+  await waitFor(() => expect(resolvePlan).toBeTypeOf("function"));
+  await act(async () => resolvePlan(json(plan)));
+  expect(await screen.findByRole("heading", { name: "프로젝트 진척" })).toBeInTheDocument();
+  expect(screen.queryByText("old dashboard")).not.toBeInTheDocument();
+  expect(screen.queryByText("old schedule")).not.toBeInTheDocument();
+  expect(resolveDashboard).toBeTypeOf("function"); expect(resolveSchedules).toBeTypeOf("function");
+});
+
 test("reuses the loaded week when switching between today and week", async () => {
   const server = http();
   server.on("GET", "/api/v1/projects/p1/plan", () => json(plan));
