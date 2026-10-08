@@ -26,6 +26,8 @@ Return changed paths, numbered acceptance/evidence mapping, actual commands with
 - Cover ALL code, tests, and behavior-affecting configuration regardless of path; a domain label does not bypass the contract or review gate.
 - Return architecture, permission, UX, scope ambiguity, failed assumptions, or a missing contract revision to the parent for a revised contract.
 - Run requested checks and record actual output paths. Follow the parent-selected tier in `harness/policies/VERIFICATION.json`; record low/standard work in `TASK-RECORD.md`, run targeted checks during iteration, and do not repeat valid unchanged evidence.
+- For applicable behavior evidence, own all code and test changes for the parent scenarios and record exact commands, cwd, exits, stdout/stderr, output paths, reviewed revision, and target environment. Fixtures and mocks support offline checks only and never count as live integration evidence.
+- If a required external prerequisite is missing or unknown, stop dependent behavior checks and return a `BLOCKER-REPORT`; do not present fixture results as live behavior or invent production observations.
 - Acknowledge the matching `TASK-ASSIGNMENT.md` before changes and follow `harness/workflows/DELEGATION-PROTOCOL.md` for bounded return and review handoff.
 - Return release preparation needs to the parent; do not deploy, publish, or hand off directly to `release-manager`.
 - Do not push, merge, publish, deploy, re-delegate, route tasks, own evaluators, issue final verdicts, or bypass the reviewer.

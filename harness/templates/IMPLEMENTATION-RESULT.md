@@ -23,6 +23,10 @@ For bounded low/standard implementation work, record the minimal result in `TASK
   - Reviewed revision or commit:
   - Evidence collected after the final edit: yes / no
   - Affected checks rerun after edits:
+- Behavior evidence applicability and reason:
+- Scenario evidence path, expected versus observed outcomes, reviewed revision, target environment, and external-readiness status:
+- Parent preparation, router read-only observation, implementer code/test ownership, and reviewer independent verification:
+- Live integration evidence or explicit fixture/mock limitation:
 - Numbered acceptance criteria mapping to concrete diff/test evidence:
   1. Contract criterion → evidence path / result
   2. Contract criterion → evidence path / result
@@ -34,6 +38,7 @@ For bounded low/standard implementation work, record the minimal result in `TASK
 - Regression evidence:
   - Failure-before-fix and pass-after-fix evidence, when a regression check was warranted:
   - If not run, conditional rationale and alternative evidence:
+- Behavior evidence result or justified `N/A`; unavailable prerequisites are `blocked` with exact resume checks:
 - Checks and evidence (actual command, exit code, output path):
 - Checks not run:
 - Deviations and uncertainties:

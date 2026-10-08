@@ -13,6 +13,7 @@ Read `harness/policies/VERIFICATION.json` and `harness/templates/TASK-RECORD.md`
 | Scope safety | Diff paths fit the contract and all code/tests/behavior configuration are covered, regardless of domain path |
 | Method consistency | Contracted approach and declared commands were followed or deviation is explained |
 | Verification | Actual commands, exit codes, output paths, and checks not run are recorded |
+| Behavior evidence | When cross-screen/state/recovery risk or an unresolved behavior concern applies, parent scenarios, expected versus observed outcomes, reviewed revision, target environment, external-readiness status, router read-only observations, implementer-owned raw checks, and reviewer verification are linked. Other work may retain proportional checks with justified `N/A`; fixtures and mocks never count as live integration. |
 | UI gate compliance | UI behavior has specialist plan and passing independent `ui-plan-review` evidence before implementation |
 | Visual UI evidence | Visual implementation includes the accepted shared pattern contract and screen-to-rule mapping, preserves functional/data-encoding invariants, and records applicable visual, responsive, keyboard, and same-action evidence; CSS-only intent does not prove behavior safety |
 | Acceptance mapping | Every numbered criterion maps to concrete diff, test, or check evidence |

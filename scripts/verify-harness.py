@@ -20,6 +20,33 @@ UI_REVIEWER_IMPLEMENTER_WHEN = "A UI plan has passed independent ui-plan-review 
 PRODUCT_PLANNER_UI_WHEN = "An accepted product plan requires screen structure or interaction decisions; parent dispatches after increment-plan-review."
 REVIEWER_RELEASE_WHEN = "Accepted implementation evidence and a complete parent release assignment require release preparation or authorized execution."
 ROUTER_IMPLEMENTER_WHEN = "A non-UI code, test, or behavior-affecting configuration request is complete against a parent-owned contract; UI implementation uses the reviewer-to-implementer prerequisite instead."
+ROUTER_LIBRARIAN_WHEN = "A parent-approved substantive document save, bounded retrieval, or archive request has exact authorized paths and no source, test, behavior, release, or verdict change is required."
+WRITING_GUIDANCE_READ_RULES = {
+    "AGENTS.md": "Before producing user-facing Korean reports or replies, read the full pinned `vendor/writing-guidance/fluent-korean.md`; this guidance copy is self-contained and does not add a global plugin runtime dependency.",
+    "harness/HARNESS.md": "Before user-facing Korean reports or replies, read the full pinned `vendor/writing-guidance/fluent-korean.md`.",
+    "harness/skills/ai-erp/SKILL.md": "Before user-facing Korean reports or replies, read the full pinned `vendor/writing-guidance/fluent-korean.md`; canonical contracts remain concise English.",
+    ".agents/skills/ai-erp/SKILL.md": "Before user-facing Korean reports or replies, read the full pinned `vendor/writing-guidance/fluent-korean.md`; canonical contracts remain concise English.",
+    "harness/team/agents/librarian.md": "Before user-facing Korean reports or replies, read the full pinned `vendor/writing-guidance/fluent-korean.md`; canonical contracts remain concise English.",
+}
+DOCUMENT_WORKFLOW_RULES = (
+    "The local source is canonical.",
+    "It inspects the actual reading status before mutation: update a same-context `안읽음` page and retain `안읽음`; preserve `읽음` and `읽는중`; otherwise create only a substantive new page and explicitly set `안읽음`.",
+    "Unknown archive schema, reading status, permission, or external readiness blocks synchronization.",
+    "Unknown archive schema, reading status, permission, or external readiness blocks synchronization. Librarian preserves the local source, reports the exact reason and resume check, and never guesses, duplicates, shares, changes permissions, deletes, renames, or bulk-merges documents.",
+    "The parent accepts content and dispatches the assignment. Librarian returns the actual local path/revision or search results, archive link and synchronization date when available, source/status evidence, preserved-meaning confirmation, blocked or partial reason, and checks not run. Librarian does not route, review, approve, or delegate.",
+    "Documents may mention or quote technical work, screen plans, release history, or verdicts; return to the existing owner only when the requested operation changes executable code, tests, behavior-affecting configuration, screen-decision meaning, release permissions/commands, or a verdict itself.",
+)
+LIBRARIAN_DOCUMENT_RULES = (
+    "Write only parent-authorized documents under `docs/planning`, `docs/ux`, `docs/reports`, or `docs/releases`.",
+    "Treat the local file as canonical.",
+    "If a same-context page is `안읽음`, update it and retain that status. Preserve `읽음` and `읽는중`; create a new substantive page only when no suitable unread page exists and explicitly set `안읽음`.",
+    "If archive schema, status, permission, or external readiness is unknown, stop synchronization, preserve the local result, and report the concrete resume check.",
+    "A document may mention or quote technical work, screen plans, release history, or verdicts. Return to the existing owner, including `implementer`, only when the requested operation changes executable code, tests, behavior-affecting configuration, screen-decision meaning, release permissions/commands, or a verdict itself.",
+)
+ROUTER_PROPORTIONAL_RULES = (
+    "Behavior evidence is conditional on cross-screen/state/recovery risk or an explicit unresolved behavior concern.",
+    "Preserve proportional checks and a justified `N/A` for other work; do not require an extra specialist document for every small edit.",
+)
 UI_HANDOFF_ARTIFACTS = {
     "harness/templates/SCREEN-PLAN.md",
     "harness/templates/UI-REVIEW.md",
@@ -31,6 +58,10 @@ REQUIRED_HANDOFF_ARTIFACTS = {
     ("router", "implementer"): {
         "harness/templates/IMPLEMENTATION-CONTRACT.md",
         "harness/templates/IMPLEMENTATION-RESULT.md",
+    },
+    ("router", "librarian"): {
+        "harness/templates/DOCUMENT-ASSIGNMENT.md",
+        "harness/templates/DOCUMENT-RESULT.md",
     },
     ("product-planner", "ui-ux-designer"): {
         "harness/templates/INCREMENT-PLAN.md",
@@ -180,6 +211,55 @@ def verify_vendor(root: Path) -> list[str]:
     return errors
 
 
+def verify_writing_guidance(root: Path) -> list[str]:
+    errors: list[str] = []
+    guidance = root / "vendor/writing-guidance/fluent-korean.md"
+    source = root / "vendor/writing-guidance/SOURCE.json"
+    if not guidance.is_file() or not source.is_file():
+        return ["missing pinned writing guidance or provenance: vendor/writing-guidance"]
+    try:
+        metadata = json.loads(source.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return [f"writing guidance provenance is not valid JSON: {exc}"]
+    expected = {
+        "schema_version": "1.0",
+        "id": "fluent-korean",
+        "plugin": "fluent-korean",
+        "version": "1.0.0",
+        "sha256": "3f1962fb848801482a1e7b99d483db7ef366c5afef8f662b78d1b6c7ca099aa0",
+        "bytes": 6365,
+    }
+    for key, value in expected.items():
+        actual = metadata.get(key)
+        if key == "sha256" and isinstance(actual, str):
+            actual = actual.lower()
+        if actual != value:
+            errors.append(f"pinned writing guidance provenance mismatch: {key}")
+    digest = hashlib.sha256(guidance.read_bytes()).hexdigest()
+    if digest != expected["sha256"]:
+        errors.append("pinned writing guidance SHA-256 mismatch")
+    if guidance.stat().st_size != expected["bytes"] or metadata.get("bytes") != guidance.stat().st_size:
+        errors.append("pinned writing guidance byte-size mismatch")
+    if metadata.get("source") != "C:/Users/USER/.codex/plugins/cache/fluent-korean/fluent-korean/1.0.0/output-styles/fluent-korean.md":
+        errors.append("pinned writing guidance source provenance mismatch")
+    return errors
+
+
+def verify_writing_guidance_links(root: Path) -> list[str]:
+    errors: list[str] = []
+    for relative, rule in WRITING_GUIDANCE_READ_RULES.items():
+        path = root / relative
+        if not path.is_file():
+            errors.append(f"missing writing-guidance link source: {relative}")
+            continue
+        text = path.read_text(encoding="utf-8").lower()
+        if "vendor/writing-guidance/fluent-korean.md" not in text:
+            errors.append(f"writing-guidance link missing: {relative} (vendor/writing-guidance/fluent-korean.md)")
+        if not has_exact_operative_sentence(text, rule):
+            errors.append(f"writing-guidance link missing: {relative} (complete operative read instruction)")
+    return errors
+
+
 def verify_templates(root: Path, spec: dict) -> list[str]:
     required = [
         root / "harness/templates/IMPLEMENTATION-CONTRACT.md",
@@ -202,6 +282,11 @@ def verify_templates(root: Path, spec: dict) -> list[str]:
         root / "harness/workflows/RELEASE-FLOW.md",
         root / "harness/templates/VISUAL-DESIGN-CONTRACT.md",
         root / "harness/templates/VISUAL-CHANGE-PLAN.md",
+        root / "harness/workflows/BEHAVIOR-EVIDENCE.md",
+        root / "harness/templates/BEHAVIOR-EVIDENCE.md",
+        root / "harness/workflows/DOCUMENT-MANAGEMENT.md",
+        root / "harness/templates/DOCUMENT-ASSIGNMENT.md",
+        root / "harness/templates/DOCUMENT-RESULT.md",
     ]
     errors = []
     for path in required:
@@ -238,6 +323,11 @@ def verify_templates(root: Path, spec: dict) -> list[str]:
         root / "harness/workflows/RELEASE-FLOW.md": ("same-sha", "authorization", "operator-action-required", "not-requested"),
         root / "harness/templates/VISUAL-DESIGN-CONTRACT.md": ("accepted pattern", "functional invariants", "data-encoding", "Unexecuted checks"),
         root / "harness/templates/VISUAL-CHANGE-PLAN.md": ("rule IDs", "Preserved behavior", "responsive", "keyboard", "ui-plan-review"),
+        root / "harness/workflows/BEHAVIOR-EVIDENCE.md": ("parent prepares bounded scenarios", "router observes results read-only", "implementer owns all code and test changes", "reviewer independently verifies", "fixtures and mocks", "cross-screen/state/recovery", "accounting, payroll, and tax", "no new specialist role"),
+        root / "harness/templates/BEHAVIOR-EVIDENCE.md": ("task and increment", "expected outcome", "observed outcome", "reviewed revision", "target environment", "external-readiness", "parent scenario preparation", "router read-only observation", "implementer-owned", "reviewer independent", "fixtures and mocks"),
+        root / "harness/workflows/DOCUMENT-MANAGEMENT.md": ("parent-approved substantive document", "local source is canonical", "AI 생성문서 관리", "안읽음", "읽음", "읽는중", "unknown archive schema", "offline-contract-only", "does not route, review, approve, or delegate"),
+        root / "harness/templates/DOCUMENT-ASSIGNMENT.md": ("task and contract revision", "exact authorized local paths", "accepted source content", "reading-status evidence", "parent acceptance", "behavior configuration", "stop/return"),
+        root / "harness/templates/DOCUMENT-RESULT.md": ("matching contract revision", "canonical local path", "preserved meaning", "inspected reading status", "안읽음", "blocked or partial reason", "checks not run", "no independent approval"),
     }
     for path, markers in required_text.items():
         if path.is_file():
@@ -245,6 +335,36 @@ def verify_templates(root: Path, spec: dict) -> list[str]:
             missing = [marker for marker in markers if marker.lower() not in text.lower()]
             if missing:
                 errors.append(f"template is missing required fields: {path.relative_to(root)} ({', '.join(missing)})")
+    behavior_workflow = root / "harness/workflows/BEHAVIOR-EVIDENCE.md"
+    if behavior_workflow.is_file():
+        behavior_text = behavior_workflow.read_text(encoding="utf-8")
+        behavior_rules = (
+            "Behavior evidence is a conditional handoff",
+            "The router observes results read-only and records the actual revision, environment, evidence source, and observed outcome beside the expected outcome.",
+            "The implementer owns all code and test changes and runs the contracted checks.",
+            "Fixtures and mocks can support offline checks, but they never count as live integration evidence.",
+            "The reviewer independently verifies the scenario evidence and issues the required verdict.",
+            "The parent records required dimensions and justified `N/A` dimensions; a small edit keeps proportional checks without a mandatory specialist document.",
+        )
+        for rule in behavior_rules:
+            if not has_exact_operative_sentence(behavior_text, rule):
+                errors.append(f"behavior-evidence workflow must preserve operative rule: {rule}")
+    document_workflow = root / "harness/workflows/DOCUMENT-MANAGEMENT.md"
+    if document_workflow.is_file():
+        document_text = document_workflow.read_text(encoding="utf-8")
+        for rule in DOCUMENT_WORKFLOW_RULES:
+            if not has_exact_operative_sentence(document_text, rule):
+                errors.append(f"document-management workflow must preserve operative rule: {rule}")
+    verification_matrix = root / "harness/workflows/VERIFICATION-MATRIX.md"
+    if verification_matrix.is_file():
+        matrix_rules = (
+            "Select checks from the actual CI and deployment contract for the changed increment, using `harness/policies/VERIFICATION.json`: targeted checks during iteration and one full applicable suite at the completed behavior-affecting batch boundary.",
+            "Reuse valid evidence and record unavailable commands as not run; UX smoke, provider preflight, and Git tracking run only on their policy triggers.",
+        )
+        matrix_text = verification_matrix.read_text(encoding="utf-8")
+        for rule in matrix_rules:
+            if not has_exact_operative_sentence(matrix_text, rule):
+                errors.append(f"verification matrix must preserve proportionality rule: {rule}")
     if assignment.is_file():
         markers = ("task id", "increment id", "plan revision", "contract revision", "sender", "recipient role", "acceptance", "stop/return", "model reason", "context manifest", "context budget", "output budget", "fork/reuse", "usage availability", "model escalation")
         missing = [marker for marker in markers if marker not in assignment.read_text(encoding="utf-8").lower()]
@@ -399,7 +519,7 @@ def verify_verification_policy(root: Path) -> list[str]:
 def verify_roles(root: Path, spec: dict) -> list[str]:
     errors: list[str] = []
     agents = {agent["id"]: agent for agent in spec["agents"]}
-    required_agents = {"router", "ui-ux-designer", "ui-visual-designer", "reviewer", "implementer", "product-planner", "release-manager"}
+    required_agents = {"router", "ui-ux-designer", "ui-visual-designer", "reviewer", "implementer", "product-planner", "release-manager", "librarian"}
     if set(agents) != required_agents:
         missing = required_agents - set(agents)
         extra = set(agents) - required_agents
@@ -415,6 +535,7 @@ def verify_roles(root: Path, spec: dict) -> list[str]:
         "implementer": "fast",
         "product-planner": "deep",
         "release-manager": "fast",
+        "librarian": "deep",
     }
     expected_caps = {
         "router": {"routing", "verification"},
@@ -424,6 +545,7 @@ def verify_roles(root: Path, spec: dict) -> list[str]:
         "implementer": {"execution", "verification"},
         "product-planner": {"product-planning"},
         "release-manager": {"release-preparation", "release-operations", "verification"},
+        "librarian": {"documentation"},
     }
     for role_id, expected in required_tiers.items():
         agent = agents.get(role_id)
@@ -444,6 +566,36 @@ def verify_roles(root: Path, spec: dict) -> list[str]:
     for phrase in ("no unresolved design decisions", "Do not push", "re-delegate", "final approval", "permission", "scope ambiguity"):
         if phrase.lower() not in implementer_text.lower():
             errors.append(f"implementer role must state boundary: {phrase}")
+    for phrase in ("behavior evidence", "fixtures and mocks", "live integration evidence", "BLOCKER-REPORT"):
+        if phrase.lower() not in implementer_text.lower():
+            errors.append(f"implementer role must state behavior-evidence boundary: {phrase}")
+    for rule in ("For applicable behavior evidence, own all code and test changes", "Fixtures and mocks support offline checks only and never count as live integration evidence."):
+        if not has_exact_operative_sentence(implementer_text, rule):
+            errors.append(f"implementer role must preserve operative behavior-evidence rule: {rule}")
+    router_text = (root / "harness/team/agents/router.md").read_text(encoding="utf-8") if (root / "harness/team/agents/router.md").is_file() else ""
+    for phrase in ("observed results read-only", "expected outcome", "reviewed revision", "target environment", "issue the verdict"):
+        if phrase.lower() not in router_text.lower():
+            errors.append(f"router role must state behavior-evidence boundary: {phrase}")
+    for rule in ("When the parent marks behavior evidence applicable, collect observed results read-only", "Do not edit implementation files, fabricate production results, or issue the verdict."):
+        if not has_exact_operative_sentence(router_text, rule):
+            errors.append(f"router role must preserve operative behavior-evidence rule: {rule}")
+    for rule in ROUTER_PROPORTIONAL_RULES:
+        if not has_exact_operative_sentence(router_text, rule):
+            errors.append(f"router role must preserve proportionality rule: {rule}")
+    reviewer_text = (root / "harness/team/agents/reviewer.md").read_text(encoding="utf-8") if (root / "harness/team/agents/reviewer.md").is_file() else ""
+    for phrase in ("expected and observed outcomes", "reviewed revision", "target environment", "fixture or mock", "conditionally"):
+        if phrase.lower() not in reviewer_text.lower():
+            errors.append(f"reviewer role must state behavior-evidence boundary: {phrase}")
+    for rule in ("For applicable behavior evidence, independently verify the parent-prepared scenarios and the router's read-only observations.", "A fixture or mock cannot satisfy live integration evidence, and an unavailable prerequisite remains blocked."):
+        if not has_exact_operative_sentence(reviewer_text, rule):
+            errors.append(f"reviewer role must preserve operative behavior-evidence rule: {rule}")
+    librarian_text = (root / "harness/team/agents/librarian.md").read_text(encoding="utf-8") if (root / "harness/team/agents/librarian.md").is_file() else ""
+    for phrase in ("parent-controlled documentation assignment", "local file as canonical", "AI 생성문서 관리", "안읽음", "읽음", "읽는중", "unknown", "do not delegate, route, review, approve"):
+        if phrase.lower() not in librarian_text.lower():
+            errors.append(f"librarian role must state document boundary: {phrase}")
+    for rule in LIBRARIAN_DOCUMENT_RULES:
+        if not has_exact_operative_sentence(librarian_text, rule):
+            errors.append(f"librarian role must preserve operative document rule: {rule}")
     planner_text = (root / "harness/team/agents/product-planner.md").read_text(encoding="utf-8") if (root / "harness/team/agents/product-planner.md").is_file() else ""
     for phrase in ("product-planning", "screen", "code", "verdict", "re-delegate", "TASK-ASSIGNMENT"):
         if phrase.lower() not in planner_text.lower():
@@ -469,6 +621,7 @@ def verify_model_and_paths(root: Path, spec: dict) -> list[str]:
         "implementer": ("gpt-6-luna", "high"),
         "product-planner": ("gpt-5.6-sol", "medium"),
         "release-manager": ("gpt-5.6-luna", "high"),
+        "librarian": ("gpt-5.6-sol", "medium"),
     }
     for agent in spec["agents"]:
         config_path = root / f".codex/agents/{spec['harness']['id']}-{agent['id']}.toml"
@@ -628,10 +781,11 @@ def verify_routing(root: Path, spec: dict) -> list[str]:
         ("ui-ux-designer", "ui-visual-designer"),
         ("ui-visual-designer", "reviewer"),
         ("reviewer", "release-manager"),
+        ("router", "librarian"),
     }
     non_ui_edges = {("router", "implementer")}
     if edges != required_edges:
-        errors.append("UI routing must contain exactly the eight accepted handoff edges")
+        errors.append("UI routing must contain exactly the accepted handoff edges")
     if not non_ui_edges.issubset(edges):
         errors.append("non-UI implementation must include router -> implementer")
     forbidden = {
@@ -641,6 +795,9 @@ def verify_routing(root: Path, spec: dict) -> list[str]:
         ("ui-visual-designer", "implementer"),
         ("implementer", "router"),
         ("implementer", "reviewer"),
+        ("librarian", "router"),
+        ("librarian", "reviewer"),
+        ("librarian", "implementer"),
     }
     if any(edge in edges for edge in forbidden):
         errors.append("forbidden routing shortcut/back edge detected")
@@ -650,6 +807,7 @@ def verify_routing(root: Path, spec: dict) -> list[str]:
         ("reviewer", "implementer"): UI_REVIEWER_IMPLEMENTER_WHEN,
         ("product-planner", "ui-ux-designer"): PRODUCT_PLANNER_UI_WHEN,
         ("reviewer", "release-manager"): REVIEWER_RELEASE_WHEN,
+        ("router", "librarian"): ROUTER_LIBRARIAN_WHEN,
     }
     for pair, expected_when in expected_conditions.items():
         matching = [item for item in handoffs if (item.get("from"), item.get("to")) == pair]
@@ -705,10 +863,12 @@ def verify_routing(root: Path, spec: dict) -> list[str]:
             errors.append("ai-erp-verify must use harness-structure")
 
     implementation_domain = None
+    documentation_domain = None
     for domain in spec["domains"]:
         if domain["id"] == "implementation":
             implementation_domain = domain
-            break
+        if domain["id"] == "documentation":
+            documentation_domain = domain
     required_paths = {"frontend", "backend", "scripts", "infra", ".github", "package.json", "Dockerfile"}
     if not implementation_domain:
         errors.append("missing implementation domain")
@@ -716,6 +876,12 @@ def verify_routing(root: Path, spec: dict) -> list[str]:
         domain_paths = set(implementation_domain.get("paths", []))
         if not required_paths.issubset(domain_paths):
             errors.append("implementation domain missing required paths")
+    if not documentation_domain:
+        errors.append("missing documentation domain")
+    else:
+        documentation_paths = set(documentation_domain.get("paths", []))
+        if documentation_paths != {"docs/planning", "docs/ux", "docs/reports", "docs/releases"} or documentation_domain.get("coordinator") != "librarian":
+            errors.append("documentation domain must be coordinated by librarian with the four approved docs paths")
 
     evaluator_ids = {ev["id"] for ev in spec["evaluators"]}
     for eval_id in {"task-review", "increment-plan-review", "release-review", "ui-plan-review", "harness-structure"}:
@@ -728,7 +894,7 @@ def verify_routing(root: Path, spec: dict) -> list[str]:
             if eval_rule.get("owner") != "reviewer" or eval_rule.get("runner") != "router":
                 errors.append("task-review must be owned by reviewer and run by router")
             pass_condition = eval_rule.get("pass_condition", "").lower()
-            required_phrases = ("every applicable required criterion", "failed or pending", "out-of-scope", "planning-only")
+            required_phrases = ("every applicable required criterion", "failed or pending", "out-of-scope", "planning-only", "applicable behavior evidence", "expected outcomes", "router-observed", "revision", "environment", "external-readiness", "fixtures never prove live integration")
             if not all(phrase in pass_condition for phrase in required_phrases):
                 errors.append("task-review pass condition must reject failed/pending required criteria and limit N/A to out-of-scope cases")
         if eval_rule["id"] == "ui-plan-review":
@@ -748,6 +914,7 @@ def verify_routing(root: Path, spec: dict) -> list[str]:
         "harness/team/agents/ui-ux-designer.md",
         "harness/team/agents/ui-visual-designer.md",
         "harness/team/agents/implementer.md",
+        "harness/team/agents/librarian.md",
     ):
         text = (root / relative).read_text(encoding="utf-8")
         if "implementer" not in text:
@@ -880,6 +1047,8 @@ def verify_project(root: Path, require_tracked: bool = False) -> list[str]:
         errors.extend(verify_model_escalation(root))
         errors.extend(verify_external_policy(root))
     errors.extend(verify_vendor(root))
+    errors.extend(verify_writing_guidance(root))
+    errors.extend(verify_writing_guidance_links(root))
     if require_tracked:
         errors.extend(verify_tracked(root))
     return errors

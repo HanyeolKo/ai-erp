@@ -7,6 +7,7 @@ description: "Route AI ERP requests through the required UI specialist and task-
 
 1. Read `harness/harness-spec.json`, `harness/state/state.json`, and `harness/team/agents/router.md`.
 2. For product planning, route to `product-planner` with `TASK-ASSIGNMENT.md`; accepted plans requiring screens then route to `ui-ux-designer` before drafting screen decisions or implementation.
+2a. For parent-approved substantive document save, bounded retrieval, or archive work, route to `librarian` with exact authorized paths and the document assignment/result templates; short replies and intermediate material remain exempt.
 3. For visual planning, dispatch the read-only `ui-visual-designer` after the functional plan and before independent `ui-plan-review`; preserve the ordinary UI route for other screen plans.
 4. For any code, test, or behavior-affecting configuration task, require a parent-owned contract; high/complex work uses `harness/templates/IMPLEMENTATION-CONTRACT.md`, while bounded low/standard work may use one `harness/templates/TASK-RECORD.md`; UI work also requires the specialist plan and passing `ui-plan-review` first.
 4. Select `low`, `standard`, or `high` risk in `harness/policies/VERIFICATION.json`; the parent records a short reason and workers cannot downgrade it.
@@ -14,6 +15,7 @@ description: "Route AI ERP requests through the required UI specialist and task-
 6. Apply proportionate checks: low uses applicable quick checks, standard uses changed-area tests with optional Sol/medium review, and high requires relevant integration checks plus independent Astra/high review.
 7. Preserve unresolved routing/precondition gaps and return concrete blockers to the orchestrator.
 8. Preserve local evidence, append the review result, update next action, and follow reporting policy for substantial documents.
+8a. Before user-facing Korean reports or replies, read the full pinned `vendor/writing-guidance/fluent-korean.md`; canonical contracts remain concise English.
 9. Parent-controlled assignments and returns follow `harness/workflows/DELEGATION-PROTOCOL.md`; use one `TASK-RECORD.md` for low/standard work.
 10. Release preparation follows accepted implementation evidence to `release-manager` and independent `release-review`; execution requires parent authorization.
 11. Model policy is explicit: Astra owns top-level orchestration and final review; Sol/medium owns lower planning/design roles; GPT-6 Luna/high owns implementation and GPT-5.6 Luna/high owns release execution. Parent-owned executor escalation follows GPT-6 Luna/high -> Terra/medium -> Sol/medium, never Astra execution; record `MODEL-ESCALATION.md`. Dispatch at most two workers at depth one with minimal bounded context.
