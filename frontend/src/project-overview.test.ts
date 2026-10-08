@@ -72,6 +72,7 @@ test("proves paging ceiling, no-progress, overlap deduplication, and failure bou
   const ceiling = await readOverviewSchedules("p1", "2090-09-08T00:00:00Z", "2090-09-15T00:00:00Z");
   expect(schedules).toHaveBeenCalledTimes(50);
   expect(ceiling).toMatchObject({ pages: 50, complete: false, partial: true });
+  expect(ceiling.rows).toHaveLength(1000);
   schedules.mockReset().mockResolvedValueOnce(rows(fullPage) as never).mockResolvedValueOnce(rows(fullPage) as never);
   const noProgress = await readOverviewSchedules("p1", "2090-09-08T00:00:00Z", "2090-09-15T00:00:00Z");
   expect(noProgress).toMatchObject({ pages: 2, complete: false, partial: true });

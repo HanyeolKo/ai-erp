@@ -128,6 +128,42 @@ test("reschedules the midnight timer when the zone changes within the same civil
   expect(server.calls.some(call => call.url.includes("from=2090-09-11T04%3A00%3A00.000Z"))).toBe(true);
 });
 
+test.each(["success", "denial"] as const)("ignores delayed obsolete-zone %s after the new zone is authorized", async outcome => {
+  const server = http();
+  let settleOld!: (value: Response) => void;
+  server.on("GET", "/api/v1/projects/p1/plan", () => json(plan));
+  server.on("GET", "/api/v1/projects/p1/dashboard", () => json(dashboard));
+  server.on("GET", "/api/v1/projects/p1/schedules", (_, url) => url.searchParams.get("from")?.includes("T15:00") ? new Promise<Response>(resolve => { settleOld = resolve; }) : json([schedule]));
+  server.on("GET", "/api/v1/projects/p1/schedule-workspace", () => json({ properties: [], views: [], dashboardViewId: null, dashboardRowVersion: 0 }));
+  window.location.hash = "#/projects/p1?period=today&zone=Asia%2FSeoul";
+  render(<App />);
+  await screen.findByRole("heading", { name: "프로젝트 진척" });
+  await act(async () => { window.location.hash = "#/projects/p1?period=today&zone=America%2FNew_York"; window.dispatchEvent(new HashChangeEvent("hashchange")); });
+  await screen.findByText(/America\/New_York/);
+  await act(async () => settleOld(outcome === "success" ? json([schedule]) : json({ code: "PROJECT_ACCESS_DENIED" }, 403)));
+  await waitFor(() => expect(screen.getByRole("heading", { name: "프로젝트 진척" })).toBeInTheDocument());
+  expect(screen.queryByText(/보호된 내용을 숨겼습니다/)).not.toBeInTheDocument();
+});
+
+test("keeps active configured-card RESOURCE_NOT_FOUND local", async () => {
+  const server = http();
+  server.on("GET", "/api/v1/projects/p1/plan", () => json(plan)); server.on("GET", "/api/v1/projects/p1/dashboard", () => json(dashboard)); server.on("GET", "/api/v1/projects/p1/schedules", () => json([]));
+  server.on("GET", "/api/v1/projects/p1/schedule-workspace", () => json({ properties: [], views: [], dashboardViewId: null, dashboardRowVersion: 0 }));
+  server.on("POST", "/api/v1/projects/p1/schedule-workspace/query", () => json({ code: "RESOURCE_NOT_FOUND" }, 404));
+  window.location.hash = "#/projects/p1"; render(<App />);
+  expect(await screen.findByRole("heading", { name: "프로젝트 진척" })).toBeInTheDocument();
+  expect(screen.queryByText(/보호된 내용을 숨겼습니다/)).not.toBeInTheDocument();
+});
+
+test("overview reading, period switching, and retry issue no product mutations", async () => {
+  const server = http(); let planCalls = 0;
+  server.on("GET", "/api/v1/projects/p1/plan", () => ++planCalls === 1 ? json({ code: "TEMPORARY" }, 500) : json(plan));
+  server.on("GET", "/api/v1/projects/p1/dashboard", () => json(dashboard)); server.on("GET", "/api/v1/projects/p1/schedules", () => json([schedule])); server.on("GET", "/api/v1/projects/p1/schedule-workspace", () => json({ properties: [], views: [], dashboardViewId: null, dashboardRowVersion: 0 }));
+  window.location.hash = "#/projects/p1"; render(<App />);
+  await screen.findByText("계획을 불러오지 못했습니다."); fireEvent.click(screen.getByRole("button", { name: "다시 시도" })); await screen.findByRole("heading", { name: "프로젝트 진척" }); fireEvent.click(screen.getByRole("button", { name: "오늘" }));
+  expect(server.calls.filter(call => ["POST", "PUT", "PATCH", "DELETE"].includes(call.method) && !call.url.endsWith("/schedule-workspace/query"))).toEqual([]);
+});
+
 test.each([
   ["incomplete within target", { forecastState: "INCOMPLETE", outsideTarget: false }, "예측 일정 일부 미정", false],
   ["incomplete outside target", { forecastState: "INCOMPLETE", outsideTarget: true }, "수동 목표 범위 밖 (outsideTarget)", true],
