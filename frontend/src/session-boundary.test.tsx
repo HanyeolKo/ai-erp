@@ -7,6 +7,7 @@ import { beginSessionBoundary, currentSessionGeneration, isSessionActive, Sessio
 import { api } from "./api/client";
 import { accessKey, hasAccessDenial } from "./state";
 import { http, invitation, json, schedule } from "./test/http";
+import { installOverviewFixtures } from "./test/project-overview-fixtures";
 
 afterEach(() => {
   cleanup();
@@ -178,7 +179,7 @@ test("a schedule success callback that is waiting for invalidation cannot naviga
 });
 
 test("a 401 hides protected UI before a stalled error body can resolve", async () => {
-  const server = http();
+  const server = http(); installOverviewFixtures(server);
   const stalledBody = new Promise<never>(() => undefined);
   server.on("GET", "/api/v1/notifications", () => ({ status: 401, ok: false, json: () => stalledBody } as unknown as Response));
   const { user } = mount("/projects/p1");

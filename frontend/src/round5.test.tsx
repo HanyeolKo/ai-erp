@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, expect, test, vi } from "vitest";
 import App from "./App";
 import { http, json, schedule } from "./test/http";
+import { installOverviewFixtures } from "./test/project-overview-fixtures";
 afterEach(() => { vi.unstubAllGlobals(); window.location.hash = ""; sessionStorage.clear(); });
 const mount = (path: string) => { window.location.hash = `#${path}`; render(<App />); return userEvent.setup(); };
 const setDate = (label: string, value: string) => fireEvent.change(screen.getByLabelText(label), { target: { value } });
@@ -55,7 +56,7 @@ test("P03 renders creator independently and mine removes another creator's row",
   await user.click(screen.getByLabelText("내가 만든 일정")); expect(screen.getAllByRole("link", { name: /Design review/ }).length).toBeGreaterThan(0);
 });
 test.each(["/projects/p1", "#/projects/p1"])("P06 project invitation link %s navigates to the project dashboard", async link => {
-  const server = http(); server.on("GET", "/api/v1/notifications", () => json([{ id: "n1", type: "INVITATION_ACCEPTED", link, readAt: "2090-09-10T00:00:00Z", createdAt: "2090-09-10T00:00:00Z" }]));
+  const server = http(); installOverviewFixtures(server); server.on("GET", "/api/v1/notifications", () => json([{ id: "n1", type: "INVITATION_ACCEPTED", link, readAt: "2090-09-10T00:00:00Z", createdAt: "2090-09-10T00:00:00Z" }]));
   const user = mount("/notifications"); const notification = await screen.findByRole("link", { name: "관련 프로젝트 보기" }); expect(notification).toHaveAttribute("href", "#/projects/p1");
   await user.click(notification); expect(await screen.findByRole("heading", { name: "프로젝트 개요" })).toBeInTheDocument();
 });

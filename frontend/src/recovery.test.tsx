@@ -3,12 +3,13 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, expect, test, vi } from "vitest";
 import App from "./App";
 import { http, invitation, json, project } from "./test/http";
+import { installOverviewFixtures } from "./test/project-overview-fixtures";
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); window.history.replaceState(null, "", "/"); sessionStorage.clear(); });
 const mount = (path = "/") => { window.location.hash = `#${path}`; render(<App />); return userEvent.setup(); };
 
 test("empty account can open an invitation, accept it, and enter the project", async () => {
-  const server = http();
+  const server = http(); installOverviewFixtures(server);
   let accepted = false;
   server.on("GET", "/api/v1/projects", () => json(accepted ? [project] : []));
   server.on("GET", "/api/v1/invitations/t1", () => json({ ...invitation, status: accepted ? "ACCEPTED" : "PENDING" }));

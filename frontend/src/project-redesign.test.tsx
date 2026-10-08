@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, expect, test, vi } from "vitest";
 import App from "./App";
 import { http, json, project } from "./test/http";
+import { installOverviewFixtures } from "./test/project-overview-fixtures";
 import { beginSessionBoundary } from "./session";
 import { resetAccessState } from "./state";
 
@@ -10,7 +11,7 @@ afterEach(() => { cleanup(); vi.unstubAllGlobals(); window.history.replaceState(
 const mount = (path = "/") => { window.location.hash = `#${path}`; render(<App />); return userEvent.setup(); };
 
 test("direct project creation sends only the trimmed name and a stable requestId", async () => {
-  const server = http(); let created = false; let firstBody: any;
+  const server = http(); installOverviewFixtures(server); let created = false; let firstBody: any;
   server.on("GET", "/api/v1/projects", () => json(created ? [project] : []));
   server.on("POST", "/api/v1/projects", body => { firstBody = body; created = true; return json(project); });
   const user = mount(); await user.click(await screen.findByRole("button", { name: "새 프로젝트" }));

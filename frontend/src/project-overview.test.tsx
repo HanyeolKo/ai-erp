@@ -84,6 +84,41 @@ test("reuses the loaded week when switching between today and week", async () =>
   expect(scheduleRequests()).toBe(1);
 });
 
+test("uses a new same-week request epoch after the Seoul civil midnight timer", async () => {
+  const server = http();
+  server.on("GET", "/api/v1/projects/p1/plan", () => json(plan));
+  server.on("GET", "/api/v1/projects/p1/dashboard", () => json(dashboard));
+  server.on("GET", "/api/v1/projects/p1/schedules", () => json([schedule]));
+  server.on("GET", "/api/v1/projects/p1/schedule-workspace", () => json({ properties: [], views: [], dashboardViewId: null, dashboardRowVersion: 0 }));
+  vi.setSystemTime(new Date("2090-09-10T14:59:59Z"));
+  window.location.hash = "#/projects/p1?period=today&zone=Asia%2FSeoul";
+  render(<App />);
+  await screen.findByRole("heading", { name: "프로젝트 진척" });
+  const scheduleRequests = () => server.calls.filter(call => call.method === "GET" && call.url.startsWith("/api/v1/projects/p1/schedules?")).length;
+  expect(scheduleRequests()).toBe(1);
+  vi.setSystemTime(new Date("2090-09-10T15:00:01Z"));
+  await new Promise(resolve => setTimeout(resolve, 1200));
+  await waitFor(() => expect(scheduleRequests()).toBe(2));
+  expect(window.location.hash).toContain("period=today");
+});
+
+test.each([
+  ["incomplete within target", { forecastState: "INCOMPLETE", outsideTarget: false }, "예측 일정 일부 미정", false],
+  ["incomplete outside target", { forecastState: "INCOMPLETE", outsideTarget: true }, "수동 목표 범위 밖 (outsideTarget)", true],
+  ["missing forecast bounds", { forecastState: "COMPLETE", forecastStart: null, forecastEnd: null, outsideTarget: false }, "비교할 예측 기간 없음", true],
+] as const)("keeps forecast comparison facts independent: %s", async (_label, summary, expected, alsoExpected) => {
+  const server = http();
+  server.on("GET", "/api/v1/projects/p1/plan", () => json({ ...plan, summary: { ...plan.summary, ...summary } }));
+  server.on("GET", "/api/v1/projects/p1/dashboard", () => json(dashboard));
+  server.on("GET", "/api/v1/projects/p1/schedules", () => json([]));
+  server.on("GET", "/api/v1/projects/p1/schedule-workspace", () => json({ properties: [], views: [], dashboardViewId: null, dashboardRowVersion: 0 }));
+  window.location.hash = "#/projects/p1";
+  render(<App />);
+  await screen.findByRole("heading", { name: "프로젝트 진척" });
+  expect(screen.getByText(new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")))).toBeInTheDocument();
+  if (!alsoExpected) expect(screen.queryByText("수동 목표 안")).not.toBeInTheDocument();
+});
+
 test.each(["MANAGER", "MEMBER", "VIEWER"] as const)("preserves %s overview rights and secondary links", async role => {
   const server = http();
   server.on("GET", "/api/v1/projects", () => json([{ ...({ id: "p1", groupId: "g1", name: "Planning", role } as const) }]));

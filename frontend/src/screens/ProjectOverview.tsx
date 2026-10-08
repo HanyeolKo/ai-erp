@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { api, type Dashboard, type PlanItem, type PlanSnapshot, type Schedules } from "../api/client";
+import { ApiError, api, type Dashboard, type PlanItem, type PlanSnapshot, type Schedules } from "../api/client";
 import { accessRead, capabilities, isAccessError, useMe, useProject } from "../state";
 import { Link, ProjectMissing, RetryButton, Shell } from "../ui";
 import { dateInZone, displayTime, shiftDate } from "../time";
@@ -13,6 +13,10 @@ const dateText = (value: string | null | undefined) => value ? value.slice(0, 10
 const stateLabel: Record<string, string> = { BACKLOG: "대기", READY: "준비", IN_PROGRESS: "진행 중", BLOCKED: "차단됨", DONE: "완료", CANCELLED: "취소" };
 const forecastLabel: Record<string, string> = { EMPTY: "예측 없음", UNDATED: "날짜 미정", INCOMPLETE: "일정 일부 미정", COMPLETE: "일정 계획 완료" };
 function stateText(state: string) { return stateLabel[state] ?? "상태 확인 필요"; }
+function isOverviewProjectAccessError(error: unknown) {
+  if (!isAccessError(error) || !(error instanceof ApiError)) return false;
+  return error.status === 403 || ["PROJECT_ACCESS_DENIED", "FORBIDDEN", "PROJECT_NOT_FOUND"].includes(error.problem.code ?? "");
+}
 function scheduleDate(row: Schedules[number], zone: string) { const startDate = dateInZone(row.startsAt, zone); const endDate = dateInZone(row.endsAt, zone); return `${startDate} ${displayTime(row.startsAt, zone).slice(11)} – ${endDate !== startDate ? `${endDate} ` : ""}${displayTime(row.endsAt, zone).slice(11)}`; }
 function sectionCount(value: number, complete: boolean) { return complete ? `${value}건` : `${value}건 불러옴`; }
 
@@ -28,6 +32,7 @@ function PlanState({ query, children }: { query: { isPending: boolean; isError: 
 function ProgressSection({ snapshot }: { snapshot: PlanSnapshot }) {
   const progress = planProgress(snapshot);
   const summary = snapshot.summary;
+  const comparison = !snapshot.targetStart && !snapshot.targetEnd ? "비교할 수동 목표 없음" : !summary.forecastStart && !summary.forecastEnd ? "비교할 예측 기간 없음" : summary.outsideTarget ? `수동 목표 범위 밖 (outsideTarget)${summary.forecastState === "INCOMPLETE" ? " · 예측 일정 일부 미정" : ""}` : summary.forecastState === "INCOMPLETE" ? "예측 일정 일부 미정" : "수동 목표 안";
   return <section className="overview-progress" aria-labelledby="overview-progress-title">
     <div className="overview-section-heading"><div><p className="eyebrow">전체 계획</p><h2 id="overview-progress-title">프로젝트 진척</h2></div></div>
     <div className="overview-progress-main">
@@ -36,7 +41,7 @@ function ProgressSection({ snapshot }: { snapshot: PlanSnapshot }) {
       {progress.empty && <p className="overview-empty">작업이 없어 완료율을 계산할 수 없습니다.</p>}
       <p className="overview-as-of">계산 기준일: {snapshot.asOfDate}</p>
     </div>
-    <dl className="overview-facts"><div><dt>수동 목표</dt><dd>{snapshot.targetStart || snapshot.targetEnd ? `${dateText(snapshot.targetStart)} – ${dateText(snapshot.targetEnd)}` : "목표 날짜 없음"}</dd></div><div><dt>예측</dt><dd>{forecastLabel[summary.forecastState] ?? summary.forecastState}{summary.forecastStart || summary.forecastEnd ? ` · 알려진 기간 ${dateText(summary.forecastStart)} – ${dateText(summary.forecastEnd)}` : " · 알려진 날짜 범위 없음"}</dd></div><div><dt>목표 비교</dt><dd>{!snapshot.targetStart && !snapshot.targetEnd ? "비교할 수동 목표 없음" : !summary.forecastStart && !summary.forecastEnd ? "비교할 예측 기간 없음" : summary.forecastState === "INCOMPLETE" ? "예측 일정 일부 미정" : summary.outsideTarget ? "수동 목표 범위 밖 (outsideTarget)" : "수동 목표 안"}</dd></div></dl>
+    <dl className="overview-facts"><div><dt>수동 목표</dt><dd>{snapshot.targetStart || snapshot.targetEnd ? `${dateText(snapshot.targetStart)} – ${dateText(snapshot.targetEnd)}` : "목표 날짜 없음"}</dd></div><div><dt>예측</dt><dd>{forecastLabel[summary.forecastState] ?? summary.forecastState}{summary.forecastStart || summary.forecastEnd ? ` · 알려진 기간 ${dateText(summary.forecastStart)} – ${dateText(summary.forecastEnd)}` : " · 알려진 날짜 범위 없음"}</dd></div><div><dt>목표 비교</dt><dd>{comparison}</dd></div></dl>
   </section>;
 }
 
@@ -66,7 +71,7 @@ function ScheduleSection({ projectId, period, zone, date, weekStart, weekFrom, w
   const rows = loaded?.rows.filter(row => scheduleOverlaps(row, period === "today" ? civilStart(date, zone) : weekFrom, period === "today" ? civilEnd(date, zone) : weekTo)) ?? [];
   const label = period === "today" ? "오늘" : "이번 주";
   const calendar = `/projects/${projectId}/schedules?view=builtin-calendar&mode=week&date=${date}&zone=${encodeURIComponent(zone)}`;
-  return <section aria-labelledby="overview-schedules-title"><div className="overview-section-heading"><div><p className="eyebrow">현재 일정</p><h2 id="overview-schedules-title">프로젝트 일정 <span className="overview-count">{loaded ? sectionCount(rows.length, loaded.complete) : ""}</span></h2></div><Link to={calendar}>캘린더 열기</Link></div><div className="overview-period-controls" role="group" aria-label="일정 기간"><button type="button" aria-pressed={period === "today"} onClick={() => updateOverviewContext("today", zone)}>오늘</button><button type="button" aria-pressed={period === "week"} onClick={() => updateOverviewContext("week", zone)}>이번 주</button></div><p className="overview-range">{label} · {period === "today" ? date : `${weekStart} – ${shiftDate(weekEnd, -1)}`} · {zone}</p>{scheduleQuery.isPending && <p className="overview-state" role="status">일정을 불러오는 중입니다.</p>}{scheduleQuery.isError && <ErrorState message={isAccessError(scheduleQuery.error) ? "프로젝트 일정 접근 권한을 확인할 수 없습니다." : "일정을 불러오지 못했습니다."} onRetry={() => scheduleQuery.refetch()} fetching={scheduleQuery.isFetching} />}{loaded && !scheduleQuery.isError && <>{loaded.partial && <p className="overview-partial" role="status">{loaded.reason ?? "일부 일정만 불러왔습니다."}</p>}{rows.length ? <ul className="overview-list overview-schedule-list">{rows.map(row => <li key={row.id}><Link to={`/projects/${projectId}/schedules/${row.id}`}><strong>{row.title}</strong><span className="overview-meta">{scheduleDate(row, zone)} · {row.status}</span></Link></li>)}</ul> : <p className="overview-empty">{label}에 해당하는 일정이 없습니다.</p>}</>}</section>;
+  return <section aria-labelledby="overview-schedules-title"><div className="overview-section-heading"><div><p className="eyebrow">현재 일정</p><h2 id="overview-schedules-title">프로젝트 일정 <span className="overview-count">{loaded ? sectionCount(rows.length, loaded.complete) : ""}</span></h2></div><Link to={calendar}>캘린더 열기</Link></div><div className="overview-period-controls" role="group" aria-label="일정 기간"><button type="button" aria-pressed={period === "today"} onClick={() => updateOverviewContext("today", zone)}>오늘</button><button type="button" aria-pressed={period === "week"} onClick={() => updateOverviewContext("week", zone)}>이번 주</button></div><p className="overview-range">{label} · {period === "today" ? date : `${weekStart} – ${shiftDate(weekEnd, -1)}`} · {zone}</p>{scheduleQuery.isPending && <p className="overview-state" role="status">일정을 불러오는 중입니다.</p>}{scheduleQuery.isError && <ErrorState message={isOverviewProjectAccessError(scheduleQuery.error) ? "프로젝트 일정 접근 권한을 확인할 수 없습니다." : "일정을 불러오지 못했습니다."} onRetry={() => scheduleQuery.refetch()} fetching={scheduleQuery.isFetching} />}{loaded && !scheduleQuery.isError && <>{loaded.partial && <p className="overview-partial" role="status">{loaded.reason ?? "일부 일정만 불러왔습니다."}</p>}{rows.length ? <ul className="overview-list overview-schedule-list">{rows.map(row => <li key={row.id}><Link to={`/projects/${projectId}/schedules/${row.id}`}><strong>{row.title}</strong><span className="overview-meta">{scheduleDate(row, zone)} · {row.status}</span></Link></li>)}</ul> : <p className="overview-empty">{label}에 해당하는 일정이 없습니다.</p>}</>}</section>;
 }
 
 function civilStart(date: string, zone: string) { return overviewWindow(date, zone).from; }
@@ -120,12 +125,13 @@ export function ProjectOverview({ id }: { id: string }) {
     document.addEventListener("visibilitychange", resume); window.addEventListener("focus", resume); schedule();
     return () => { document.removeEventListener("visibilitychange", resume); window.removeEventListener("focus", resume); if (timer !== undefined) window.clearTimeout(timer); };
   }, []);
-  const plan = useQuery({ queryKey: overviewQueryPrefix("overview-plan"), queryFn: () => accessRead(`overview-plan:${id}:${sessionGeneration}:${overviewRevision}`, () => api.plan(id)), enabled: project.isSuccess && !!project.data && !accessFailure });
-  const dashboard = useQuery({ queryKey: overviewQueryPrefix("overview-dashboard"), queryFn: () => accessRead(`overview-dashboard:${id}:${sessionGeneration}:${overviewRevision}`, () => api.dashboard(id)), enabled: project.isSuccess && !!project.data && !accessFailure });
-  const schedules = useQuery({ queryKey: [...overviewQueryPrefix("overview-schedules"), context.weekFrom, context.weekTo, context.zone], queryFn: () => readOverviewSchedules(id, context.weekFrom, context.weekTo), enabled: project.isSuccess && !!project.data && !accessFailure });
-  useEffect(() => { const observe = () => { const denied = queryClient.getQueryCache().getAll().some(query => isProjectProtectedQuery(query) && isAccessError(query.state.error)); if (denied) { clearOverviewQueries(); setWorkspaceAccessFailure(true); setAccessFailure(true); } }; observe(); return queryClient.getQueryCache().subscribe(observe); }, [id, queryClient]);
-  const protectedAccessFailure = accessFailure || workspaceAccessFailure || (project.isError && isAccessError(project.error)) || (plan.isError && isAccessError(plan.error)) || (schedules.isError && isAccessError(schedules.error)) || (dashboard.isError && isAccessError(dashboard.error));
-  useEffect(() => { if ((project.isError && isAccessError(project.error)) || (plan.isError && isAccessError(plan.error)) || (schedules.isError && isAccessError(schedules.error)) || (dashboard.isError && isAccessError(dashboard.error))) { clearOverviewQueries(); setOverviewRevision(value => value + 1); setAccessFailure(true); } }, [project.isError, project.error, plan.isError, plan.error, schedules.isError, schedules.error, dashboard.isError, dashboard.error]);
+  const contextEpoch = `${context.date}:${context.zone}:${context.weekFrom}:${context.weekTo}`;
+  const plan = useQuery({ queryKey: [...overviewQueryPrefix("overview-plan"), contextEpoch], queryFn: () => accessRead(`overview-plan:${id}:${sessionGeneration}:${overviewRevision}:${contextEpoch}`, () => api.plan(id)), enabled: project.isSuccess && !!project.data && !accessFailure });
+  const dashboard = useQuery({ queryKey: [...overviewQueryPrefix("overview-dashboard"), contextEpoch], queryFn: () => accessRead(`overview-dashboard:${id}:${sessionGeneration}:${overviewRevision}:${contextEpoch}`, () => api.dashboard(id)), enabled: project.isSuccess && !!project.data && !accessFailure });
+  const schedules = useQuery({ queryKey: [...overviewQueryPrefix("overview-schedules"), contextEpoch], queryFn: () => readOverviewSchedules(id, context.weekFrom, context.weekTo), enabled: project.isSuccess && !!project.data && !accessFailure });
+  useEffect(() => { const observe = () => { const denied = queryClient.getQueryCache().getAll().some(query => isProjectProtectedQuery(query) && isOverviewProjectAccessError(query.state.error)); if (denied) { clearOverviewQueries(); setWorkspaceAccessFailure(true); setAccessFailure(true); } }; observe(); return queryClient.getQueryCache().subscribe(observe); }, [id, queryClient]);
+  const protectedAccessFailure = accessFailure || workspaceAccessFailure || (project.isError && isOverviewProjectAccessError(project.error)) || (plan.isError && isOverviewProjectAccessError(plan.error)) || (schedules.isError && isOverviewProjectAccessError(schedules.error)) || (dashboard.isError && isOverviewProjectAccessError(dashboard.error));
+  useEffect(() => { if ((project.isError && isOverviewProjectAccessError(project.error)) || (plan.isError && isOverviewProjectAccessError(plan.error)) || (schedules.isError && isOverviewProjectAccessError(schedules.error)) || (dashboard.isError && isOverviewProjectAccessError(dashboard.error))) { clearOverviewQueries(); setOverviewRevision(value => value + 1); setAccessFailure(true); } }, [project.isError, project.error, plan.isError, plan.error, schedules.isError, schedules.error, dashboard.isError, dashboard.error]);
   const retry = async () => {
     clearOverviewQueries();
     const result = await project.refetch();
