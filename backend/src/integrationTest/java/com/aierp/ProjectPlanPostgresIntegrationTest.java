@@ -11,25 +11,27 @@ import java.util.concurrent.*;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 /** CI Testcontainers coverage for additive V9 project-plan persistence and semantics. */
-@SpringBootTest @Testcontainers(disabledWithoutDocker=false)
+@SpringBootTest
+@org.springframework.context.annotation.Import(H2SessionConfiguration.class)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
+@TestExecutionListeners(listeners = NativeIntegrationRuntimeCleanupListener.class,
+        mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
 class ProjectPlanPostgresIntegrationTest {
-    @Container static final PostgreSQLContainer<?> POSTGRES=new PostgreSQLContainer<>("postgres:18.6");
-    @Container static final GenericContainer<?> REDIS=new GenericContainer<>(DockerImageName.parse("redis:8.2.9")).withExposedPorts(6379);
-    @DynamicPropertySource static void properties(DynamicPropertyRegistry registry){registry.add("spring.datasource.url",POSTGRES::getJdbcUrl);registry.add("spring.datasource.username",POSTGRES::getUsername);registry.add("spring.datasource.password",POSTGRES::getPassword);registry.add("spring.data.redis.url",()->"redis://%s:%d".formatted(REDIS.getHost(),REDIS.getMappedPort(6379)));registry.add("spring.flyway.locations",()->"classpath:db/migration,classpath:db/integration-migration");}
+    private static final NativeIntegrationRuntime RUNTIME = NativeIntegrationRuntime.start();
+
+
+    @DynamicPropertySource static void properties(DynamicPropertyRegistry registry){registry.add("spring.datasource.url",RUNTIME::postgresUrl);registry.add("spring.datasource.username",RUNTIME::postgresUsername);registry.add("spring.datasource.password",RUNTIME::postgresPassword);registry.add("spring.flyway.locations",()->"classpath:db/migration,classpath:db/integration-migration");}
     @Autowired JdbcTemplate jdbc; @Autowired ProjectPlanService service;
     @MockitoBean GoogleAuthorizationService googleAuthorization; @MockitoBean GoogleHttpClient googleHttp;
     @MockitoSpyBean ProjectPlanRepository planRepository;
@@ -166,4 +168,5 @@ class ProjectPlanPostgresIntegrationTest {
     }
     private ItemWrite write(UUID parent,PlanItemKind kind,String title,PlanItemState state,LocalDate start,LocalDate end,List<UUID> deps){return new ItemWrite(parent,kind,title,null,null,state,start,end,null,sort++,List.of(),null,deps,UUID.randomUUID(),null);}
     private ItemWrite writeUpdate(ItemResponse current,List<UUID> deps,long version){return new ItemWrite(current.parentId(),current.kind(),current.title(),current.description(),current.assigneeId(),current.state(),current.targetStart(),current.targetEnd(),current.deadline(),current.sortOrder(),current.labels(),version,deps,null,"dependency change");}
+
 }

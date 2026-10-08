@@ -49,6 +49,8 @@ class Phase1ApiDocumentationTest {
     @MockitoBean NotificationRepository notifications;
     @MockitoBean CalendarService calendar;
     @MockitoBean ProjectAccess projectAccess;
+    @MockitoBean ProjectNotificationAccess projectNotificationAccess;
+    @MockitoBean ScheduleLookup scheduleLookup;
     @MockitoBean ScheduleDashboard scheduleDashboard;
     @MockitoBean CalendarDashboard calendarDashboard;
     final UUID project=UUID.fromString("10000000-0000-0000-0000-000000000001"),user=UUID.fromString("20000000-0000-0000-0000-000000000002"),id=UUID.fromString("30000000-0000-0000-0000-000000000003");
@@ -147,10 +149,32 @@ class Phase1ApiDocumentationTest {
     }
     @Test void documentsNotificationCalendarAndSessionInventory() throws Exception {
         var n=new NotificationEntity();n.id=id;n.userAccountId=user;n.type="SCHEDULE_CONFIRMED";n.link="/projects/"+project+"/schedules/"+id;n.createdAt=starts;
+        n.payload=Map.of("content",Map.of("projectName","Planning","scheduleTitle","Planning review","actorDisplayName","Morgan","occurredAt",starts.toString(),
+            "scheduleStatus","CONFIRMED","businessRevision",1,"summary","Schedule confirmed","changedFields",List.of(Map.of(
+                "field","title","label","Title","before","Old title","after","Planning review"))));
         when(notifications.findByUserAccountId(eq(user),any())).thenReturn(List.of(n));when(notifications.findByIdAndUserAccountId(id,user)).thenReturn(Optional.of(n));
-        var nf=fields("[].id","[].type","[].link","[].readAt","[].createdAt");nf[2].optional().type(JsonFieldType.STRING);nf[3].optional().type(JsonFieldType.STRING);
+        when(projectNotificationAccess.visibleProject(project,user)).thenReturn(Optional.of(new ProjectNotificationAccess.ProjectView(project,"Planning")));
+        when(scheduleLookup.notificationTarget(project,id)).thenReturn(Optional.of(new ScheduleLookup.NotificationTarget("Planning review","CONFIRMED")));
+        var nf=fields("[].id","[].type","[].link","[].readAt","[].createdAt","[].content.provenance","[].content.projectName","[].content.scheduleTitle","[].content.actorDisplayName","[].content.occurredAt","[].content.scheduleStatus","[].content.businessRevision","[].content.summary","[].content.changedFields","[].content.currentProjectName","[].content.currentScheduleTitle","[].content.currentScheduleStatus","[].content.resourceAvailable");
+        nf[2].optional().type(JsonFieldType.STRING);nf[3].optional().type(JsonFieldType.STRING);
+        for(int i=6;i<=10;i++) nf[i].optional().type(JsonFieldType.STRING);
+        nf[11].optional().type(JsonFieldType.NUMBER);nf[12].optional().type(JsonFieldType.STRING);nf[13].optional().type(JsonFieldType.ARRAY);
+        nf[14].optional().type(JsonFieldType.STRING);nf[15].optional().type(JsonFieldType.STRING);nf[16].optional().type(JsonFieldType.STRING);nf[17].type(JsonFieldType.BOOLEAN);
+        nf=Arrays.copyOf(nf,nf.length+5);nf[18]=fieldWithPath("[].content").description("Structured, access-checked notification content").type(JsonFieldType.OBJECT);
+        nf[19]=fieldWithPath("[].content.changedFields[].field").description("Changed field key").type(JsonFieldType.STRING);
+        nf[20]=fieldWithPath("[].content.changedFields[].label").description("Readable field label").type(JsonFieldType.STRING);
+        nf[21]=fieldWithPath("[].content.changedFields[].before").description("Captured before value when known").type(JsonFieldType.STRING).optional();
+        nf[22]=fieldWithPath("[].content.changedFields[].after").description("Captured after value when known").type(JsonFieldType.STRING).optional();
         success("notification-list",get("/api/v1/notifications"),nf);
-        var readFields=fields("id","type","link","readAt","createdAt");readFields[2].optional().type(JsonFieldType.STRING);
+        var readFields=fields("id","type","link","readAt","createdAt","content.provenance","content.projectName","content.scheduleTitle","content.actorDisplayName","content.occurredAt","content.scheduleStatus","content.businessRevision","content.summary","content.changedFields","content.currentProjectName","content.currentScheduleTitle","content.currentScheduleStatus","content.resourceAvailable");
+        readFields[2].optional().type(JsonFieldType.STRING);for(int i=5;i<=9;i++) readFields[i].optional().type(JsonFieldType.STRING);
+        readFields[10].optional().type(JsonFieldType.STRING);readFields[11].optional().type(JsonFieldType.NUMBER);readFields[12].optional().type(JsonFieldType.STRING);readFields[13].optional().type(JsonFieldType.ARRAY);
+        readFields[14].optional().type(JsonFieldType.STRING);readFields[15].optional().type(JsonFieldType.STRING);readFields[16].optional().type(JsonFieldType.STRING);readFields[17].type(JsonFieldType.BOOLEAN);
+        readFields=Arrays.copyOf(readFields,readFields.length+5);readFields[18]=fieldWithPath("content").description("Structured, access-checked notification content").type(JsonFieldType.OBJECT);
+        readFields[19]=fieldWithPath("content.changedFields[].field").description("Changed field key").type(JsonFieldType.STRING);
+        readFields[20]=fieldWithPath("content.changedFields[].label").description("Readable field label").type(JsonFieldType.STRING);
+        readFields[21]=fieldWithPath("content.changedFields[].before").description("Captured before value when known").type(JsonFieldType.STRING).optional();
+        readFields[22]=fieldWithPath("content.changedFields[].after").description("Captured after value when known").type(JsonFieldType.STRING).optional();
         success("notification-read",post("/api/v1/notifications/{id}/read",id),readFields);
         success("calendar-connection",get("/api/v1/calendar/connection"),fields("status","configurationRequired"));
         success("calendar-reconnect",post("/api/v1/calendar/reconnect"),fields("status","configurationRequired"));

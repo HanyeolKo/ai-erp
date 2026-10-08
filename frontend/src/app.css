@@ -123,7 +123,7 @@ button[aria-disabled="true"],
 .schedule-heading > *,
 .section-heading > *,
 .member-row > *,
-.notification-list li > *,
+  .notification-list > li > *,
 .google-account-summary > *,
 .google-service-card > *,
 .calendar-binding-card > *,
@@ -199,8 +199,17 @@ input[readonly] { color: var(--text-secondary); }
 .notification-list { list-style: none; padding: 0; margin: 20px 0; }
 .notification-content { min-width: 0; }
 .notification-content--compact { width: 100%; }
-.notification-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--divider); }
+.notification-list > li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--divider); }
 .notification-main { min-width: 0; }
+.notification-main strong,
+.notification-main p,
+.notification-main time,
+.notification-changes { overflow-wrap: anywhere; }
+.notification-meta,
+.notification-summary { margin: 6px 0 0; }
+.notification-meta { color: var(--text-secondary); font-size: 13px; }
+.notification-meta time { display: inline; }
+.notification-changes { margin: 6px 0 0; padding-left: 20px; }
 .notification-actions { display: flex; min-width: 0; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px 16px; }
 .notification-actions > a { min-width: 0; overflow-wrap: anywhere; }
 .notification-actions > button { min-width: max-content; }
@@ -253,7 +262,7 @@ input[readonly] { color: var(--text-secondary); }
   .modal-body { padding: 16px; }
   .modal-actions { justify-content: stretch; }
   .modal-actions .button { flex: 1 1 auto; }
-  .notification-list li { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .notification-list > li { grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .notification-actions { align-items: stretch; justify-content: stretch; }
   .notification-actions > button,
   .notification-actions > a { flex: 1 1 100%; min-height: 44px; }

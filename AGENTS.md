@@ -52,7 +52,7 @@ Do not archive short conversation replies, temporary notes, raw command output, 
 - Respect spec approval gates and reuse authorization already granted.
 - Core has no durable memory, self-evaluation, improvement, or Learning Gate. Recommend and obtain authorization before adding those layers.
 - Core includes routing, planning, evaluation, verification, and reporting; it omits adaptive memory, self-evaluation, improvement, and governed learning controls.
-- Native defaults are explicit: root/final reviewer Astra/high; router, product-planner, and ui-ux-designer Sol/medium; implementer and release-manager Luna/high. Spark/high is an explicitly selected implementation alternative with reason and availability evidence.
+- Native defaults are explicit: root/final reviewer Astra/high; router, product-planner, and ui-ux-designer Sol/medium; implementer GPT-6 Luna/high; release-manager GPT-5.6 Luna/high. Spark/high is an explicitly selected implementation alternative with reason and availability evidence.
 - Parent-owned executor escalation is Luna/high -> Terra/medium -> Sol/medium, never Astra execution. Sol-ceiling failures return to the Astra orchestrator for self-review; workers cannot self-escalate. Generic dispatch records model, effort, canonical role/contract, bounded context, and `MODEL-ESCALATION.md` when applicable. Limits are two active workers and delegation depth one.
 - Implementer is parent-assigned execution and verification only; it may not own verdicts, routing, or improvement actions.
 - Execution evidence and bounded retry guidance: `harness/loops/EXECUTION-LOOP.md`.

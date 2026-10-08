@@ -5,7 +5,7 @@
 ## 완료 범위
 
 - Java 25 / Spring Boot 4.1.1 기반 모듈러 모놀리스와 7개 닫힌 업무 모듈
-- PostgreSQL·Redis 개발 Compose, Flyway schema 초기화, Testcontainers 통합 검증
+- PostgreSQL·Redis 개발 Compose, Flyway schema 초기화, native PostgreSQL 통합 검증
 - OIDC 설정 기반의 초대·프로젝트·일정·확인·알림·Calendar 단방향 투영 API와 React SPA
 - `GET /api/v1/system/info` 및 liveness/readiness health 공개, 그 밖의 경로 deny-all
 - REST Docs → OpenAPI 3.0.1 → TypeScript 타입·정적 Swagger 검토 산출물
@@ -24,7 +24,7 @@
 5. 루트에서 `pnpm api:generate`
 6. `pnpm frontend:test && pnpm frontend:typecheck && pnpm frontend:build`
 
-통합 검증은 Docker가 필요하며 `cd backend && ./gradlew integrationTest`로 별도 실행합니다. Docker가 없으면 이 작업은 명시적으로 실패합니다.
+일반 통합 검증은 Docker 없이 `cd backend && ./gradlew integrationTest`로 실행하며 임시 PostgreSQL 18.6과 테스트 전용 H2 JDBC 세션 저장소를 사용합니다. Redis 호환성 검증은 별도 `redisIntegrationTest` 태스크가 담당합니다. 이 태스크에는 `AI_ERP_REDIS_TEST_URL=redis://127.0.0.1:<port>`처럼 로컬 임시 Redis 8.2.9의 명시적 주소가 필요하며, 운영 주소는 사용할 수 없습니다. CI는 동적 루프백 포트에 `redis:8.2.9` 서비스를 올리고 해당 태스크를 실행합니다. Compose 검사와 이미지 빌드에는 Docker를 사용합니다.
 
 ## 로컬 개발과 API 검토
 

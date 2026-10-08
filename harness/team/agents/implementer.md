@@ -12,7 +12,7 @@ Execute parent-approved code, test, and behavior-affecting configuration changes
 - Domains: implementation, harness, ui-ux
 - Capabilities: execution, verification
 - Canonical contract: `harness/harness-spec.json`
-- Model contract defaults to `gpt-5.6-luna` with `high` reasoning. `gpt-5.3-codex-spark` with `high` is an explicitly selected implementation alternative and requires a recorded reason and availability evidence. Parent-owned escalation may select Terra/medium and then Sol/medium; this role cannot self-escalate or select Astra. This role does not own routing, verdicts, or improvements.
+- Model contract defaults to `gpt-6-luna` with `high` reasoning. `gpt-5.3-codex-spark` with `high` is an explicitly selected implementation alternative and requires a recorded reason and availability evidence. Parent-owned escalation may select Terra/medium and then Sol/medium; this role cannot self-escalate or select Astra. This role does not own routing, verdicts, or improvements.
 
 ## Input and output
 
