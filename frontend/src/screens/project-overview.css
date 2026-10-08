@@ -27,6 +27,7 @@
 .overview-list li { display: flex; min-width: 0; flex-direction: column; gap: 4px; padding: 12px 0; border-top: 1px solid var(--divider); }
 .overview-list li strong, .overview-list li a { min-width: 0; color: var(--text); font-size: 15px; line-height: 1.5; overflow-wrap: anywhere; }
 .overview-list li a { display: flex; align-items: center; min-height: 44px; text-decoration: none; }
+.overview-list li a.overview-record-link { align-items: flex-start; flex-direction: column; gap: 4px; width: 100%; }
 .overview-list li a:hover strong, .overview-list li a:focus-visible strong { text-decoration: underline; }
 .overview-empty, .overview-state { color: var(--text-secondary); overflow-wrap: anywhere; }
 .overview-state { margin: 24px 0; }

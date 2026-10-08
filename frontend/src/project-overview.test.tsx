@@ -99,6 +99,7 @@ test("reuses the loaded week when switching between today and week", async () =>
   const week = await screen.findByRole("button", { name: "이번 주" });
   const scheduleRequests = () => server.calls.filter(call => call.method === "GET" && call.url.startsWith("/api/v1/projects/p1/schedules?")).length;
   await waitFor(() => expect(screen.getAllByRole("link", { name: /오늘 일정/ }).length).toBeGreaterThan(1));
+  expect(screen.getAllByText(/확정/).length).toBeGreaterThan(0);
   expect(scheduleRequests()).toBe(1);
   fireEvent.click(week);
   await waitFor(() => expect(screen.getAllByText("오늘 일정").length).toBeGreaterThan(0));
@@ -154,16 +155,27 @@ test.each(["success", "denial"] as const)("ignores delayed obsolete-zone %s afte
   let settleOld!: (value: Response) => void;
   server.on("GET", "/api/v1/projects/p1/plan", () => json(plan));
   server.on("GET", "/api/v1/projects/p1/dashboard", () => json(dashboard));
-  server.on("GET", "/api/v1/projects/p1/schedules", (_, url) => url.searchParams.get("from")?.includes("T15:00") ? new Promise<Response>(resolve => { settleOld = resolve; }) : json([schedule]));
+  const oldSchedule = { ...schedule, title: "OLD zone schedule", startsAt: "2090-09-10T01:00:00Z", endsAt: "2090-09-10T02:00:00Z" }; const newSchedule = { ...schedule, title: "NEW zone schedule", startsAt: "2090-09-10T14:00:00Z", endsAt: "2090-09-10T15:00:00Z" };
+  server.on("GET", "/api/v1/projects/p1/schedules", (_, url) => url.searchParams.get("from")?.includes("T15:00") ? new Promise<Response>(resolve => { settleOld = resolve; }) : json([newSchedule]));
   server.on("GET", "/api/v1/projects/p1/schedule-workspace", () => json({ properties: [], views: [], dashboardViewId: null, dashboardRowVersion: 0 }));
   window.location.hash = "#/projects/p1?period=today&zone=Asia%2FSeoul";
   render(<App />);
   await screen.findByRole("heading", { name: "프로젝트 진척" });
   await act(async () => { window.location.hash = "#/projects/p1?period=today&zone=America%2FNew_York"; window.dispatchEvent(new HashChangeEvent("hashchange")); });
   await screen.findByText(/America\/New_York/);
-  await act(async () => settleOld(outcome === "success" ? json([schedule]) : json({ code: "PROJECT_ACCESS_DENIED" }, 403)));
+  await screen.findByText("NEW zone schedule");
+  await act(async () => settleOld(outcome === "success" ? json([oldSchedule]) : json({ code: "PROJECT_ACCESS_DENIED" }, 403)));
   await waitFor(() => expect(screen.getByRole("heading", { name: "프로젝트 진척" })).toBeInTheDocument());
   expect(screen.queryByText(/보호된 내용을 숨겼습니다/)).not.toBeInTheDocument();
+  expect(screen.getByText("NEW zone schedule")).toBeInTheDocument(); expect(screen.queryByText("OLD zone schedule")).not.toBeInTheDocument();
+});
+
+test.each([
+  ["EMPTY", { forecastState: "EMPTY", forecastStart: null, forecastEnd: null, outsideTarget: false, taskCount: 0, doneCount: 0, progressPercent: null }, "예측 없음"],
+  ["UNDATED", { forecastState: "UNDATED", forecastStart: null, forecastEnd: null, outsideTarget: false }, "날짜 미정"],
+] as const)("renders truthful %s project facts", async (_state, summary, expected) => {
+  const server = http(); server.on("GET", "/api/v1/projects/p1/plan", () => json({ ...plan, targetStart: null, targetEnd: null, summary: { ...plan.summary, ...summary } })); server.on("GET", "/api/v1/projects/p1/dashboard", () => json(dashboard)); server.on("GET", "/api/v1/projects/p1/schedules", () => json([])); server.on("GET", "/api/v1/projects/p1/schedule-workspace", () => json({ properties: [], views: [], dashboardViewId: null, dashboardRowVersion: 0 }));
+  window.location.hash = "#/projects/p1"; render(<App />); await screen.findByRole("heading", { name: "프로젝트 진척" }); expect(screen.getByText(new RegExp(expected))).toBeInTheDocument(); expect(screen.getByText("비교할 수동 목표 없음")).toBeInTheDocument(); if (_state === "EMPTY") expect(screen.queryByText("37.5%")).not.toBeInTheDocument();
 });
 
 test("keeps active configured-card RESOURCE_NOT_FOUND local", async () => {
