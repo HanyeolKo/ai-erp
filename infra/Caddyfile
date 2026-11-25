@@ -7,7 +7,7 @@
     redir https://ai-erp.duckdns.org{uri} 308
 }
 
-192.168.219.100, ai-erp.duckdns.org, blackcow.duckdns.org {
+192.168.219.100, ai-erp.duckdns.org {
     tls internal
     encode zstd gzip
     @ip_browser_entry {
@@ -20,5 +20,8 @@
         path /oauth2/authorization/google
     }
     redir @ip_google_login https://ai-erp.duckdns.org{uri} 302
+    import /etc/caddy/state/main-site-*.caddy
     import /etc/caddy/state/active-upstream.caddy
 }
+
+import /etc/caddy/state/sites-*.caddy

@@ -13,7 +13,7 @@ cleanup() {
   docker rm --force "$CONTAINER" >/dev/null 2>&1 || true
   case "$TEST_DIR" in
     "$TEMP_ROOT"/ai-erp-caddy-no-sni.*)
-      rm -f -- "$TEST_DIR/state/active-upstream.caddy"
+      rm -f -- "$TEST_DIR/state/active-upstream.caddy" "$TEST_DIR/state/sites-test.caddy" "$TEST_DIR/state/main-site-test.caddy"
       rmdir -- "$TEST_DIR/state" "$TEST_DIR"
       ;;
     *)
@@ -31,6 +31,8 @@ command -v curl >/dev/null || { printf 'FAIL: curl is required\n' >&2; exit 1; }
 
 mkdir "$TEST_DIR/state"
 printf 'header X-AI-ERP-Release "%s"\nrespond "ready" 200\n' "$TEST_RELEASE" >"$TEST_DIR/state/active-upstream.caddy"
+printf 'http://private-site.test {\n    respond "private" 200\n}\n' >"$TEST_DIR/state/sites-test.caddy"
+printf 'respond /private-hook "hook" 200\n' >"$TEST_DIR/state/main-site-test.caddy"
 
 docker run --detach --rm \
   --name "$CONTAINER" \
@@ -83,7 +85,7 @@ grep -q '^HTTP/1\.[01] 200' <<<"$NO_SNI_RESPONSE" || {
   exit 1
 }
 
-for site in ai-erp.duckdns.org blackcow.duckdns.org; do
+for site in ai-erp.duckdns.org; do
   for path in / /oauth2/authorization/google; do
     DOMAIN_RESPONSE="$(request with-sni "$site" "$path")"
     grep -q '^HTTP/1\.[01] 200' <<<"$DOMAIN_RESPONSE" || {
@@ -92,6 +94,12 @@ for site in ai-erp.duckdns.org blackcow.duckdns.org; do
     }
   done
 done
+
+HOOK_RESPONSE="$(request with-sni "$SITE_ADDRESS" /private-hook)"
+grep -q '^HTTP/1\.[01] 200' <<<"$HOOK_RESPONSE" && grep -q '^hook$' <<<"${HOOK_RESPONSE//$'\r'/}" || {
+  printf 'FAIL: main-site-*.caddy import must load inside the primary site block\n' >&2
+  exit 1
+}
 
 for path in '/?entry=preserve' '/index.html?entry=preserve'; do
   IP_ENTRY_RESPONSE="$(request without-sni "$PRODUCTION_IP" "$path")"
@@ -147,4 +155,10 @@ for site in 203.0.113.9 ai-erp.duckdns.org blackcow.duckdns.org unapproved.examp
   }
 done
 
-printf 'PASS: 1 scenario / 25 assertions (loopback, IP SNI/no-SNI, both domain origins, canonical browser entry, bounded IP OAuth redirect, canonical HTTP entry)\n'
+PRIVATE_SITE_RESPONSE="$(curl --silent --show-error --max-time 3 --noproxy '*' --header 'Host: private-site.test' "http://127.0.0.1:$HTTP_PORT/")"
+[[ "$PRIVATE_SITE_RESPONSE" == "private" ]] || {
+  printf 'FAIL: sites-*.caddy import must load top-level site blocks\n' >&2
+  exit 1
+}
+
+printf 'PASS: 1 scenario / 25 assertions (loopback, IP SNI/no-SNI, primary domain origin, state import hooks, canonical browser entry, bounded IP OAuth redirect, canonical HTTP entry)\n'
